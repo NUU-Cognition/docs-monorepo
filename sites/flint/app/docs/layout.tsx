@@ -7,7 +7,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <DocsLayout
       tree={source.pageTree}
       nav={{
-        title: "Flint Docs",
+        title: "NUU Flint",
       }}
     >
       {children}
