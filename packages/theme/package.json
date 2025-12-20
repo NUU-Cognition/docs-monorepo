@@ -1,0 +1,24 @@
+{
+  "name": "@nuu/docs-theme",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tailwind": "./src/tailwind-preset.ts"
+  },
+  "scripts": {
+    "build": "echo 'No build step yet'",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fumadocs-ui": "^15.1.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "tailwindcss": "^3.4"
+  }
+}
