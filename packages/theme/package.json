@@ -1,23 +1,28 @@
 {
   "name": "@nuu/docs-theme",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tailwind": "./src/tailwind-preset.ts"
+    "./tailwind": "./src/tailwind-preset.ts",
+    "./components": "./src/components/index.ts",
+    "./layout": "./src/layout/index.ts"
   },
   "scripts": {
-    "build": "echo 'No build step yet'",
+    "build": "tsc --noEmit",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "fumadocs-ui": "^15.1.4"
+    "fumadocs-ui": "^15.1.4",
+    "lucide-react": "^0.475.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.2",
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
+    "next": "^15",
     "react": "^18 || ^19",
     "tailwindcss": "^3.4"
   }
