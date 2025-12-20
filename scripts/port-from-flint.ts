@@ -5,9 +5,6 @@
  * Reads docs-manifest.json from the subflint to determine structure and mapping.
  *
  * Usage: pnpm port --source <subflint-path>
- *
- * Example:
- *   pnpm port --source "/path/to/(Flint) App Docs"
  */
 
 import * as fs from "fs";
@@ -19,16 +16,19 @@ import * as path from "path";
 
 interface PageMapping {
   source: string;
+  title: string;
   slug: string;
-  title?: string; // Override extracted title
-  description?: string; // Override extracted description
 }
 
 interface Section {
   id: string;
   title: string;
-  description?: string;
   pages: PageMapping[];
+}
+
+interface IndexPage {
+  source: string;
+  title: string;
 }
 
 interface DocsManifest {
@@ -36,67 +36,13 @@ interface DocsManifest {
   version: string;
   site: string;
   title: string;
-  description?: string;
-  index: string; // Source file for index.mdx
+  index: IndexPage;
   sections: Section[];
 }
 
 // ============================================================================
 // Content Processing
 // ============================================================================
-
-function escapeYamlString(str: string): string {
-  // Always quote to avoid any YAML parsing issues
-  // Escape backslashes first, then quotes
-  const escaped = str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  return `"${escaped}"`;
-}
-
-function extractTitle(content: string): string | null {
-  const match = content.match(/^#\s+(.+)$/m);
-  return match ? match[1].trim() : null;
-}
-
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "$1") // Bold
-    .replace(/\*(.+?)\*/g, "$1") // Italic
-    .replace(/`(.+?)`/g, "$1") // Inline code
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Links
-    .replace(/\[\[([^\]]+)\]\]/g, "$1") // Wiki links
-    .trim();
-}
-
-function extractDescription(content: string): string | null {
-  const lines = content.split("\n");
-  let foundTitle = false;
-
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      foundTitle = true;
-      continue;
-    }
-    if (foundTitle && line.trim() === "") {
-      continue;
-    }
-    if (foundTitle && line.trim()) {
-      // Stop at headings, lists, tables, code blocks
-      if (
-        line.startsWith("#") ||
-        line.startsWith("-") ||
-        line.startsWith("|") ||
-        line.startsWith("```")
-      ) {
-        break;
-      }
-      // Strip markdown and truncate
-      const desc = stripMarkdown(line);
-      return desc.length > 160 ? desc.slice(0, 157) + "..." : desc;
-    }
-  }
-
-  return null;
-}
 
 // Map unsupported languages to supported ones
 const LANGUAGE_MAP: Record<string, string> = {
@@ -117,7 +63,7 @@ function convertWikiLinks(content: string, manifest: DocsManifest): string {
   const linkMap = new Map<string, string>();
 
   // Index page
-  const indexBaseName = manifest.index.replace(/\.md$/, "");
+  const indexBaseName = manifest.index.source.replace(/\.md$/, "");
   linkMap.set(indexBaseName, "/docs");
 
   // Section pages
@@ -148,25 +94,11 @@ function convertWikiLinks(content: string, manifest: DocsManifest): string {
   });
 }
 
-function createFrontmatter(title: string, description?: string): string {
-  const lines = ["---", `title: ${escapeYamlString(title)}`];
-  if (description) {
-    lines.push(`description: ${escapeYamlString(description)}`);
-  }
-  lines.push("---", "");
-  return lines.join("\n");
-}
-
-function processContent(
-  content: string,
-  title: string,
-  description: string | undefined,
-  manifest: DocsManifest
-): string {
+function processContent(content: string, title: string, manifest: DocsManifest): string {
   // Remove existing frontmatter
   let processed = content.replace(/^---[\s\S]*?---\n*/, "");
 
-  // Remove the first H1 title (we use frontmatter title)
+  // Remove the first H1 title (fumadocs displays title from frontmatter)
   processed = processed.replace(/^#\s+.+\n+/, "");
 
   // Convert wiki links
@@ -175,9 +107,8 @@ function processContent(
   // Normalize code block languages
   processed = normalizeCodeBlocks(processed);
 
-  // Build frontmatter
-  const extractedDesc = description || extractDescription(content);
-  const frontmatter = createFrontmatter(title, extractedDesc || undefined);
+  // Simple frontmatter with just title
+  const frontmatter = `---\ntitle: "${title.replace(/"/g, '\\"')}"\n---\n\n`;
 
   return frontmatter + processed.trim() + "\n";
 }
@@ -194,12 +125,8 @@ function portFromManifest(sourcePath: string): void {
   const manifestPath = path.join(sourcePath, "docs-manifest.json");
   const meshPath = path.join(sourcePath, "Mesh");
 
-  // Validate paths
   if (!fs.existsSync(manifestPath)) {
     console.error(`Error: docs-manifest.json not found at ${manifestPath}`);
-    console.error("");
-    console.error("Create a docs-manifest.json in your docs subflint.");
-    console.error("See: https://nuu.dev/docs/guide/docs-manifest");
     process.exit(1);
   }
 
@@ -208,38 +135,30 @@ function portFromManifest(sourcePath: string): void {
     process.exit(1);
   }
 
-  // Load manifest
-  const manifest: DocsManifest = JSON.parse(
-    fs.readFileSync(manifestPath, "utf-8")
-  );
+  const manifest: DocsManifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
 
   console.log(`Porting: ${manifest.title}`);
   console.log(`Site: ${manifest.site}`);
-  console.log(`Source: ${meshPath}`);
 
-  const targetPath = path.join(
-    process.cwd(),
-    "sites",
-    manifest.site,
-    "content",
-    "docs"
-  );
-  console.log(`Target: ${targetPath}`);
-  console.log("");
+  const targetPath = path.join(process.cwd(), "sites", manifest.site, "content", "docs");
 
-  // Ensure target directory exists
+  // Clean target directory
+  if (fs.existsSync(targetPath)) {
+    fs.rmSync(targetPath, { recursive: true });
+  }
   fs.mkdirSync(targetPath, { recursive: true });
 
+  console.log(`Target: ${targetPath}\n`);
+
   // Process index page
-  const indexSource = path.join(meshPath, manifest.index);
+  const indexSource = path.join(meshPath, manifest.index.source);
   if (fs.existsSync(indexSource)) {
     const content = fs.readFileSync(indexSource, "utf-8");
-    const title = extractTitle(content) || "Introduction";
-    const mdx = processContent(content, title, undefined, manifest);
+    const mdx = processContent(content, manifest.index.title, manifest);
     fs.writeFileSync(path.join(targetPath, "index.mdx"), mdx);
-    console.log(`  Created: index.mdx (from ${manifest.index})`);
+    console.log(`  index.mdx <- ${manifest.index.source}`);
   } else {
-    console.warn(`  Warning: Index file not found: ${manifest.index}`);
+    console.warn(`  Warning: ${manifest.index.source} not found`);
   }
 
   // Track sections for root meta.json
@@ -256,38 +175,27 @@ function portFromManifest(sourcePath: string): void {
       const sourceFile = path.join(meshPath, page.source);
 
       if (!fs.existsSync(sourceFile)) {
-        console.warn(`  Warning: File not found: ${page.source}`);
+        console.warn(`  Warning: ${page.source} not found`);
         continue;
       }
 
       const content = fs.readFileSync(sourceFile, "utf-8");
-      const title = page.title || extractTitle(content) || page.slug;
-      const mdx = processContent(content, title, page.description, manifest);
+      const mdx = processContent(content, page.title, manifest);
 
       fs.writeFileSync(path.join(sectionPath, `${page.slug}.mdx`), mdx);
       pageSlugs.push(page.slug);
-      console.log(`  Created: ${section.id}/${page.slug}.mdx`);
+      console.log(`  ${section.id}/${page.slug}.mdx <- ${page.source}`);
     }
 
     // Create section meta.json
-    fs.writeFileSync(
-      path.join(sectionPath, "meta.json"),
-      createMetaJson(section.title, pageSlugs)
-    );
-    console.log(`  Created: ${section.id}/meta.json`);
-
+    fs.writeFileSync(path.join(sectionPath, "meta.json"), createMetaJson(section.title, pageSlugs));
     sectionIds.push(section.id);
   }
 
   // Create root meta.json
-  fs.writeFileSync(
-    path.join(targetPath, "meta.json"),
-    createMetaJson("Documentation", sectionIds)
-  );
-  console.log(`  Created: meta.json`);
+  fs.writeFileSync(path.join(targetPath, "meta.json"), createMetaJson("Documentation", sectionIds));
 
-  console.log("");
-  console.log("Done! Run `pnpm build` to verify.");
+  console.log("\nDone!");
 }
 
 // ============================================================================
@@ -306,11 +214,6 @@ for (let i = 0; i < args.length; i++) {
 
 if (!sourcePath) {
   console.log("Usage: pnpm port --source <subflint-path>");
-  console.log("");
-  console.log("The subflint must contain a docs-manifest.json file.");
-  console.log("");
-  console.log("Example:");
-  console.log('  pnpm port --source "/path/to/(Flint) App Docs"');
   process.exit(1);
 }
 
