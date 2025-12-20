@@ -192,8 +192,8 @@ function portFromManifest(sourcePath: string): void {
     sectionIds.push(section.id);
   }
 
-  // Create root meta.json
-  fs.writeFileSync(path.join(targetPath, "meta.json"), createMetaJson("Documentation", sectionIds));
+  // Create root meta.json (uses manifest title)
+  fs.writeFileSync(path.join(targetPath, "meta.json"), createMetaJson(manifest.title, sectionIds));
 
   console.log("\nDone!");
 }
