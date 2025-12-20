@@ -1,0 +1,310 @@
+---
+title: "Tutorial: Agent Collaboration"
+description: "Learn how to work effectively with AI agents in your Flint."
+---
+Learn how to work effectively with AI agents in your Flint.
+
+## What We'll Cover
+
+- Setting up for agent collaboration
+- Teaching agents your workspace
+- Using plugins for structured work
+- Best practices for human-agent workflow
+
+## Step 1: Install the Claude Code Mod
+
+Edit `flint.toml`:
+
+```toml
+[flint]
+name = "my-project"
+type = "flint"
+
+[plugins]
+required = [
+  "living-documents",
+  "increments",
+  "flint-terminal-agent"
+]
+
+[mods]
+required = ["git", "claude-code"]
+```
+
+```bash
+flint sync
+```
+
+This installs the Flint Terminal Agent plugin (agent conventions) and the Claude Code mod (tool integration).
+
+## Step 2: Prepare Your Init File
+
+The init file is how agents understand your workspace. Make it comprehensive:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#system"
+---
+
+# My Project
+
+A workspace for [describe your project].
+
+## Purpose
+
+[2-3 sentences about what this Flint is for]
+
+## Current Focus
+
+- Active increment: [Increment 1.0.0 - Foundation](/docs/increment-1-0-0-foundation)
+- Key tasks: [Task User Auth](/docs/task-user-auth), [Task API Design](/docs/task-api-design)
+
+## Key Documents
+
+| Document | Purpose |
+|----------|---------|
+| [(Dashboard) Backlog](/docs/dashboard-backlog) | All planned work |
+| [(Dashboard) Increments](/docs/dashboard-increments) | Release tracking |
+| [Architecture](/docs/architecture) | System design |
+
+## Plugins
+
+| Plugin | Purpose |
+|--------|---------|
+| Living Document | Track document lifecycle |
+| Increments | Version releases |
+| Flint Terminal Agent | Agent conventions |
+
+## Agent Instructions
+
+When working in this Flint:
+1. Check current increment for priorities
+2. Update task status as you work
+3. Follow existing naming conventions
+4. Ask before major architectural changes
+
+## Workspace
+
+Codebase linked at [Workspace/Monorepo](/docs/workspace-monorepo)
+```
+
+## Step 3: Start an Agent Session
+
+When you start Claude Code (or another AI agent) in your Flint:
+
+**First message pattern:**
+
+```
+Read Mesh/(System) Flint Init.md to understand this workspace.
+Then help me with [your task].
+```
+
+The agent will read the init file and have context for everything that follows.
+
+## Step 4: Use Plugins for Structured Work
+
+### Creating a Task
+
+```
+Read @Plugins/Projects/init-proj.md and create a new task for
+implementing user notifications.
+```
+
+The agent will:
+1. Read the Projects plugin init file
+2. Follow the task template
+3. Create a properly structured task document
+
+### Archiving Completed Work
+
+```
+Use @Plugins/Archive/skills/sk-arc-archive.md to archive the
+completed authentication task.
+```
+
+The agent will:
+1. Read the archive skill
+2. Move the task to Archive/
+3. Update relevant dashboards
+
+### Creating an Increment
+
+```
+Read @Plugins/Increments/init-inc.md and create increment 2.0.0
+for the notification system.
+```
+
+## Step 5: Establish Conventions
+
+Document your preferences in the init file:
+
+```markdown
+## Conventions
+
+### Naming
+- Tasks: `(Task) Verb Noun.md`
+- Concepts: `Noun Phrase.md`
+- System files: `(System) Name.md`
+
+### Tags
+- `#task` - Actionable items
+- `#concept` - Ideas and definitions
+- `#ld/living` - Active documents
+- `#ld/dead` - Archived documents
+
+### Workflow
+1. Tasks start in Backlog
+2. Active tasks get `status: active`
+3. Done tasks move to Archive
+```
+
+Agents will follow these conventions when creating documents.
+
+## Step 6: Multi-Session Continuity
+
+Agents start fresh each session. To maintain continuity:
+
+### Session Notes
+
+Create a session note at start:
+
+```markdown
+# Session 2025-12-18
+
+## Context
+
+Continuing work from yesterday:
+- Completed: [Task User Auth](/docs/task-user-auth)
+- In progress: [Task API Design](/docs/task-api-design)
+- Blocked: Waiting on design review
+
+## Goals Today
+
+1. Finish API endpoint specs
+2. Start database migration
+3. Update architecture doc
+
+## Notes
+
+[Agent adds notes during session]
+```
+
+### Handoff Pattern
+
+End sessions with a summary:
+
+```
+Summarize what we accomplished and what's pending.
+Update the relevant dashboards and create a handoff note.
+```
+
+## Step 7: Effective Prompting
+
+### Good Patterns
+
+**Grounded in context:**
+```
+Looking at [Task API Design](/docs/task-api-design), what's the best approach
+for the authentication endpoints?
+```
+
+**Plugin-aware:**
+```
+Use the Increments plugin to update our 1.0.0 increment
+with today's completed tasks.
+```
+
+**Convention-following:**
+```
+Create a concept note for "Rate Limiting" following our
+existing naming conventions.
+```
+
+### Patterns to Avoid
+
+**Vague scope:**
+```
+Help me with the project.  ❌
+```
+
+**Context-free:**
+```
+Write some API documentation.  ❌
+```
+
+**Better:**
+```
+Read [Architecture](/docs/architecture) and [Task API Design](/docs/task-api-design), then write
+API documentation for the auth endpoints.  ✓
+```
+
+## Agent Capabilities by Plugin
+
+| Plugin | What Agents Can Do |
+|--------|-------------------|
+| **Core** | Navigate, search, create notes |
+| **Living Document** | Track status, manage lifecycle |
+| **Increments** | Create/update version releases |
+| **Projects** | Manage tasks and backlog |
+| **Archive** | Move completed items |
+| **Notepad** | Quick capture of ideas |
+
+Load the relevant plugin init before asking for plugin-specific work.
+
+## Workflow: Daily Agent Session
+
+```
+# Morning
+1. "Read the init file and check (Dashboard) Backlog"
+2. "What's the status of our current increment?"
+3. "Let's work on [task]"
+
+# During work
+4. Agent creates/updates notes
+5. Agent uses plugins as needed
+6. Human reviews, provides feedback
+
+# End of day
+7. "Update task statuses based on our work"
+8. "Create a session summary"
+9. Human commits changes
+```
+
+## Troubleshooting
+
+### Agent seems confused
+
+```
+Re-read Mesh/(System) Flint Init.md and tell me what you
+understand about this workspace.
+```
+
+### Agent not following conventions
+
+```
+Look at the existing (Task) files in Mesh/ and follow that
+exact format for the new task.
+```
+
+### Agent context seems lost
+
+```
+Let's start fresh. Read the init file again, then
+check our current increment status.
+```
+
+## What You've Learned
+
+- **Init file importance** - The foundation of agent context
+- **Plugin loading** - On-demand capability extension
+- **Convention documentation** - Teaching agents your preferences
+- **Session patterns** - Maintaining continuity across sessions
+- **Effective prompting** - Grounded, specific, convention-aware
+
+## Next Steps
+
+- [Module - Plugins](/docs/modules/plugins) - Deep dive into available plugins
+- [Reference - CLI Commands](/docs/reference/cli) - All available commands
+- [Guide - Core Concepts](/docs/guide/core-concepts) - Review mental model

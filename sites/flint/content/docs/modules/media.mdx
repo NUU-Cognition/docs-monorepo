@@ -1,0 +1,141 @@
+---
+title: "Module: Media"
+description: "Store and reference images, PDFs, and other binary assets."
+---
+**Store and reference images, PDFs, and other binary assets.**
+
+## Purpose
+
+Some knowledge isn't text. Diagrams, screenshots, PDFs, recordings - these binary assets need a home. The Media module provides that home, keeping your non-markdown files organized and accessible from your Mesh notes.
+
+Media is deliberately simple. It's a folder for assets with a referencing convention. Files go in, you link to them from Mesh, and they appear inline or as attachments in your notes.
+
+Unlike Mesh, Media files aren't indexed for content search (they're binary). Unlike Workspace, Media files travel with your Flint (they're committed). Media is for assets that are *part of* your knowledge base, not external resources you're referencing.
+
+## Structure
+
+```
+Media/
+├── diagrams/
+│   ├── architecture.png
+│   └── flow-chart.svg
+├── screenshots/
+│   ├── ui-mockup.png
+│   └── error-state.png
+├── references/
+│   ├── paper.pdf
+│   └── specification.pdf
+└── recordings/
+    └── meeting-2025-12-18.mp3
+```
+
+### Organization
+
+Flat or nested - your choice. Common patterns:
+
+- **By type**: `diagrams/`, `screenshots/`, `documents/`
+- **By project**: `project-alpha/`, `project-beta/`
+- **Flat**: Everything at top level (fine for small Flints)
+
+### Supported Formats
+
+**Images**: PNG, JPG, GIF, SVG, WebP
+**Documents**: PDF
+**Video**: MP4, WebM, MOV
+**Audio**: MP3, WAV, M4A
+
+Other binary formats work but may not render inline.
+
+## Referencing Media
+
+From Mesh notes, embed assets with the transclusion syntax:
+
+```markdown
+Here's the architecture diagram:
+![Media/diagrams/architecture.png](/docs/media-diagrams-architecture-png)
+
+See the specification:
+![Media/references/specification.pdf](/docs/media-references-specification-pdf)
+
+Listen to the discussion:
+![Media/recordings/meeting.mp3](/docs/media-recordings-meeting-mp3)
+```
+
+### Image Sizing
+
+Some editors support size hints:
+
+```markdown
+![500](/docs/media-diagram-png)        # 500px width
+![300x200](/docs/media-diagram-png)    # Explicit dimensions
+```
+
+### Linking vs Embedding
+
+Embed (`![...](/docs/)`) displays inline. Link (`[...](/docs/)`) creates a reference:
+
+```markdown
+![Media/diagram.png](/docs/media-diagram-png)    # Shows the image
+[Media/diagram.png](/docs/media-diagram-png)     # Links to the file
+```
+
+## Integration
+
+### With Mesh
+
+Media is referenced from Mesh notes. The notes provide context; Media provides visual evidence.
+
+```markdown
+# Architecture Overview
+
+The system has three layers:
+![Media/diagrams/three-layer.png](/docs/media-diagrams-three-layer-png)
+
+As shown above, Layer A communicates with Layer B via...
+```
+
+### With Exports
+
+Media references in notes are preserved when compiling exports. The exported files maintain their references to the Media folder.
+
+### With Index
+
+Media files are skipped during indexing (they're binary and not searchable). Only the `Imports/`, `Workspace/`, and `Media/` prefixes are excluded from wiki-link indexing.
+
+## Best Practices
+
+**Use descriptive names.** `architecture-v2-2025-12.png` beats `image1.png`. You'll thank yourself later.
+
+**Organize by purpose.** Group related assets. A diagram supporting a specific note might live in `Media/project-name/`.
+
+**Compress images.** Large images slow everything down. Use appropriate compression.
+
+**Prefer vector formats.** SVG for diagrams scales infinitely. PNG for screenshots.
+
+**Keep originals.** If you edit an image, keep the original (maybe in `Media/originals/`). You might need to re-edit.
+
+**Don't embed large files.** PDFs and videos should be linked, not embedded. Let the reader choose to open them.
+
+### When to Use Media vs Other Modules
+
+| Use Case | Module |
+|----------|--------|
+| Diagram you created | Media |
+| Screenshot of your UI | Media |
+| External spec PDF you need | Media |
+| Code you're documenting | Workspace |
+| Another Flint's exports | Imports |
+| Notes and concepts | Mesh |
+
+### Common Mistakes
+
+- **Storing code in Media** - Code isn't binary; it belongs in Workspace or Mesh
+- **Huge uncompressed images** - Compress before adding
+- **Orphaned assets** - Periodically check for Media files with no references
+- **Wrong format choices** - JPEG for diagrams loses quality; PNG for photos wastes space
+
+## Related
+
+- [Module - Mesh](/docs/modules/mesh) - Notes that embed media assets
+- [Module - Exports](/docs/modules/exports) - Media references in compiled exports
+- [Module - Workspace](/docs/modules/workspace) - For code, use Workspace not Media

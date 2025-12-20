@@ -1,0 +1,231 @@
+---
+title: "Module: Plugins"
+description: "Extend Flint with skills, templates, and automation."
+---
+**Extend Flint with skills, templates, and automation.**
+
+## Purpose
+
+Flint's core is intentionally minimal - a workspace structure and indexing. Everything else comes from plugins: project management workflows, living document verification, archive operations, agent skills.
+
+Plugins are markdown-based prompt packages. They provide context (init files that agents load), skills (repeatable tasks), templates (document structures), and workflows (multi-step processes). Installing a plugin gives your Flint - and the agents working in it - new capabilities.
+
+The plugin system is designed for AI agents. Plugins don't run code by default; they provide structured prompts that agents interpret. This makes plugins portable, inspectable, and safe.
+
+## Structure
+
+```
+Plugins/
+├── Core/                       # Core plugin (always present)
+│   ├── init-core.md           # Context for agents
+│   └── meta-core.md           # Plugin metadata
+├── Living Documents/           # Living docs plugin
+│   ├── init-ld.md
+│   ├── setup-ld.md            # One-time setup skill
+│   └── skills/
+│       └── sk-ld-verify.md
+├── Increments/                 # Work stream plugin
+│   ├── init-inc.md
+│   ├── templates/
+│   │   └── tmp-inc-stream.md
+│   └── workflows/
+│       └── wkfl-inc-plan.md
+└── Archive/                    # Archival plugin
+    ├── init-arc.md
+    └── skills/
+        └── sk-arc-archive.md
+```
+
+### File Naming Conventions
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `init-[id].md` | Context loaded into agent sessions | `init-ld.md` |
+| `setup-[id].md` | One-time initialization skill | `setup-inc.md` |
+| `sk-[id]-[name].md` | Repeatable skill | `sk-arc-archive.md` |
+| `tmp-[id]-[name].md` | Document template | `tmp-inc-stream.md` |
+| `wkfl-[id]-[name].md` | Multi-step workflow | `wkfl-proj-plan.md` |
+| `meta-[id].md` | Plugin metadata | `meta-core.md` |
+
+### Plugin Shorthand
+
+Each plugin has a short identifier:
+
+- `core` - Core plugin
+- `ld` - Living Documents
+- `inc` - Increments
+- `arc` - Archive
+- `proj` - Projects
+- `ntpd` - Notepad
+- `cm` - Comments
+- `fta` - Flint Terminal Agent
+- `auto` - Autonomy
+- `tst` - Testing
+- `cmpr` - Compiler
+- `conn` - Connections
+- `mdl` - Models
+- `doc` - Documentation
+- `tl` - Timelines
+
+## Commands
+
+### List Installed Plugins
+
+```bash
+flint plugin list
+```
+
+Shows installed plugins and their status.
+
+### List Available Plugins
+
+```bash
+flint plugin list --available
+```
+
+Shows plugins that can be installed.
+
+### Install a Plugin
+
+```bash
+flint plugin install inc
+```
+
+Copies the plugin from the registry to `Plugins/`.
+
+### Update All Plugins
+
+```bash
+flint plugin update
+```
+
+Updates all installed plugins to their latest versions.
+
+### Uninstall a Plugin
+
+```bash
+flint plugin uninstall inc
+```
+
+Removes the plugin directory.
+
+## Using Plugins
+
+### Loading Context
+
+Agents load plugin context by reading init files:
+
+```markdown
+@Plugins/Increments/init-inc.md
+```
+
+The init file explains the plugin's concepts, conventions, and available skills.
+
+### Using Skills
+
+Skills are prompted by reading the skill file:
+
+```markdown
+Use the archive skill: @Plugins/Archive/skills/sk-arc-archive.md
+```
+
+The skill file contains instructions the agent follows.
+
+### Using Templates
+
+Templates define document structures:
+
+```markdown
+Create a new increment using: @Plugins/Increments/templates/tmp-inc-stream.md
+```
+
+Templates contain placeholders and generation instructions.
+
+### Using Workflows
+
+Workflows are multi-step processes:
+
+```markdown
+Follow the planning workflow: @Plugins/Increments/workflows/wkfl-inc-plan.md
+```
+
+Workflows involve human-in-the-loop checkpoints.
+
+## Integration
+
+### With Mesh
+
+Plugins create and manage Mesh documents. The Increments plugin creates `(Increment)` files. The Archive plugin moves files to `Mesh/Archive/`.
+
+### Plugin Status
+
+Plugin status is tracked in `Mesh/(System) Plugin Status.md`:
+
+```markdown
+## Plugin Status
+
+- Core 1.0.0: installed
+- Living Documents 1.0.0: initialized
+- Increments 1.0.0: initialized
+```
+
+### With Agents
+
+Plugins are designed for AI agents. The Flint Terminal Agent plugin (`fta`) provides conventions for how agents should operate in the workspace.
+
+## Built-in Plugins
+
+**Core** - Base system, always installed. File operations, navigation, conventions.
+
+**Living Documents** - Self-verifying specifications. Track document status, run verification.
+
+**Increments** - Work stream management. Version-numbered work packages with tasks.
+
+**Archive** - Move completed items to archive. Maintain history.
+
+**Projects** - Project tracking. Group related work, track status.
+
+**Notepad** - Quick capture. Scratchpad for ideas before they become notes.
+
+**Comments** - Add timestamped comments to notes. Discussion threads.
+
+**Flint Terminal Agent** - Agent operating conventions. How agents work in Flint.
+
+**Autonomy** - Autonomous workflows and agent sessions.
+
+**Testing** - Test tracking and verification.
+
+**Compiler** - Export compilation helpers.
+
+**Connections** - Connection management helpers.
+
+**Models** - Model and schema tracking.
+
+**Documentation** - Documentation generation.
+
+**Timelines** - Timeline visualization.
+
+## Best Practices
+
+**Load plugins on demand.** Don't load every init file at session start. Load when you need that plugin's capabilities.
+
+**Read init before using.** The init file explains conventions. Don't guess - read the instructions.
+
+**Run setup once.** Setup skills are one-time. Don't re-run unless troubleshooting.
+
+**Respect plugin boundaries.** Each plugin manages its domain. Don't manually edit plugin-managed files.
+
+**Check status after install.** Some plugins need initialization after installation.
+
+### Common Mistakes
+
+- **Loading all plugins** - Context overload. Load what you need.
+- **Skipping setup** - Plugins may not work until setup runs
+- **Editing managed files** - Let plugins manage their documents
+- **Ignoring conventions** - Each plugin has naming and tagging conventions. Follow them.
+
+## Related
+
+- [Module - Mesh](/docs/modules/mesh) - Plugins create and manage Mesh documents
+- [Guide - Tutorial Agent Collaboration](/docs/guide/tutorial-agent-collaboration) - Using plugins with agents
+- [Reference - Configuration](/docs/reference/configuration) - Plugin configuration in flint.toml

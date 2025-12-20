@@ -1,0 +1,305 @@
+---
+title: "Tutorial: Project Planning with Flint"
+description: "Learn Flint by building a real project management workspace."
+---
+Learn Flint by building a real project management workspace.
+
+## What We'll Build
+
+A Flint for managing a software project with:
+- Task tracking
+- Incremental releases
+- Codebase documentation
+- Compiled spec documents
+
+## Step 1: Create the Flint
+
+```bash
+flint init alpha-project
+cd "(Flint) alpha-project"
+```
+
+The title will default to "alpha-project" - you can edit it in `flint.toml` after creation.
+
+## Step 2: Configure Plugins
+
+Edit `flint.toml`:
+
+```toml
+[flint]
+name = "alpha-project"
+type = "flint"
+
+[plugins]
+required = [
+  "living-documents",
+  "increments",
+  "projects",
+  "archive"
+]
+
+[mods]
+required = ["git"]
+```
+
+Sync to install:
+
+```bash
+flint sync
+```
+
+## Step 3: Set Up the Init File
+
+Edit `Mesh/(System) Flint Init.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#system"
+---
+
+# Project Alpha
+
+A workspace for planning and tracking Project Alpha development.
+
+## Purpose
+
+Track development from concept to release. Coordinate tasks,
+document decisions, and maintain project history.
+
+## Key Documents
+
+- [(Dashboard) Backlog](/docs/dashboard-backlog) - All planned work
+- [(Dashboard) Increments](/docs/dashboard-increments) - Version releases
+- [(System) Index](/docs/system-index) - Document index
+
+## Plugins
+
+- **Living Document** - Track document lifecycle
+- **Increments** - Manage versioned releases
+- **Projects** - Backlog and task management
+- **Archive** - Historical record
+```
+
+## Step 4: Create Your Backlog
+
+Create `Mesh/(Dashboard) Backlog.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#dashboard"
+  - "#ld/living"
+---
+
+# Backlog
+
+## Active Tasks
+
+- [ ] [(Task) User Authentication](/docs/task-user-authentication)
+- [ ] [(Task) API Design](/docs/task-api-design)
+- [ ] [(Task) Database Schema](/docs/task-database-schema)
+
+## Completed
+
+(Tasks move here when done)
+
+## Ideas
+
+- Consider caching layer
+- Evaluate GraphQL vs REST
+```
+
+## Step 5: Create a Task
+
+Create `Mesh/(Task) User Authentication.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#task"
+  - "#ld/living"
+status: active
+priority: high
+---
+
+# User Authentication
+
+## Goal
+
+Implement user authentication with email/password and OAuth.
+
+## Requirements
+
+- [ ] Email/password registration
+- [ ] Email verification
+- [ ] Password reset flow
+- [ ] Google OAuth
+- [ ] Session management
+
+## Notes
+
+Looking at Clerk vs Auth0 for managed auth.
+
+## Related
+
+- [API Design](/docs/api-design)
+- [Database Schema](/docs/database-schema)
+```
+
+## Step 6: Create an Increment
+
+Create `Mesh/(Increment) 1.0.0 - Foundation.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#increment"
+  - "#ld/living"
+increment: "1.0.0"
+---
+
+# (Increment) 1.0.0 - Foundation
+
+*Core infrastructure and authentication.*
+
+## Scope
+
+- User authentication system
+- Database setup
+- API foundation
+
+## Tasks
+
+- [x] [(Task) Database Schema](/docs/task-database-schema)
+- [ ] [(Task) User Authentication](/docs/task-user-authentication)
+- [ ] [(Task) API Design](/docs/task-api-design)
+
+## Log
+
+| Date | Change |
+|------|--------|
+| 2025-12-18 | Increment created |
+```
+
+## Step 7: Link Your Codebase
+
+```bash
+flint workspace reference codebase /path/to/your/code
+```
+
+Document it in `Workspace/Codebase.md`:
+
+```markdown
+# Codebase
+
+**Type:** codebase
+**Registered:** 2025-12-18
+
+## Key Paths
+
+- `src/auth/` - Authentication module
+- `src/api/` - API routes
+- `prisma/schema.prisma` - Database schema
+
+## Running Locally
+
+```bash
+npm run dev
+```
+
+## Notes
+
+External resource at: /path/to/your/code
+```
+
+## Step 8: Index Everything
+
+```bash
+flint sync
+```
+
+This adds IDs to all your new files.
+
+## Step 9: Query Your Project
+
+Find all active tasks:
+
+```bash
+mesh query --tag "#task"
+```
+
+Find the backlog:
+
+```bash
+mesh query --tag "#dashboard"
+```
+
+## Step 10: Create an Export
+
+When ready to share, create `Exports/Spec.md` (the export manifest):
+
+```markdown
+---
+id: (auto-generated)
+description: Project specification bundle
+---
+
+# Spec Export
+
+Compile these documents into the project specification:
+
+[(System) Flint Init](/docs/system-flint-init)
+[(Task) User Authentication](/docs/task-user-authentication)
+[(Task) API Design](/docs/task-api-design)
+[(Task) Database Schema](/docs/task-database-schema)
+```
+
+Build the export:
+
+```bash
+flint export build Spec
+```
+
+Output appears in `Exports/Spec/`.
+
+## Workflow Going Forward
+
+### Daily
+
+1. `flint sync` - Start fresh
+2. Check `(Dashboard) Backlog` - See priorities
+3. Work on tasks - Update status as you go
+4. `flint sync` - End of session
+
+### Weekly
+
+1. Review increment progress
+2. Move completed tasks
+3. Update backlog priorities
+4. Archive completed increments
+
+### On Completion
+
+1. Mark tasks complete
+2. Update increment to done
+3. Archive with `@Plugins/Archive/skills/sk-arc-archive.md`
+4. Create new increment for next version
+
+## What You've Learned
+
+- **Flint structure** - How modules work together
+- **Task tracking** - Using tasks with the Projects plugin
+- **Increments** - Versioned work packages
+- **Workspace linking** - Connecting to external code
+- **Exports** - Compiling documents for sharing
+
+## Next Steps
+
+- [Guide - Tutorial Research Notes](/docs/guide/tutorial-research-notes) - Different use case
+- [Guide - Tutorial Agent Collaboration](/docs/guide/tutorial-agent-collaboration) - Work with AI
+- [Module - Plugins](/docs/modules/plugins) - Deep dive into plugins

@@ -1,0 +1,184 @@
+---
+title: "Core Concepts: The Flint Mental Model"
+description: "Understanding these concepts will make everything else click."
+---
+Understanding these concepts will make everything else click.
+
+## Bounded Cognitive Workspace
+
+A Flint is a *bounded* workspace. It has clear edges - one folder containing everything related to a single domain of thought.
+
+This is different from:
+- A file system (infinite, unstructured)
+- A database (infinite, but structured)
+- A wiki (can sprawl indefinitely)
+
+The boundary matters because:
+1. **Comprehensibility** - You can understand the whole thing
+2. **Portability** - You can move, share, or archive it as a unit
+3. **Agent context** - An AI can read the init file and understand the scope
+
+When a Flint gets too big or unfocused, split it. Create a new Flint and use Imports/Connections to link them.
+
+## Modules
+
+Flint organizes content into 8 modules, each with a specific purpose:
+
+| Module | Purpose | Question it Answers |
+|--------|---------|---------------------|
+| **Mesh** | Your thinking | What do I know/think? |
+| **Imports** | External context | What do others know? |
+| **Exports** | Shared outputs | What am I publishing? |
+| **Workspace** | External reality | What am I modeling? |
+| **Media** | Binary assets | What visuals support this? |
+| **Plugins** | Automation | What can agents do here? |
+| **Connections** | Messaging | Who am I coordinating with? |
+| **Subflints** | Nested workspaces | What needs isolation? |
+
+The mental model: **Mesh is the center**. Everything else either feeds into it (Imports, Workspace), flows out of it (Exports), supports it (Media, Plugins, Subflints), or coordinates around it (Connections).
+
+## The Mesh: Notes as a Graph
+
+Your notes in `Mesh/` aren't isolated files - they're nodes in a graph. When you write `[Other Note](/docs/other-note)`, you create an edge. When you write `![Embedded Content](/docs/embedded-content)`, you create a transclusion.
+
+This graph enables:
+- **Navigation** - Follow links between concepts
+- **Discovery** - Find backlinks (what links *to* this?)
+- **Compilation** - Resolve transclusions into complete documents
+
+Think of Mesh as your external brain. Ideas go in as notes. Connections form through links. Insights emerge from the structure.
+
+## Plugins: Cognitive Runtimes
+
+Plugins extend what you (and agents) can do in a Flint. But they're not traditional code plugins - they're *prompt packages*.
+
+A plugin contains:
+- **Init file** - Context agents load to understand the plugin
+- **Skills** - Repeatable tasks (archive a note, create an increment)
+- **Templates** - Document structures (task spec, increment log)
+- **Workflows** - Multi-step processes with human checkpoints
+
+Plugins don't run code by default. They provide structured prompts that agents interpret. This makes them:
+- Safe (no arbitrary code execution)
+- Inspectable (it's all markdown)
+- Portable (works with any capable agent)
+
+Load plugins on demand. Don't load everything at session start - that wastes context.
+
+## Mods: Root-Level Modifications
+
+Mods modify how Flint itself works. Unlike plugins (which add agent capabilities), mods configure the system:
+
+- **git mod** - Initializes git, manages `.gitignore`
+- **claude-code mod** - Configures Claude Code integration
+
+Mods are declared in `flint.toml` and installed via `flint sync`.
+
+## Configuration Layers
+
+Flint uses layered configuration:
+
+1. **Global** - `~/.flint/config.toml` - User preferences (registry location)
+2. **Workspace** - `flint.toml` - This Flint's configuration
+3. **Lock** - `.flint/flint.lock` - Computed state (don't edit)
+
+Most configuration lives in `flint.toml`:
+
+```toml
+[flint]
+name = "my-project"
+type = "flint"
+
+[plugins]
+required = [
+  "living-documents",
+  "increments"
+]
+
+[mods]
+required = ["git"]
+```
+
+## Types and Presets
+
+**Types** define what a note is for. Common types include:
+- `note` - General purpose
+- `task` - Actionable item
+- `increment` - Versioned work package
+- `system` - Configuration/navigation
+
+Types are indicated by frontmatter (`type: task`) or naming convention (`(Task) Name.md`).
+
+**Presets** are templates for common Flint configurations. Instead of configuring from scratch, you can base your Flint on a preset that includes plugins, mods, and conventions for a specific use case (research, software project, writing).
+
+## The Flow
+
+Here's how data typically flows through a Flint:
+
+```
+External World
+     │
+     ▼
+┌─────────┐     ┌──────────┐
+│Workspace│     │ Imports  │
+│(reality)│     │(context) │
+└────┬────┘     └────┬─────┘
+     │               │
+     └───────┬───────┘
+             ▼
+        ┌────────┐
+        │  Mesh  │ ← Your thinking happens here
+        │(notes) │
+        └────┬───┘
+             │
+     ┌───────┼───────┐
+     │       │       │
+     ▼       ▼       ▼
+┌───────┐ ┌──────┐ ┌───────────┐
+│Exports│ │Media │ │Connections│
+│(share)│ │(viz) │ │ (message) │
+└───────┘ └──────┘ └───────────┘
+             │
+             ▼
+      Other Flints / World
+```
+
+1. **Workspace** grounds you in reality (codebases, data)
+2. **Imports** bring context from other Flints
+3. **Mesh** is where you think and work
+4. **Exports** publish your thinking
+5. **Media** supports visualization
+6. **Connections** coordinate with others
+
+**Not shown in the flow diagram:**
+- **Plugins** extend agent capabilities (they're tools, not data)
+- **Subflints** are nested workspaces with their own complete structure
+
+## Agent Mental Model
+
+If you're an AI agent operating in a Flint:
+
+1. **Start with init** - Read `Mesh/(System) Flint Init.md`
+2. **Load plugins on demand** - Only what you need
+3. **Work in Mesh** - That's where thinking happens
+4. **Follow conventions** - Match existing naming patterns
+5. **Use `mesh query`** - Find what you need
+6. **Don't overreach** - Stay within the Flint's scope
+
+The init file tells you everything you need to know about this specific workspace.
+
+## Key Principles
+
+1. **One domain per Flint** - When it sprawls, split it
+2. **Modules have purposes** - Put things where they belong
+3. **Links create meaning** - Connect your ideas
+4. **Plugins are prompts** - Safe, inspectable, portable
+5. **Agents are first-class** - The system is designed for AI collaboration
+6. **Declare, don't code** - Configuration over programming
+
+## Next Steps
+
+- [Guide - Tutorial Project Planning](/docs/guide/tutorial-project-planning) - See concepts in action
+- [Module - Mesh](/docs/modules/mesh) - Deep dive into the core module
+- [Module - Plugins](/docs/modules/plugins) - Understand the plugin system
+- [Module - Subflints](/docs/modules/subflints) - Nested workspaces

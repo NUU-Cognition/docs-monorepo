@@ -1,0 +1,367 @@
+---
+title: "Troubleshooting Guide"
+description: "Common issues and how to resolve them."
+---
+Common issues and how to resolve them.
+
+## Quick Diagnostics
+
+When something isn't working:
+
+```bash
+# Check you're in a Flint
+flint --version
+
+# See current state
+flint plugin list
+flint workspace list
+flint connection list
+
+# Repair common issues
+flint repair --dry-run
+```
+
+## Common Issues
+
+### "Not a Flint workspace"
+
+**Symptom:** Commands fail with "Not a Flint workspace" or similar.
+
+**Causes:**
+- Not in a `(Flint)` folder
+- Missing `flint.toml`
+- Corrupted `.flint/` directory
+
+**Solutions:**
+
+```bash
+# Check current directory
+pwd
+ls -la
+
+# Should see:
+# - flint.toml
+# - .flint/
+# - Mesh/
+
+# If flint.toml missing, you're in the wrong folder
+cd "(Flint) Your Project"
+
+# If .flint/ corrupted
+flint repair
+```
+
+### Missing File IDs
+
+**Symptom:** Files don't appear in queries or have `id: undefined`.
+
+**Solution:**
+
+```bash
+# Re-index to add IDs
+flint sync
+
+# Or specifically index
+mesh index
+```
+
+### Plugin Not Working
+
+**Symptom:** Plugin commands fail or agent doesn't recognize plugin.
+
+**Solutions:**
+
+```bash
+# Check if installed
+flint plugin list
+
+# If not listed, add to flint.toml and sync
+# [plugins]
+# required = ["plugin-name"]
+flint sync
+
+# If listed but not working, update all plugins
+flint plugin update
+```
+
+For agents: Make sure to read the plugin's init file first:
+```
+@Plugins/PluginName/init-shorthand.md
+```
+
+### Configuration Out of Sync
+
+**Symptom:** Changes to `flint.toml` not reflected.
+
+**Solution:**
+
+```bash
+flint sync
+```
+
+This reads `flint.toml` and updates installed plugins, mods, and state.
+
+### Broken Links
+
+**Symptom:** `[Note](/docs/note)` links don't resolve or show as broken.
+
+**Solutions:**
+
+```bash
+# Common causes:
+# 1. Typo in link - fix the spelling
+# 2. Note renamed - update links or use mesh rename
+# 3. Note deleted - remove or update references
+
+# Rename and update all references
+mesh rename "Old Name" "New Name"
+
+# Check what notes exist
+mesh query --tag "#some-tag"
+```
+
+Note: There is no `mesh query --broken` command. You need to manually check links.
+
+### Git Conflicts in .flint/
+
+**Symptom:** Git shows conflicts in `.flint/` files.
+
+**Solution:**
+
+`.flint/` should be gitignored. If you're seeing conflicts:
+
+```bash
+# Remove from git tracking
+git rm -r --cached .flint/
+
+# Ensure .gitignore has the entry
+echo ".flint/" >> .gitignore
+
+# Regenerate
+flint sync
+```
+
+### Workspace References Missing
+
+**Symptom:** Workspace references show red dots or "missing".
+
+**Causes:**
+- Path doesn't exist on this machine
+- Path changed
+- Different machine than where reference was created
+
+**Solution:**
+
+```bash
+# Check references
+flint workspace list
+
+# Re-register with correct path
+flint workspace reference name /correct/path
+
+# Or remove if no longer needed
+flint workspace remove name
+```
+
+### Connection Sync Fails
+
+**Symptom:** Messages not being delivered.
+
+**Solutions:**
+
+```bash
+# Check connection status
+flint connection status
+
+# Verify other Flint exists and is registered
+flint list
+
+# Check for write permissions
+ls -la /path/to/other/flint/Connections/
+
+# Re-add connection if needed
+flint connection remove name
+flint connection add name
+```
+
+### Export Compilation Fails
+
+**Symptom:** Export build produces errors.
+
+**Common causes:**
+
+1. **Missing notes:**
+   ```
+   Error: Note not found: [Missing Note](/docs/missing-note)
+   ```
+   Fix: Create the note or remove the reference from the export manifest.
+
+2. **Circular transclusions:**
+   ```
+   Error: Circular reference detected
+   ```
+   Fix: Remove the circular embed chain.
+
+3. **Invalid output path:**
+   ```
+   Error: Cannot write to output
+   ```
+   Fix: Check the Exports/ folder exists.
+
+**Building exports:**
+
+```bash
+# List available exports
+flint export list
+
+# Build a specific export
+flint export build guide
+
+# Or use mesh compile for ad-hoc compilation
+mesh compile "Note Name"
+```
+
+### Index Corruption
+
+**Symptom:** Queries return wrong results or missing files.
+
+**Solution:**
+
+```bash
+# Delete and rebuild index
+rm -rf .flint/index/
+flint sync
+```
+
+### Frontmatter Parsing Errors
+
+**Symptom:** Files not indexed or showing parse errors.
+
+**Common causes:**
+
+1. **Invalid YAML:**
+   ```yaml
+   ---
+   tags: #tag    # Wrong - needs quotes or array
+   ---
+   ```
+   Fix:
+   ```yaml
+   ---
+   tags:
+     - "#tag"
+   ---
+   ```
+
+2. **Missing closing `---`:**
+   ```markdown
+   ---
+   id: abc
+
+   # Content  # Missing closing ---
+   ```
+
+3. **Tabs instead of spaces:**
+   YAML requires spaces. Check for tab characters.
+
+### Performance Issues
+
+**Symptom:** Commands are slow.
+
+**Solutions:**
+
+```bash
+# Check Mesh size
+find Mesh -name "*.md" | wc -l
+
+# If very large (1000+), consider:
+# 1. Archiving old content
+# 2. Splitting into subflints
+# 3. Using more specific queries
+
+# Clear and rebuild index
+rm -rf .flint/
+flint sync
+```
+
+### CLI Not Found
+
+**Symptom:** `flint: command not found`
+
+**Solutions:**
+
+The Flint CLI is part of a private monorepo. If you're developing locally:
+
+```bash
+# From the monorepo root
+pnpm install
+pnpm build
+
+# Link the CLI globally
+cd apps/flint-cli
+pnpm link --global
+```
+
+## Repair Command
+
+`flint repair` fixes many common issues automatically:
+
+```bash
+# Preview what would be fixed
+flint repair --dry-run
+
+# Apply fixes
+flint repair
+```
+
+**What it fixes:**
+- Missing standard folders (Mesh/, Exports/, etc.)
+- Invalid lock file
+- Missing flint.toml
+- Missing .gitignore
+- Missing registry entries
+
+## Resetting a Flint
+
+If all else fails, you can reset runtime state:
+
+```bash
+# Remove all generated state (keeps your notes)
+rm -rf .flint/
+
+# Remove plugins (keeps notes)
+rm -rf Plugins/
+
+# Regenerate everything
+flint sync
+```
+
+**Warning:** This removes:
+- Index (will be rebuilt)
+- Plugin status (plugins will need re-initialization)
+- Lock file (will be regenerated)
+
+Your notes in `Mesh/` are preserved.
+
+## Getting Help
+
+If these solutions don't work:
+
+1. **Check documentation:**
+   - [Reference - CLI Commands](/docs/reference/cli)
+   - [Reference - Configuration](/docs/reference/configuration)
+
+2. **Report issues:**
+   https://github.com/nuu-cognition/flint/issues
+
+Include:
+- Flint version (`flint --version`)
+- OS and Node version
+- Exact error message
+- Steps to reproduce
+
+## Related
+
+- [Reference - CLI Commands](/docs/reference/cli) - All commands
+- [Reference - Configuration](/docs/reference/configuration) - Configuration options
+- [Guide - Quick Start](/docs/guide/quick-start) - Getting started

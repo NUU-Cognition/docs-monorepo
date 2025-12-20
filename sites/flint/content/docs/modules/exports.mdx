@@ -1,0 +1,195 @@
+---
+title: "Module: Exports"
+description: "Transform your interconnected notes into shareable, linear documents."
+---
+**Transform your interconnected notes into shareable, linear documents.**
+
+## Purpose
+
+Mesh is great for thinking - notes link freely, ideas branch and reconnect. But when you need to share knowledge, you need linear output: a document with a beginning, middle, and end.
+
+The Exports module compiles your Mesh notes into publishable artifacts. It resolves transclusions (pulling in embedded content), rewrites wiki-links, and produces clean output.
+
+Exports serve two purposes: sharing with humans (guides, specifications, reports) and sharing with other Flints (bundles that can be imported). Either way, Exports is how your thinking becomes portable.
+
+## Structure
+
+```
+Exports/
+├── guide.md                    # Export manifest
+├── guide/                      # Built export folder
+│   ├── (MeshName) --- Introduction.md
+│   ├── (MeshName) --- Getting Started.md
+│   └── (MeshName) --- Reference.md
+└── api-bundle.md               # Another export manifest
+```
+
+### Export Manifests
+
+Exports are defined by markdown files in `Exports/`. Each manifest lists the notes to include via wiki-links:
+
+```markdown
+---
+id: uuid
+description: Complete user guide
+---
+
+# User Guide Export
+
+Include these in order:
+
+[Introduction to Flint](/docs/introduction-to-flint)
+[Getting Started](/docs/getting-started)
+[Command Reference](/docs/command-reference)
+```
+
+The manifest file name becomes the export name.
+
+## Commands
+
+### List Exports
+
+```bash
+flint export list
+```
+
+Shows all export manifests and their build status.
+
+### Build an Export
+
+```bash
+flint export build guide
+```
+
+Reads the manifest, processes linked notes, and writes to an output folder.
+
+### Check Export Status
+
+```bash
+flint export status
+```
+
+Shows build status for all exports.
+
+### Compile a Note Directly
+
+```bash
+mesh compile "Note Name"
+mesh compile "User Guide" --depth 3
+```
+
+For quick compilation without a manifest, use `mesh compile` directly on any note.
+
+## How Compilation Works
+
+1. **Read manifest** - Parse the wiki-links listed in the export manifest
+2. **Collect notes** - Gather all referenced notes
+3. **Expand embeds** - Resolve `![embed](/docs/embed)` transclusions
+4. **Rewrite links** - Update wiki-links with prefixed file names
+5. **Write output** - Create files in the export folder
+
+### File Naming in Exports
+
+Built files are prefixed with the source Mesh name:
+
+```
+(MeshName) --- Original File Name.md
+```
+
+This ensures exported files can be distinguished when imported into other Flints.
+
+### Wiki-Link Rewriting
+
+Links are rewritten to reference the prefixed names:
+
+```markdown
+# Source
+See [Other Concept](/docs/other-concept) for details.
+
+# Built output
+See [Other Concept](/docs/meshname-other-concept) for details.
+```
+
+### Transclusion Resolution
+
+Embeds are expanded into blockquotes:
+
+```markdown
+# Source
+![Important Point](/docs/important-point)
+
+# Built output
+> **Important Point**
+>
+> The actual content from the Important Point note...
+```
+
+## Integration
+
+### From Mesh
+
+Export manifests reference Mesh notes via wiki-links:
+
+```markdown
+Include these concepts:
+[Core Concepts](/docs/core-concepts)
+[Advanced Patterns](/docs/advanced-patterns)
+[Best Practices](/docs/best-practices)
+```
+
+Order matters - notes are compiled in the order listed.
+
+### With Imports
+
+Other Flints can import your exports. Structure exports with consumers in mind - clear naming, focused bundles.
+
+## Output Format
+
+Currently, Exports outputs markdown files only. The files have:
+- Frontmatter stripped or preserved based on configuration
+- Embeds expanded
+- Wiki-links rewritten with prefixes
+
+## Best Practices
+
+**Design exports for your audience.** A guide for humans differs from a bundle for other Flints. Know who's consuming.
+
+**Keep manifests updated.** When you add notes to a series, update the export manifest.
+
+**Test your exports.** Read the compiled output. Broken links, missing context, and ordering issues only show up in the final artifact.
+
+**Version your bundles.** When creating exports for other Flints, note the version in the manifest description.
+
+### Manifest Patterns
+
+Simple sequential:
+```markdown
+[Chapter 1](/docs/chapter-1)
+[Chapter 2](/docs/chapter-2)
+[Chapter 3](/docs/chapter-3)
+```
+
+With sections:
+```markdown
+## Part 1: Foundations
+[Core Concepts](/docs/core-concepts)
+[Basic Usage](/docs/basic-usage)
+
+## Part 2: Advanced
+[Advanced Patterns](/docs/advanced-patterns)
+[Integration](/docs/integration)
+```
+
+### Common Mistakes
+
+- **Circular transclusions** - Note A embeds Note B embeds Note A. Compiler detects this.
+- **Missing notes** - Manifest references a note that doesn't exist. Check for typos.
+- **Order confusion** - Wiki-link lists compile in order. Reorganize the list, not the files.
+- **Giant single exports** - Split into logical chunks. Nobody wants a 100-page single file.
+
+## Related
+
+- [Module - Mesh](/docs/modules/mesh) - Source content for exports
+- [Module - Imports](/docs/modules/imports) - Others can import your exports
+- [Module - Media](/docs/modules/media) - Media referenced in exports
+- [Reference - CLI Commands](/docs/reference/cli) - Export CLI commands

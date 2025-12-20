@@ -1,0 +1,258 @@
+---
+title: "Module: Subflints"
+description: "Nested Flint workspaces that live inside a parent Flint."
+---
+**Nested Flint workspaces that live inside a parent Flint.**
+
+## Purpose
+
+Sometimes you need isolation within a project. A documentation subsite, a side experiment, a publishing pipeline - these belong conceptually with the parent but benefit from their own bounded workspace.
+
+Subflints solve this by letting you create full Flint workspaces inside another Flint. They have the complete structure (Mesh, Workspace, Media, Exports, Plugins) but aren't registered globally. The parent Flint contains and mediates them.
+
+The key insight: a subflint is just a Flint that isn't registered. It's invisible outside the parent but fully functional inside.
+
+## Structure
+
+```
+Subflints/
+├── (Flint) Docs/               # A documentation subflint
+│   ├── flint.toml
+│   ├── Mesh/
+│   │   └── Index.md
+│   ├── Workspace/
+│   ├── Media/
+│   ├── Exports/
+│   └── Plugins/
+├── (Flint) Blog/               # A publishing subflint
+│   ├── flint.toml
+│   ├── Mesh/
+│   └── ...
+└── (Flint) Research/           # An isolated research space
+    └── ...
+```
+
+### Subflint Configuration
+
+Subflints have a minimal `flint.toml`:
+
+```toml
+[flint]
+name = "docs"
+type = "subflint"    # Signals "don't register me"
+```
+
+The `type = "subflint"` is the only difference from a regular Flint.
+
+### Parent Tracking
+
+The parent tracks subflints in `.flint/subflints.json`:
+
+```json
+{
+  "version": 1,
+  "subflints": [
+    {
+      "name": "Docs",
+      "relativePath": "Subflints/(Flint) Docs",
+      "created": "2025-12-18T10:00:00Z"
+    }
+  ]
+}
+```
+
+## Commands
+
+### Create a Subflint
+
+```bash
+flint subflint create docs
+```
+
+Creates `Subflints/(Flint) docs/` with full Flint structure.
+
+**With a preset:**
+```bash
+flint subflint create api-spec --preset documentation
+```
+
+### List Subflints
+
+```bash
+flint subflint list
+```
+
+Shows all subflints in the current Flint.
+
+### Sync (Rename) a Subflint
+
+```bash
+flint subflint sync docs
+```
+
+The "config-first" rename workflow:
+1. Edit the `name` field in the subflint's `flint.toml`
+2. Run `flint subflint sync <current-name>`
+3. Folder and registry update to match the config
+
+**Example:**
+```bash
+# Edit Subflints/(Flint) docs/flint.toml to change name = "API Docs"
+flint subflint sync docs
+# Renames folder to "(Flint) API Docs"
+```
+
+If names already match, it reports "already in sync" and does nothing.
+
+### Remove a Subflint
+
+```bash
+flint subflint remove docs
+```
+
+Deletes the subflint directory. **This is destructive.**
+
+### Promote to Registered Flint
+
+```bash
+flint subflint promote docs --to ~/projects/api-docs
+```
+
+When a subflint outgrows its parent:
+1. Moves the subflint to a new location
+2. Changes `type = "subflint"` to `type = "flint"`
+3. Registers it in the global registry
+4. Optionally creates a Connection between parent and new Flint
+
+**Without bidirectional connection:**
+```bash
+flint subflint promote docs --to ~/projects/api-docs --no-connect
+```
+
+By default, promote creates a bidirectional Connection. Use `--no-connect` to skip this.
+
+## Integration
+
+### With Parent Flint
+
+The parent can access subflint content directly:
+
+```markdown
+See [Subflints/(Flint) Docs/Mesh/Getting Started](/docs/subflints-flint-docs-mesh-getting-started) for details.
+```
+
+Subflints are part of the parent's git repository - just folders.
+
+### With Plugins
+
+Subflints can have their own plugins:
+
+```toml
+# Subflints/(Flint) Docs/flint.toml
+[flint]
+name = "docs"
+type = "subflint"
+
+[plugins]
+required = ["documentation"]
+```
+
+Or they can be minimal with no plugins at all.
+
+### Discovery
+
+Subflints are auto-discovered during `flint sync`:
+
+```bash
+flint sync
+# Discovers: Subflints/(Flint) Docs
+# Discovers: Subflints/(Flint) Blog
+```
+
+The parent's registry entry lists its subflints:
+
+```json
+{
+  "name": "my-project",
+  "path": "/path/to/flint",
+  "subflints": ["Docs", "Blog"]
+}
+```
+
+## When to Use Subflints
+
+### Use a Subflint When:
+
+- Content is conceptually part of the parent
+- You need isolation but not independence
+- Publishing or exports need their own structure
+- Experiments that might be discarded
+- Bounded contexts within a larger project
+
+### Use a Separate Flint When:
+
+- The work is truly independent
+- Multiple Flints need to connect to it
+- Different collaboration patterns needed
+- Long-term standalone existence expected
+
+## Best Practices
+
+**Start embedded, promote when needed.** Begin as a subflint. If it grows independent, promote it.
+
+**Keep subflints focused.** Each subflint should have a clear purpose. Documentation, publishing, research - not everything at once.
+
+**Use presets for common patterns.** Documentation subflints, publishing subflints, and research subflints have different needs.
+
+**Don't over-nest.** Subflints shouldn't contain subflints. If you need that level of nesting, rethink your structure.
+
+**Sync after creating.** Run `flint sync` after creating subflints to update tracking.
+
+### Common Patterns
+
+**Documentation subflint:**
+```
+Subflints/(Flint) Docs/
+├── Mesh/
+│   ├── Guide/
+│   ├── Reference/
+│   └── API/
+└── Exports/
+    └── Site/
+```
+
+**Publishing subflint:**
+```
+Subflints/(Flint) Blog/
+├── Mesh/
+│   ├── Posts/
+│   └── Drafts/
+├── Media/
+│   └── images/
+└── Exports/
+    └── Published/
+```
+
+**Research subflint:**
+```
+Subflints/(Flint) Research/
+├── Mesh/
+│   ├── Sources/
+│   ├── Notes/
+│   └── Synthesis/
+└── Media/
+    └── papers/
+```
+
+### Common Mistakes
+
+- **Too many subflints** - If you have 10+ subflints, consider reorganizing
+- **Subflints of subflints** - Don't nest; flatten or separate
+- **Forgetting to sync** - New subflints need `flint sync` to be tracked
+- **Promoting too early** - Wait until a subflint truly needs independence
+
+## Related
+
+- [Module - Connections](/docs/modules/connections) - Created when promoting subflints
+- [Module - Mesh](/docs/modules/mesh) - Each subflint has its own Mesh
+- [Reference - CLI Commands](/docs/reference/cli) - Subflint commands reference

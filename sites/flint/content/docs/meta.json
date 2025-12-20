@@ -1,4 +1,9 @@
 {
   "title": "Documentation",
-  "pages": ["index", "guide"]
+  "pages": [
+    "index",
+    "guide",
+    "modules",
+    "reference"
+  ]
 }

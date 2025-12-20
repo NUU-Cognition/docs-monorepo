@@ -1,0 +1,127 @@
+---
+title: "Module: Imports"
+description: "Bring cognitive context from other Flints into your workspace."
+---
+**Bring cognitive context from other Flints into your workspace.**
+
+## Purpose
+
+The Imports module lets you pull content from other Flint workspaces into your own. When you're working on a project that relates to another domain (maybe your architecture notes live in a separate Flint from your implementation notes), Imports bridges that gap.
+
+Unlike Connections (which is for messaging between Flints), Imports is for bringing in *content* - actual notes you want to reference, quote, or build upon. Think of it as importing a library: you get read access to another Mesh's exports.
+
+Imports are one-way. The source Flint publishes to its Exports folder; you import that export into your Imports folder. Updates flow downstream - you pull, they push.
+
+## Structure
+
+```
+Imports/
+├── (Import) Architecture/      # Imported from Architecture Flint
+│   └── api-bundle/             # The specific export
+│       ├── (Import) (Architecture) API Patterns.md
+│       └── (Import) (Architecture) System Design.md
+└── (Import) Research/          # Another import
+    └── Main/
+        └── (Import) (Research) Literature Review.md
+```
+
+### File Naming
+
+Imported files are prefixed with `(Import) (SourceName)` to clearly indicate their origin and prevent conflicts with local Mesh files.
+
+### Import Tracking
+
+Import state is tracked in `.flint/flint.lock`:
+
+```yaml
+imports:
+  - mesh: "(Mesh) Architecture"
+    meshId: "uuid-here"
+    export: "api-bundle"
+    path: "Imports/(Import) Architecture/api-bundle"
+    lastSync: "2025-12-18T10:00:00.000Z"
+```
+
+## Commands
+
+### List Available Imports
+
+```bash
+flint import list
+flint import list "Architecture"  # From specific Flint
+```
+
+Shows available exports from connected Flints and current imports.
+
+### Import from Another Flint
+
+```bash
+flint import add "Architecture/api-bundle"
+```
+
+Copies the named export from the other Flint into `Imports/`.
+
+### Update an Import
+
+```bash
+flint import sync
+flint import sync "Architecture/api-bundle"
+```
+
+Re-syncs from the source, pulling any changes.
+
+## Integration
+
+### Referencing Imports from Mesh
+
+Once imported, reference notes using the full path:
+
+```markdown
+According to [Imports/(Import) Architecture/api-bundle/(Import) (Architecture) API Patterns](/docs/imports-import-architecture-api-bundle-import-architecture-api-patterns), we should...
+```
+
+Or use the simpler display alias:
+
+```markdown
+[API Patterns](/docs/imports-import-architecture-api-bundle-import-architecture-api-patterns)
+```
+
+### With Exports
+
+You can re-export imported content (with attribution). Useful for creating derivative works or curated collections.
+
+### Difference from Connections
+
+| Imports | Connections |
+|---------|-------------|
+| Pull content from exports | Send/receive messages |
+| One-way (source → you) | Two-way communication |
+| Bundles of notes | Individual messages |
+| Read-only | Read-write |
+
+Use Imports when you need reference material. Use Connections when you need ongoing dialogue.
+
+## Best Practices
+
+**Import exports, not raw Meshes.** The source Flint should prepare an export bundle. Don't import their entire Mesh - that's coupling too tightly.
+
+**Use copy for stability.** Imports are copied, not linked. This gives you a stable snapshot that doesn't break if the source moves.
+
+**Document your imports.** Note in your Mesh why you imported something and how it relates to your work.
+
+**Keep imports focused.** Import specific bundles you need, not everything. Your Imports folder shouldn't dwarf your Mesh.
+
+**Update deliberately.** Review changes before pulling - the source may have reorganized.
+
+### Common Mistakes
+
+- **Importing full Meshes** - Import curated exports instead
+- **Circular imports** - Don't import from a Flint that imports from you
+- **Stale imports** - Check `flint import list` periodically
+- **Editing imported files** - They'll be overwritten on next sync; copy to Mesh first
+
+## Related
+
+- [Module - Exports](/docs/modules/exports) - Create exports that others can import
+- [Module - Connections](/docs/modules/connections) - Two-way messaging (vs one-way import)
+- [Module - Mesh](/docs/modules/mesh) - Where imported content is referenced

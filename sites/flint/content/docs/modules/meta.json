@@ -1,0 +1,13 @@
+{
+  "title": "Modules",
+  "pages": [
+    "mesh",
+    "imports",
+    "exports",
+    "workspace",
+    "plugins",
+    "connections",
+    "subflints",
+    "media"
+  ]
+}

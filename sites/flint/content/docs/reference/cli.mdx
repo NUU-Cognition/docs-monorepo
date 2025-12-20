@@ -1,0 +1,659 @@
+---
+title: "CLI Reference: Complete Command Guide"
+description: "All Flint and Mesh CLI commands organized by function."
+---
+All Flint and Mesh CLI commands organized by function.
+
+## Overview
+
+Flint has two CLI layers:
+
+| CLI | Purpose | Scope |
+|-----|---------|-------|
+| `mesh` | Base note operations | Any Mesh folder |
+| `flint` | Workspace operations | Flint folders only |
+
+Both auto-detect your workspace from the current directory.
+
+## Flint Core Commands
+
+### flint init
+
+Create a new Flint workspace.
+
+```bash
+flint init [name] [options]
+```
+
+**Options:**
+- `--path <dir>` - Parent directory for the new Flint
+- `--preset <preset>` - Use a preset configuration
+- `--no-git` - Skip git initialization
+
+**Examples:**
+```bash
+flint init my-project
+flint init research --preset research
+flint init docs --path ~/projects
+```
+
+### flint sync
+
+Synchronize configuration with actual state.
+
+```bash
+flint sync [options]
+```
+
+**What it does:**
+- Installs/updates plugins declared in `flint.toml`
+- Installs/updates mods declared in `flint.toml`
+- Runs mod hooks (e.g., git sync)
+- Syncs connections
+- Updates `.flint/` state
+
+**Options:**
+- `-p, --path <dir>` - Path to Flint workspace
+
+**Examples:**
+```bash
+flint sync
+```
+
+### flint repair
+
+Fix common workspace issues.
+
+```bash
+flint repair [options]
+```
+
+**What it fixes:**
+- Missing standard folders (Mesh/, Exports/, etc.)
+- Invalid config files
+- Missing flint.toml or flint.lock
+- Missing registry entries
+- Missing .gitignore
+
+**Options:**
+- `-n, --dry-run` - Show what would be fixed without making changes
+- `-p, --path <dir>` - Path to Flint workspace
+
+**Examples:**
+```bash
+flint repair --dry-run
+flint repair
+```
+
+### flint open
+
+Open the workspace in configured applications.
+
+```bash
+flint open [flint-name]
+```
+
+Opens the Flint in applications configured in `~/.flint/config.toml`. Supported apps: obsidian, cursor, vscode.
+
+**Examples:**
+```bash
+flint open              # Open current Flint
+flint open my-project   # Open specific registered Flint
+```
+
+### flint list
+
+List registered Flints.
+
+```bash
+flint list [options]
+```
+
+**Options:**
+- `--json` - Output as JSON
+- `--full-path` - Show full paths
+- `-s, --status` - Show valid/broken status
+- `--sub` - Include subflints for each registered Flint
+
+**Examples:**
+```bash
+flint list
+flint list --status
+flint list --sub --json
+```
+
+### flint index
+
+Add IDs to markdown files in the Mesh.
+
+```bash
+flint index [options]
+```
+
+**Options:**
+- `-p, --path <dir>` - Path to Flint workspace
+
+## Mesh Commands
+
+### mesh index
+
+Index all markdown files in the Mesh.
+
+```bash
+mesh index [options]
+```
+
+Scans Mesh files and ensures each has a unique ID in frontmatter.
+
+**Options:**
+- `-p, --path <dir>` - Path to Flint workspace
+- `-n, --dry-run` - Show what would be indexed
+
+### mesh query
+
+Query notes by tag.
+
+```bash
+mesh query --tag <tag> [options]
+```
+
+**Options:**
+- `-t, --tag <tag>` - Filter by tag (required)
+- `-f, --format <format>` - Output format (paths, json)
+- `-p, --path <dir>` - Path to Flint workspace
+- `--no-auto-index` - Disable auto-indexing
+
+**Examples:**
+```bash
+mesh query --tag "#task"
+mesh query --tag "#ld/living" --format json
+mesh query -t "#draft"
+```
+
+### mesh compile
+
+Compile a note with transclusions resolved.
+
+```bash
+mesh compile <note-name> [options]
+```
+
+Resolves all `![embeds](/docs/embeds)` in the note and outputs compiled content.
+
+**Options:**
+- `-e, --export <name>` - Export to file instead of clipboard
+- `-d, --depth <n>` - Recursion depth for embeds
+- `-n, --dry-run` - Show what would be compiled
+- `-p, --path <dir>` - Path to Flint workspace
+
+**Examples:**
+```bash
+mesh compile "Project Spec"
+mesh compile "User Guide" --export guide --depth 3
+```
+
+### mesh rename
+
+Rename a note and update all references.
+
+```bash
+mesh rename <old-name> <new-name> [options]
+```
+
+**Options:**
+- `-n, --dry-run` - Show what would be renamed
+- `-p, --path <dir>` - Path to Flint workspace
+
+**Examples:**
+```bash
+mesh rename "Old Name" "New Name"
+mesh rename "Mesh/Draft.md" "Mesh/Published.md"
+```
+
+This updates all `[Old Name](/docs/old-name)` links across the Mesh.
+
+## Plugin Commands
+
+### flint plugin list
+
+List plugins.
+
+```bash
+flint plugin list [options]
+```
+
+**Options:**
+- `--available` - Show available (not installed) plugins
+
+**Examples:**
+```bash
+flint plugin list
+flint plugin list --available
+```
+
+### flint plugin install
+
+Install a plugin.
+
+```bash
+flint plugin install <shorthand>
+```
+
+**Examples:**
+```bash
+flint plugin install inc
+flint plugin install ld
+```
+
+Note: Prefer adding to `flint.toml` and running `flint sync`.
+
+### flint plugin uninstall
+
+Uninstall a plugin.
+
+```bash
+flint plugin uninstall <shorthand>
+```
+
+### flint plugin update
+
+Update all plugins from source.
+
+```bash
+flint plugin update
+```
+
+Updates all installed plugins to their latest versions.
+
+## Connection Commands
+
+### flint connection add
+
+Add a connection to another Flint.
+
+```bash
+flint connection add <name>
+```
+
+**Arguments:**
+- `name` - Name of a registered Flint (from `flint list`)
+
+The target Flint must be registered in the global registry. Use `flint list` to see available Flints.
+
+**Examples:**
+```bash
+flint connection add architecture
+flint connection add "NUU Vessel"
+```
+
+### flint connection list
+
+List all connections.
+
+```bash
+flint connection list [options]
+```
+
+**Options:**
+- `-s, --status` - Show connection status
+
+### flint connection status
+
+Check connection health.
+
+```bash
+flint connection status
+```
+
+### flint connection remove
+
+Remove a connection.
+
+```bash
+flint connection remove <name>
+```
+
+### flint connection mirror
+
+Create symlink mirror for instant sync.
+
+```bash
+flint connection mirror <name>
+```
+
+### flint connection unmirror
+
+Remove symlink mirror.
+
+```bash
+flint connection unmirror <name>
+```
+
+### flint connection mirrors
+
+List all mirrored connections.
+
+```bash
+flint connection mirrors
+```
+
+## Inbox Commands
+
+### flint inbox list
+
+List inbox messages.
+
+```bash
+flint inbox list [connection] [options]
+```
+
+**Options:**
+- `-a, --all` - Show read messages too
+
+**Examples:**
+```bash
+flint inbox list              # Unread messages
+flint inbox list --all        # All messages
+flint inbox list architecture # From specific connection
+```
+
+### flint inbox send
+
+Send a message to a connection.
+
+```bash
+flint inbox send <connection> <subject> [options]
+```
+
+**Options:**
+- `-m, --message <text>` - Message body
+- `-f, --file <path>` - Read message body from file
+
+**Examples:**
+```bash
+flint inbox send architecture "Question" --message "Message body here"
+flint inbox send research "Update" --file body.md
+```
+
+### flint inbox read
+
+Read a specific message.
+
+```bash
+flint inbox read <message-id>
+```
+
+### flint inbox outbox
+
+Show pending outgoing messages.
+
+```bash
+flint inbox outbox [connection]
+```
+
+### flint inbox status
+
+Show inbox/outbox status for all connections.
+
+```bash
+flint inbox status
+```
+
+## Workspace Commands
+
+### flint workspace list
+
+List workspace references.
+
+```bash
+flint workspace list
+```
+
+Shows all registered external resources with path validation status.
+
+### flint workspace reference
+
+Add an external resource reference.
+
+```bash
+flint workspace reference <name> [path]
+```
+
+Creates a reference markdown file and updates flint.toml.
+
+**Examples:**
+```bash
+flint workspace reference monorepo /path/to/code
+flint workspace reference docs    # Prompts for path
+```
+
+### flint workspace remove
+
+Remove a workspace reference.
+
+```bash
+flint workspace remove <name>
+```
+
+Removes from flint.toml but keeps the `.md` reference file.
+
+## Import/Export Commands
+
+### flint import list
+
+List available imports and current imports.
+
+```bash
+flint import list [mesh]
+```
+
+### flint import add
+
+Import content from another Flint's export.
+
+```bash
+flint import add <mesh>/<export-name>
+```
+
+**Examples:**
+```bash
+flint import add "Architecture/api-bundle"
+```
+
+### flint import sync
+
+Update existing imports.
+
+```bash
+flint import sync [ref]
+```
+
+### flint export list
+
+List export definitions.
+
+```bash
+flint export list
+```
+
+### flint export build
+
+Build an export from its manifest.
+
+```bash
+flint export build <name>
+```
+
+**Examples:**
+```bash
+flint export build guide
+```
+
+### flint export status
+
+Show export build status.
+
+```bash
+flint export status
+```
+
+## Git Commands
+
+Git commands are passthrough with Flint awareness.
+
+### flint git init
+
+Initialize git with proper `.gitignore`.
+
+```bash
+flint git init
+```
+
+### flint git sync
+
+Update `.gitignore` for current configuration.
+
+```bash
+flint git sync
+```
+
+### flint git *
+
+Any git command:
+
+```bash
+flint git status
+flint git add .
+flint git commit -m "message"
+flint git push
+```
+
+## Configuration Commands
+
+### flint config
+
+View or set global configuration.
+
+```bash
+flint config [action] [key] [value]
+```
+
+**Actions:**
+- `get <key>` - Get a configuration value
+- `set <key> <value>` - Set a configuration value
+- (no action) - Show all configuration
+
+**Examples:**
+```bash
+flint config                    # Show all
+flint config get open.apps      # Get specific value
+flint config set open.apps '["obsidian", "cursor"]'
+```
+
+## Subflint Commands
+
+### flint subflint create
+
+Create a subflint within current Flint.
+
+```bash
+flint subflint create <name> [options]
+```
+
+**Options:**
+- `--preset <preset>` - Use a preset configuration (default: blank)
+- `-d, --description <desc>` - Description for the subflint
+
+**Examples:**
+```bash
+flint subflint create docs
+flint subflint create api-spec --preset documentation
+```
+
+### flint subflint list
+
+List subflints.
+
+```bash
+flint subflint list
+```
+
+### flint subflint sync
+
+Sync a subflint's folder name to match its `flint.toml` configuration.
+
+```bash
+flint subflint sync <name>
+```
+
+This is the "config-first" rename workflow:
+1. Edit the `name` field in the subflint's `flint.toml`
+2. Run `flint subflint sync <current-folder-name>`
+3. The folder and registry are updated to match the config
+
+**Examples:**
+```bash
+# If flint.toml says name = "API Docs" but folder is "(Flint) docs"
+flint subflint sync docs
+# Renames folder to "(Flint) API Docs" and updates registry
+
+# Check if already in sync (no-op if names match)
+flint subflint sync "API Docs"
+```
+
+**What it does:**
+1. Reads the subflint's `flint.toml` to get configured name
+2. Compares with current folder name
+3. Renames folder if they differ: `Subflints/(Flint) {old}` → `Subflints/(Flint) {new}`
+4. Updates parent's `.flint/subflints.json` registry
+
+### flint subflint remove
+
+Remove a subflint.
+
+```bash
+flint subflint remove <name>
+```
+
+**Warning:** This deletes the subflint directory and all its contents.
+
+### flint subflint promote
+
+Promote a subflint to a registered Flint.
+
+```bash
+flint subflint promote <name> --to <path> [options]
+```
+
+**Options:**
+- `--to <path>` - Destination path for the new Flint (required)
+- `--no-connect` - Skip creating bidirectional connection
+
+By default, promotion creates a Connection between the parent and promoted Flint.
+
+**Examples:**
+```bash
+flint subflint promote docs --to ~/projects/api-docs
+flint subflint promote docs --to ~/projects/api-docs --no-connect
+```
+
+**What it does:**
+1. Moves subflint to new location
+2. Changes `type = "subflint"` to `type = "flint"`
+3. Registers in global registry
+4. Creates Connection between parent and new Flint (unless --no-connect)
+
+## Global Options
+
+Available on most commands:
+
+| Option | Description |
+|--------|-------------|
+| `--help` | Show help |
+| `--version` | Show version |
+
+## Related
+
+- [Reference - Configuration](/docs/reference/configuration) - Configuration options
+- [Reference - Troubleshooting](/docs/reference/troubleshooting) - Common issues
+- [Guide - Quick Start](/docs/guide/quick-start) - Getting started

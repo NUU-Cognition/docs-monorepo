@@ -1,0 +1,151 @@
+---
+title: "Module: Workspace"
+description: "Connect your Flint to external codebases and resources."
+---
+**Connect your Flint to external codebases and resources.**
+
+## Purpose
+
+Your Mesh contains *thoughts about* things. The Workspace module connects those thoughts to the actual things - codebases, data directories, external repositories. When you're documenting an API or planning a feature, Workspace bridges the gap between your notes and the code.
+
+Workspace supports two patterns: local scripts that live inside your Flint, and references to external resources that live elsewhere on your machine. Both let you ground your cognitive work in external reality.
+
+The key insight: Workspace entries appear in `flint.toml` with machine-specific paths (gitignored), while reference documents in `Workspace/` describe the resource and travel with your Flint.
+
+## Structure
+
+```
+Workspace/
+├── Monorepo.md                 # Reference doc for external codebase
+├── Data Pipeline.md            # Reference doc for data project
+└── scripts/                    # Local scripts that travel with Flint
+    ├── analyze.py
+    └── generate-report.sh
+```
+
+### Two Patterns
+
+**Pattern A: Local Scripts**
+
+Scripts in `Workspace/scripts/` are part of your Flint. They're committed to git and travel with your workspace. Use for automation specific to this Flint.
+
+```
+Workspace/scripts/
+├── analyze.py          # Python script
+└── generate-report.sh  # Shell script
+```
+
+Run via standard tooling:
+```bash
+uv run Workspace/scripts/analyze.py
+bun run Workspace/scripts/generate-report.sh
+```
+
+**Pattern B: External References**
+
+External codebases are registered in `flint.toml` (machine-specific, gitignored) with a description file in `Workspace/` (committed, portable):
+
+```toml
+# flint.toml
+[workspace]
+monorepo = { path = "/Users/nathan/dev/nuu/main" }
+```
+
+```markdown
+# Workspace/Monorepo.md (committed)
+# Monorepo
+
+**Type:** codebase
+**Registered:** 2025-12-16
+
+## Key Paths
+
+- `packages/flint/` - Core Flint library
+- `apps/flint-cli/` - CLI application
+
+## Notes
+
+External resource for the main development monorepo.
+```
+
+## Commands
+
+### List Workspace References
+
+```bash
+flint workspace list
+```
+
+Shows all registered external resources with their local paths and validation status (green for valid, red for missing).
+
+### Add a Reference
+
+```bash
+flint workspace reference monorepo /path/to/codebase
+```
+
+Registers an external resource. Creates entry in `flint.toml` and a reference markdown file in `Workspace/`.
+
+### Remove a Reference
+
+```bash
+flint workspace remove monorepo
+```
+
+Removes the entry from `flint.toml` (keeps the `.md` reference file).
+
+## Integration
+
+### Referencing from Mesh
+
+Link to workspace items using the `Workspace/` prefix:
+
+```markdown
+See implementation in [Workspace/Monorepo#Key Paths](/docs/workspace-monorepo-key-paths).
+
+The codebase follows [Workspace/Monorepo](/docs/workspace-monorepo) conventions.
+```
+
+### With Exports
+
+Workspace references in compiled exports resolve to their descriptions, not raw file contents. This keeps exports portable.
+
+### Symlinks for Direct Access
+
+For frequent access to external resources, you can create symlinks manually:
+
+```bash
+# Create symlink manually
+ln -s /path/to/external Workspace/Links/external
+```
+
+This gives fast access but breaks if the source moves.
+
+## Sync Behavior
+
+When you run `flint sync`, workspace references are validated. If a path is missing or invalid, you'll be prompted to fix it. This ensures your workspace references stay accurate.
+
+## Best Practices
+
+**Document, don't dump.** Workspace references should have description files explaining what the resource is and how it relates to your Flint.
+
+**Keep scripts focused.** `Workspace/scripts/` is for Flint-specific automation. Don't recreate your entire toolchain here.
+
+**Use references for codebases.** External code should be referenced, not copied. Copying creates drift.
+
+**Update paths on new machines.** After cloning a Flint, update `flint.toml` workspace paths for your machine. The reference docs tell you what to register.
+
+**Prefer relative paths in docs.** When describing paths within a workspace resource, use relative paths from that resource's root.
+
+### Common Mistakes
+
+- **Copying code into Workspace** - Reference it; don't copy it
+- **Hardcoding paths in Mesh** - Use Workspace references for portability
+- **Ignoring reference docs** - They're how others understand your external dependencies
+- **Storing secrets in scripts** - Use environment variables, not committed files
+
+## Related
+
+- [Module - Mesh](/docs/modules/mesh) - Notes that reference workspace resources
+- [Module - Exports](/docs/modules/exports) - Workspace references in exports
+- [Reference - Configuration](/docs/reference/configuration) - Workspace section in flint.toml

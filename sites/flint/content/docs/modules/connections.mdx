@@ -1,0 +1,263 @@
+---
+title: "Module: Connections"
+description: "Communicate between Flints through file-based messaging."
+---
+**Communicate between Flints through file-based messaging.**
+
+## Purpose
+
+Flints are bounded workspaces - each one focuses on a specific domain. But domains connect. Your architecture Flint needs to inform your implementation Flint. Your research Flint should feed into your writing Flint.
+
+The Connections module enables inter-Flint communication through a simple pattern: inboxes and outboxes. You send messages by writing to outboxes; you receive them in inboxes. It's email for Flints.
+
+Unlike Imports (which pulls static bundles), Connections is for ongoing dialogue. Messages are timestamped, bidirectional, and relationship-aware. Each connection knows about both sides of the relationship.
+
+## Structure
+
+```
+Connections/
+├── Architecture/               # Connection to another Flint
+│   ├── connection.md          # Relationship description
+│   ├── inbox/                 # Messages you receive
+│   │   └── msg-1765862744770-abc.md
+│   └── outbox/                # Messages you send
+│       └── msg-1765861234567-xyz.md
+└── Research/                   # Another connection
+    ├── connection.md
+    ├── inbox/
+    └── outbox/
+```
+
+### The Connection File
+
+Each connection has a `connection.md` describing the relationship:
+
+```markdown
+---
+flint: Architecture
+path: /Users/nathan/flints/architecture
+alias: arch
+created: 2025-12-15T10:00:00.000Z
+---
+
+# Connection: Architecture
+
+This Flint receives architectural guidance and sends implementation questions.
+
+## From Them (Inbox)
+- Design decisions
+- Pattern recommendations
+- Review feedback
+
+## To Them (Outbox)
+- Implementation questions
+- Feasibility assessments
+- Progress updates
+```
+
+### Message Format
+
+Messages are markdown files with frontmatter:
+
+```markdown
+---
+id: msg-1765862744770-abc123
+from: Implementation
+sent: 2025-12-18T10:00:00.000Z
+subject: "Question about caching layer"
+read: false
+---
+
+# Question: Caching Layer
+
+We're implementing the data layer. Should we use Redis or an in-memory cache?
+
+Context: [Mesh/Data Layer Design](/docs/mesh-data-layer-design)
+```
+
+### Connection Tracking
+
+Connections are stored in `.flint/connections.json`:
+
+```json
+{
+  "version": 1,
+  "connections": [
+    {
+      "name": "Architecture",
+      "path": "/Users/nathan/flints/architecture",
+      "created": "2025-12-15T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Commands
+
+### Add a Connection
+
+```bash
+flint connection add "Architecture"
+```
+
+The target Flint must be registered in the global registry (use `flint list` to see registered Flints). Creates the connection directory and sets up inbox/outbox.
+
+### List Connections
+
+```bash
+flint connection list
+flint connection list --status
+```
+
+Shows all connections with their paths and optionally their status.
+
+### Check Connection Status
+
+```bash
+flint connection status
+```
+
+Shows connection health for all connections.
+
+### Check Inbox
+
+```bash
+flint inbox list
+flint inbox list --all           # Include read messages
+flint inbox list Architecture    # From specific connection
+```
+
+Shows messages, optionally filtered by connection.
+
+### Send a Message
+
+```bash
+flint inbox send Architecture "Question about caching" --message "Message body here"
+flint inbox send Research "Update" --file body.md
+```
+
+Creates a message in the outbox. Must specify message body with `--message` or `--file`.
+
+### Read a Message
+
+```bash
+flint inbox read msg-1765862744770-abc123
+```
+
+### Check Inbox/Outbox Status
+
+```bash
+flint inbox status
+```
+
+Shows message counts and pending deliveries.
+
+### Sync Messages
+
+```bash
+flint sync
+```
+
+Pushes outbox messages to connected Flints and pulls inbox messages from them.
+
+### Remove a Connection
+
+```bash
+flint connection remove Architecture
+```
+
+Removes the connection.
+
+### Mirror Mode
+
+For real-time sync, use symlink mirrors:
+
+```bash
+flint connection mirror Architecture
+flint connection unmirror Architecture
+flint connection mirrors          # List mirrors
+```
+
+Creates symlinks instead of copies. Changes appear instantly (requires both Flints on same machine).
+
+## Integration
+
+### Sync Behavior
+
+When you run `flint sync`:
+
+1. For each connection, push outbox → their inbox
+2. For each connection, pull their outbox → your inbox
+3. Mark synced messages as delivered
+
+### With Mesh
+
+Reference connection messages from Mesh notes:
+
+```markdown
+As discussed in [Connections/Architecture/inbox/msg-1765862744770-abc](/docs/connections-architecture-inbox-msg-1765862744770-abc),
+we should use the repository pattern.
+```
+
+## Message Patterns
+
+### Question → Answer
+
+```markdown
+# Outbox: Question about X
+What should we do about X?
+
+# Inbox: Re: Question about X
+Do Y because Z.
+```
+
+### Status Update
+
+```markdown
+# Outbox: Weekly Update
+Completed: A, B, C
+In progress: D
+Blocked: E (waiting on architecture decision)
+```
+
+### Handoff
+
+```markdown
+# Outbox: Handoff - User Auth Module
+Attached: [Exports/user-auth-bundle](/docs/exports-user-auth-bundle)
+The user auth module is ready for integration.
+```
+
+## Best Practices
+
+**Define relationships clearly.** The `connection.md` should explain what flows in each direction.
+
+**Use descriptive subjects.** Messages pile up. "Question about X" beats "Quick question".
+
+**Reference, don't duplicate.** Link to Mesh notes or Exports rather than copying content into messages.
+
+**Sync regularly.** Run `flint sync` as part of your workflow. Messages only arrive after sync.
+
+### Connections vs Imports
+
+| Connections | Imports |
+|-------------|---------|
+| Two-way messages | One-way content pull |
+| Ongoing dialogue | Static snapshots |
+| Small, timestamped | Large bundles |
+| Relationship-aware | Source-aware |
+
+Use Connections for collaboration. Use Imports for reference material.
+
+### Common Mistakes
+
+- **Forgetting to sync** - Messages don't auto-deliver
+- **Giant messages** - Keep messages focused; link to details
+- **No relationship description** - Future-you won't remember what this connection is for
+- **Inbox overload** - Process messages; don't let them pile up
+
+## Related
+
+- [Module - Imports](/docs/modules/imports) - One-way content sharing (vs two-way messaging)
+- [Module - Exports](/docs/modules/exports) - Create content to share via connections
+- [Module - Subflints](/docs/modules/subflints) - Promote subflints with auto-connection

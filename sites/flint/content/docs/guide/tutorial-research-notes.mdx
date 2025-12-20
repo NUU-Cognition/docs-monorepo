@@ -1,0 +1,375 @@
+---
+title: "Tutorial: Research Notes with Flint"
+description: "Learn how to organize research, connect sources, and produce publications."
+---
+Learn how to organize research, connect sources, and produce publications.
+
+## What We'll Build
+
+A research Flint with:
+- Organized source materials
+- Connected concept notes
+- Literature synthesis
+- Exportable papers
+
+## Step 1: Create the Flint
+
+```bash
+flint init ai-safety-research
+cd "(Flint) ai-safety-research"
+```
+
+Edit `flint.toml` to set the title if desired.
+
+## Step 2: Configure for Research
+
+Edit `flint.toml`:
+
+```toml
+[flint]
+name = "ai-safety-research"
+type = "flint"
+
+[plugins]
+required = [
+  "living-documents",
+  "notepad",
+  "archive"
+]
+
+[mods]
+required = ["git"]
+```
+
+```bash
+flint sync
+```
+
+## Step 3: Set Up Source Organization
+
+Create folders in `Mesh/`:
+
+```
+Mesh/
+├── (System) Flint Init.md
+├── (System) Index.md
+├── Sources/           # Primary sources
+├── Concepts/          # Key ideas
+├── Syntheses/         # Your analysis
+└── Drafts/            # Work in progress
+```
+
+## Step 4: Document Your Sources
+
+Create `Mesh/Sources/Bostrom 2014 - Superintelligence.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#source"
+  - "#book"
+---
+
+# Superintelligence (Bostrom, 2014)
+
+**Author:** Nick Bostrom
+**Year:** 2014
+**Type:** Book
+
+## Key Claims
+
+1. Superintelligent AI could emerge this century
+2. Control problem is the central challenge
+3. Value alignment is technically difficult
+
+## Important Quotes
+
+> "The first superintelligence may shape the future of Earth-originating life."
+> — Chapter 1
+
+> "A superintelligence could be the last invention humanity ever needs to make."
+> — Chapter 2
+
+## My Notes
+
+Strong argument for taking AI safety seriously early.
+The orthogonality thesis is particularly compelling.
+
+## Related
+
+- [Concepts/Orthogonality Thesis](/docs/concepts-orthogonality-thesis)
+- [Concepts/Control Problem](/docs/concepts-control-problem)
+- [Sources/Russell 2019 - Human Compatible](/docs/sources-russell-2019-human-compatible)
+```
+
+## Step 5: Build Concept Notes
+
+Create `Mesh/Concepts/Orthogonality Thesis.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#concept"
+  - "#core"
+---
+
+# Orthogonality Thesis
+
+The claim that intelligence and goals are independent: a system
+can be arbitrarily intelligent while pursuing any goal.
+
+## Definition
+
+"Intelligence and final goals are orthogonal: more or less any
+level of intelligence could in principle be combined with more
+or less any final goal." — Bostrom
+
+## Implications
+
+1. Smart doesn't mean benevolent
+2. Can't assume advanced AI shares human values
+3. Alignment must be engineered, not assumed
+
+## Sources
+
+- [Sources/Bostrom 2014 - Superintelligence](/docs/sources-bostrom-2014-superintelligence)
+- [Sources/Armstrong 2015 - Motivated Value Selection](/docs/sources-armstrong-2015-motivated-value-selection)
+
+## Related Concepts
+
+- [Control Problem](/docs/control-problem)
+- [Value Alignment](/docs/value-alignment)
+- [Instrumental Convergence](/docs/instrumental-convergence)
+```
+
+## Step 6: Create Synthesis Notes
+
+Create `Mesh/Syntheses/Control Problem Overview.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#synthesis"
+  - "#ld/living"
+---
+
+# Control Problem Overview
+
+My synthesis of the AI control problem literature.
+
+## The Core Challenge
+
+Given the [Orthogonality Thesis](/docs/orthogonality-thesis), we cannot assume advanced AI
+will share human values. The control problem asks: how do we
+ensure AI systems remain beneficial as they become more capable?
+
+## Key Approaches
+
+### 1. Corrigibility
+
+Making AI systems that accept correction. Challenges include:
+- Incentive to resist shutdown
+- Preserving own goals
+
+See [Concepts/Corrigibility](/docs/concepts-corrigibility) for details.
+
+### 2. Value Learning
+
+Having AI infer human values through observation.
+
+See [Concepts/Value Learning](/docs/concepts-value-learning) for details.
+
+### 3. Constitutional AI
+
+Training with explicit principles. Anthropic's approach.
+
+See [Sources/Bai 2022 - Constitutional AI](/docs/sources-bai-2022-constitutional-ai).
+
+## Open Questions
+
+1. Can value learning scale to superintelligence?
+2. Is corrigibility stable under self-improvement?
+3. What happens with multiple competing AI systems?
+
+## Sources
+
+![Sources/Bostrom 2014 - Superintelligence#Key Claims](/docs/sources-bostrom-2014-superintelligence-key-claims)
+![Sources/Russell 2019 - Human Compatible#Central Argument](/docs/sources-russell-2019-human-compatible-central-argument)
+```
+
+## Step 7: Add Reference Materials
+
+Store PDFs in `Media/`:
+
+```
+Media/
+├── papers/
+│   ├── bostrom-2014-superintelligence-excerpt.pdf
+│   └── russell-2019-human-compatible-ch1.pdf
+└── diagrams/
+    └── control-problem-taxonomy.png
+```
+
+Reference them in notes:
+
+```markdown
+See the original argument: ![Media/papers/bostrom-2014-superintelligence-excerpt.pdf](/docs/media-papers-bostrom-2014-superintelligence-excerpt-pdf)
+
+Visual overview:
+![Media/diagrams/control-problem-taxonomy.png](/docs/media-diagrams-control-problem-taxonomy-png)
+```
+
+## Step 8: Use the Index
+
+Create `Mesh/(System) Index.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#system"
+  - "#dashboard"
+---
+
+# Index
+
+## By Type
+
+### Sources
+- [Sources/Bostrom 2014 - Superintelligence](/docs/sources-bostrom-2014-superintelligence)
+- [Sources/Russell 2019 - Human Compatible](/docs/sources-russell-2019-human-compatible)
+
+### Core Concepts
+- [Concepts/Orthogonality Thesis](/docs/concepts-orthogonality-thesis)
+- [Concepts/Control Problem](/docs/concepts-control-problem)
+- [Concepts/Value Alignment](/docs/concepts-value-alignment)
+
+### Syntheses
+- [Syntheses/Control Problem Overview](/docs/syntheses-control-problem-overview)
+
+## By Topic
+
+### Foundational
+- [Concepts/Orthogonality Thesis](/docs/concepts-orthogonality-thesis)
+- [Concepts/Instrumental Convergence](/docs/concepts-instrumental-convergence)
+
+### Solutions
+- [Concepts/Corrigibility](/docs/concepts-corrigibility)
+- [Concepts/Value Learning](/docs/concepts-value-learning)
+```
+
+## Step 9: Draft Your Paper
+
+Create `Mesh/Drafts/Control Problem Survey.md`:
+
+```markdown
+---
+id: (auto-generated)
+tags:
+  - "#draft"
+  - "#paper"
+  - "#ld/living"
+---
+
+# Draft: Control Problem Survey
+
+## Abstract
+
+[To be written]
+
+## 1. Introduction
+
+The development of artificial general intelligence poses
+unprecedented challenges for ensuring beneficial outcomes.
+This paper surveys approaches to the AI control problem.
+
+## 2. The Control Problem
+
+![Syntheses/Control Problem Overview#The Core Challenge](/docs/syntheses-control-problem-overview-the-core-challenge)
+
+### 2.1 Theoretical Foundations
+
+The [Orthogonality Thesis](/docs/orthogonality-thesis) establishes that...
+
+## 3. Approaches
+
+### 3.1 Corrigibility
+
+![Concepts/Corrigibility#Definition](/docs/concepts-corrigibility-definition)
+
+### 3.2 Value Learning
+
+[Content]
+
+## 4. Open Problems
+
+[Content]
+
+## References
+
+- Bostrom, N. (2014). Superintelligence.
+- Russell, S. (2019). Human Compatible.
+```
+
+## Step 10: Export for Publication
+
+Create `Exports/Survey.md` (the export manifest):
+
+```markdown
+---
+id: (auto-generated)
+description: Survey paper for publication
+---
+
+# Survey Paper Export
+
+[Drafts/Control Problem Survey](/docs/drafts-control-problem-survey)
+```
+
+Build:
+
+```bash
+flint export build Survey
+```
+
+The compiled paper appears in `Exports/Survey/` with all transclusions resolved.
+
+## Research Workflow
+
+### When Reading
+
+1. Create source note immediately
+2. Capture key claims and quotes
+3. Link to relevant concepts
+4. Add to Index
+
+### When Thinking
+
+1. Create or update concept notes
+2. Write synthesis notes
+3. Link everything
+4. Use Notepad for rough ideas
+
+### When Writing
+
+1. Outline with links to concepts
+2. Use transclusions for quotes
+3. Compile to check flow
+4. Iterate in drafts
+
+## What You've Learned
+
+- **Source organization** - Consistent note templates
+- **Concept linking** - Building a knowledge graph
+- **Synthesis writing** - Combining sources
+- **Transclusion** - Embedding content
+- **Export compilation** - Producing final documents
+
+## Next Steps
+
+- [Guide - Tutorial Agent Collaboration](/docs/guide/tutorial-agent-collaboration) - Get AI help
+- [Module - Mesh](/docs/modules/mesh) - Deep dive into notes
+- [Module - Exports](/docs/modules/exports) - Export options

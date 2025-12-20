@@ -1,4 +1,10 @@
 {
   "title": "Guide",
-  "pages": ["quick-start"]
+  "pages": [
+    "quick-start",
+    "core-concepts",
+    "tutorial-project-planning",
+    "tutorial-research-notes",
+    "tutorial-agent-collaboration"
+  ]
 }
