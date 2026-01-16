@@ -1,5 +1,5 @@
 {
-  "name": "@nuu/flint-docs",
+  "name": "@nuucognition/flint-docs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
-    "@nuu/docs-theme": "workspace:*",
+    "@nuucognition/docs-theme": "workspace:*",
     "fumadocs-core": "^15.8.5",
     "fumadocs-mdx": "^12.0.3",
     "fumadocs-ui": "^15.8.5",
