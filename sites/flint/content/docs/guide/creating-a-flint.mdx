@@ -1,0 +1,315 @@
+---
+title: "Creating a Flint"
+---
+
+How to create and initialize Flint workspaces.
+
+## Overview
+
+Flint follows a **local-first model**. Your local flint is fully functional on its own, with all state derived from configuration files. There's no cloud service required.
+
+## The Init-Sync Model
+
+Creating a flint is a two-phase process:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  INIT PHASE                                                     │
+│  Creates essential flint structure                              │
+│                                                                 │
+│  1. Create folder: (Flint) <name>/                              │
+│  2. Create standard directories (Mesh/, Media/, Plugins/, etc.) │
+│  3. Create .flint/ directory                                    │
+│  4. Create flint.toml with name, type, plugins, mods            │
+│  5. Create flint.lock                                           │
+│  6. Apply preset templates (if any)                             │
+│  7. Register in local registry (~/.flint/registry.json)         │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  SYNC PHASE                                                     │
+│  Installs configured features from flint.toml                   │
+│                                                                 │
+│  1. Install plugins from [plugins].required                     │
+│  2. Install mods from [mods].required                           │
+│  3. Clone .obsidian/ configuration                              │
+│  4. Run mod hooks                                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+This separation means:
+- **Init creates structure** — everything that makes a flint a flint
+- **Sync installs features** — plugins, mods, and their effects
+- **Sync is idempotent** — run it anytime to reconcile configured state
+- **Config is truth** — the entire flint can be regenerated from `flint.toml`
+
+## Basic Usage
+
+### Minimal Flint
+
+```bash
+flint init my-project
+```
+
+Creates:
+```
+(Flint) my-project/
+├── .flint/
+│   └── flint.lock
+├── .obsidian/
+├── Mesh/
+├── Media/
+├── Plugins/
+├── Imports/
+├── Exports/
+├── Workspace/
+└── flint.toml
+```
+
+The `flint.toml` contains only:
+```toml
+[flint]
+name = "my-project"
+type = "flint"
+```
+
+### With a Preset
+
+```bash
+flint init my-project --preset default
+```
+
+The preset adds plugins, mods, and template files:
+```toml
+[flint]
+name = "my-project"
+type = "flint"
+
+[plugins]
+required = ["core", "living-documents", "increments", "projects", "notepad", "plan"]
+
+[mods]
+required = ["git", "claude-code"]
+```
+
+## Presets
+
+Presets are pre-configured flint templates that bundle plugins, mods, and starter files.
+
+### Available Presets
+
+| Preset | Description | Plugins | Mods |
+|--------|-------------|---------|------|
+| `default` | Common setup for general use | core, living-documents, increments, projects, notepad, plan | git, claude-code |
+| `blank` | Empty flint, nothing installed | none | none |
+| `spec` | For specifications and documentation | core, living-documents | git |
+| `vessel` | For publishing projects | core, living-documents | git |
+
+### Using Presets
+
+```bash
+# Use default preset
+flint init research --preset default
+
+# Explicitly empty
+flint init scratch --preset blank
+
+# No preset = minimal (same as blank but no preset templates)
+flint init notes
+```
+
+### Preset Locations
+
+Presets are discovered from:
+1. **Built-in:** `<flint-install>/presets/`
+2. **User:** `~/.flint/presets/` (can override built-in)
+
+### Creating Custom Presets
+
+Create a folder in `~/.flint/presets/` with a `preset.toml`:
+
+```
+~/.flint/presets/my-preset/
+├── preset.toml
+└── templates/
+    └── Overview.md
+```
+
+```toml
+# preset.toml
+[preset]
+name = "my-preset"
+description = "My custom preset for research projects"
+
+[plugins]
+required = ["core", "living-documents", "notepad"]
+
+[mods]
+required = ["git"]
+
+[templates](/templates)
+source = "templates/Overview.md"
+target = "Mesh/Overview.md"
+```
+
+Template files support variables:
+- `{{name}}` — flint name
+- `{{date}}` — creation date (YYYY-MM-DD)
+- `{{uuid}}` — unique identifier
+
+## The Local Registry
+
+The registry at `~/.flint/registry.json` tracks all your flints for CLI discovery:
+
+```json
+{
+  "version": 1,
+  "flints": [
+    {
+      "name": "my-project",
+      "path": "/Users/me/projects/(Flint) my-project",
+      "type": "flint"
+    }
+  ]
+}
+```
+
+**Key points:**
+- Registry stores only **name + path + type**
+- Path is the primary identifier
+- Used by `flint list` and import resolution
+- Automatically updated by `init`, `register`, `unregister`
+- Run `flint registry validate` to clean up broken entries
+
+### Managing the Registry
+
+```bash
+# List registered flints
+flint list
+
+# Register an existing flint (cloned, moved, etc.)
+flint register /path/to/flint
+
+# Scan and register multiple flints
+flint register --scan ~/projects
+
+# Remove from registry (keeps files)
+flint unregister
+```
+
+## Command Reference
+
+### flint init
+
+```bash
+flint init <name> [options]
+```
+
+**Options:**
+- `--path <dir>` — Parent directory (default: current directory)
+- `--preset <name>` — Use a preset configuration
+
+**Examples:**
+```bash
+flint init my-project
+flint init research --preset default
+flint init docs --path ~/projects
+```
+
+### flint sync
+
+After init, or anytime you modify `flint.toml`:
+
+```bash
+flint sync
+```
+
+**What it does:**
+- Creates missing directories
+- Installs/removes plugins to match config
+- Installs/removes mods to match config
+- Runs mod hooks (e.g., git sync)
+- Updates `flint.lock`
+
+### flint repair
+
+Fix common issues:
+
+```bash
+flint repair           # Fix issues
+flint repair --dry-run # Preview fixes
+```
+
+## Best Practices
+
+### Starting Fresh
+
+```bash
+# Quick start with common plugins
+flint init my-project --preset default
+```
+
+### Minimal Setup
+
+```bash
+# Just the structure, add plugins later
+flint init my-project
+# Then edit flint.toml and run:
+flint sync
+```
+
+### Cloning an Existing Flint
+
+```bash
+git clone <repo> "(Flint) my-project"
+cd "(Flint) my-project"
+flint register
+flint sync
+```
+
+### Moving a Flint
+
+```bash
+# Move the folder
+mv "(Flint) old-location" "/new/path/(Flint) my-project"
+
+# Update registry
+flint unregister /old/path
+flint register /new/path/(Flint) my-project
+```
+
+## Troubleshooting
+
+### "Not a flint directory"
+
+The directory must have a `flint.toml` file. Either:
+- Run `flint init` to create a new flint
+- Run `flint register` if it's an existing flint
+
+### Missing directories after clone
+
+Run `flint sync` to create standard directories and install plugins.
+
+### Flint not showing in `flint list`
+
+Register it:
+```bash
+flint register /path/to/flint
+```
+
+### Plugins not installing
+
+Check your `flint.toml` has the plugins listed:
+```toml
+[plugins]
+required = ["core", "living-documents"]
+```
+
+Then run `flint sync`.
+
+## Related
+
+- [Reference - CLI Commands](/reference/cli-commands) — Full command reference
+- [Reference - Configuration](/reference/configuration) — Configuration options
+- [Module - Plugins & Mods](/modules/plugins-mods) — Plugin system details

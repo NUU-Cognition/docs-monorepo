@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | NUU Flint",
+    template: "%s | NUU Flint Docs",
     default: "NUU Flint Documentation",
   },
   description: "Documentation for NUU Flint - the structured workspace system for knowledge work",
   icons: {
-    icon: "/flint_logo.png",
+    icon: "/logo-with-bg.png",
   },
 };
 

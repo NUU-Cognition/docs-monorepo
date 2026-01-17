@@ -5,7 +5,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@/.source": [".source"]
+      "@/.source": [".source"],
+      "@nuucognition/docs-theme": ["../../packages/theme/src/index.ts"],
+      "@nuucognition/docs-theme/*": ["../../packages/theme/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

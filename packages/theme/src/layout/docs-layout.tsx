@@ -1,10 +1,26 @@
 import type { DocsLayoutProps } from "fumadocs-ui/layouts/docs";
-import { baseOptions } from "./base-options";
+import type { SiteConfig } from "../config";
+import { createBaseOptions, baseOptions } from "./base-options";
 
 /**
- * Docs layout options extending base layout
+ * Create docs layout options for a documentation site
  *
- * Provides sidebar and navigation configuration for documentation sites.
+ * @param config - Site-specific configuration
+ * @returns DocsLayoutProps configured for the site
+ */
+export function createDocsLayoutOptions(
+  config: SiteConfig
+): Partial<DocsLayoutProps> {
+  return {
+    ...createBaseOptions(config),
+    sidebar: {
+      defaultOpenLevel: 1,
+    },
+  };
+}
+
+/**
+ * @deprecated Use createDocsLayoutOptions(config) instead
  */
 export const docsLayoutOptions: Partial<DocsLayoutProps> = {
   ...baseOptions,

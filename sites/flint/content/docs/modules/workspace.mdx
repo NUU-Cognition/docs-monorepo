@@ -6,67 +6,56 @@ title: "Workspace"
 
 ## Purpose
 
-Your Mesh contains *thoughts about* things. The Workspace module connects those thoughts to the actual things - codebases, data directories, external repositories. When you're documenting an API or planning a feature, Workspace bridges the gap between your notes and the code.
+Your Mesh contains *thoughts about* things. The Workspace module connects those thoughts to the actual things - codebases, data directories, APIs, databases, and external services. When you're documenting an API or planning a feature, Workspace bridges the gap between your notes and the code.
 
-Workspace supports two patterns: local scripts that live inside your Flint, and references to external resources that live elsewhere on your machine. Both let you ground your cognitive work in external reality.
+The key insight: **declarations travel, paths don't**. Workspace references are declared in `flint.toml` (committed, portable), while the actual machine-specific paths live in `Workspace/References/*.md` files (gitignored, local).
 
-The key insight: Workspace entries appear in `flint.toml` with machine-specific paths (gitignored), while reference documents in `Workspace/` describe the resource and travel with your Flint.
+## Architecture
 
-## Structure
+Workspace uses a two-part system to maintain portability:
+
+1. **Declarations** in `flint.toml` - what external resources this Flint needs
+2. **Fulfillments** in `Workspace/References/*.md` - where those resources live on this machine
+
+```
+flint.toml (committed)              Workspace/References/ (gitignored)
+┌─────────────────────────┐        ┌──────────────────────────────┐
+│ [workspace]             │        │ rf-monorepo.md               │
+│ references = [          │        │   **Path:** /Users/me/code   │
+│   { name = "Monorepo",  │   →    │   **Type:** codebase         │
+│     type = "codebase"}, │        │                              │
+│ ]                       │        │   ## Key Paths               │
+└─────────────────────────┘        │   - packages/flint/          │
+                                   └──────────────────────────────┘
+```
+
+When you clone a Flint, you see what external resources it needs (from `flint.toml`) and can fulfill them with local paths.
+
+## Reference Types
+
+Workspace supports five reference types:
+
+| Type | Description | Example Use |
+|------|-------------|-------------|
+| `codebase` | Source code repository | Main project repo, dependency repos |
+| `drive` | File storage location | Shared drive, asset folder |
+| `api` | External API endpoint | REST API base URL |
+| `database` | Database connection | Development database |
+| `service` | External service | Local dev server, external tool |
+
+## Directory Structure
 
 ```
 Workspace/
-├── Monorepo.md                 # Reference doc for external codebase
-├── Data Pipeline.md            # Reference doc for data project
-└── scripts/                    # Local scripts that travel with Flint
-    ├── analyze.py
-    └── generate-report.sh
+└── References/           # Gitignored - machine-specific paths
+    ├── rf-monorepo.md    # Path to monorepo on this machine
+    └── rf-assets.md      # Path to assets folder
 ```
 
-### Two Patterns
-
-**Pattern A: Local Scripts**
-
-Scripts in `Workspace/scripts/` are part of your Flint. They're committed to git and travel with your workspace. Use for automation specific to this Flint.
-
-```
-Workspace/scripts/
-├── analyze.py          # Python script
-└── generate-report.sh  # Shell script
-```
-
-Run via standard tooling:
-```bash
-uv run Workspace/scripts/analyze.py
-bun run Workspace/scripts/generate-report.sh
-```
-
-**Pattern B: External References**
-
-External codebases are registered in `flint.toml` (machine-specific, gitignored) with a description file in `Workspace/` (committed, portable):
-
-```toml
-# flint.toml
-[workspace]
-monorepo = { path = "/Users/nathan/dev/nuu/main" }
-```
-
-```markdown
-# Workspace/Monorepo.md (committed)
-# Monorepo
-
-**Type:** codebase
-**Registered:** 2025-12-16
-
-## Key Paths
-
-- `packages/flint/` - Core Flint library
-- `apps/flint-cli/` - CLI application
-
-## Notes
-
-External resource for the main development monorepo.
-```
+The `Workspace/References/` directory is gitignored. Each `rf-*.md` file contains:
+- The local path to the resource
+- The reference type
+- Optional notes about key paths and usage
 
 ## Commands
 
@@ -76,76 +65,278 @@ External resource for the main development monorepo.
 flint workspace list
 ```
 
-Shows all registered external resources with their local paths and validation status (green for valid, red for missing).
+Shows all declared workspace references with their fulfillment status:
+- **Green checkmark** - Fulfilled (path exists)
+- **Yellow circle** - Unfulfilled (no path configured)
+- **Red exclamation** - Missing (path configured but doesn't exist)
+
+Example output:
+
+```
+Workspace References:
+
+  ✓ Monorepo (codebase)
+      ~/dev/nuu/main
+  ○ Assets (drive)
+      (unfulfilled - no path configured)
+  ! OldProject (codebase)
+      ~/dev/old-project
+      (path not found)
+```
 
 ### Add a Reference
 
 ```bash
-flint workspace reference monorepo /path/to/codebase
+flint workspace add <name> [--type <type>]
 ```
 
-Registers an external resource. Creates entry in `flint.toml` and a reference markdown file in `Workspace/`.
+Declares a new workspace reference in `flint.toml`. The reference is unfulfilled until you provide a path.
+
+```bash
+# Add a codebase reference (default type)
+flint workspace add Monorepo
+
+# Add a drive reference
+flint workspace add Assets --type drive
+
+# Add a database reference
+flint workspace add DevDB --type database
+```
+
+This adds to your `flint.toml`:
+
+```toml
+[workspace]
+references = [
+  { name = "Monorepo", type = "codebase" },
+  { name = "Assets", type = "drive" },
+  { name = "DevDB", type = "database" },
+]
+```
+
+### Fulfill a Reference
+
+```bash
+flint workspace fulfill [name] [path]
+```
+
+Provides a local path for a declared reference. Creates a `rf-*.md` file in `Workspace/References/`.
+
+```bash
+# Fulfill a specific reference with a path
+flint workspace fulfill Monorepo /Users/me/dev/main
+
+# Interactive mode - prompts for all unfulfilled references
+flint workspace fulfill
+```
+
+When you fulfill a reference, Flint creates:
+
+```
+Workspace/References/rf-monorepo.md
+```
+
+With content:
+
+```markdown
+**Path:** /Users/me/dev/main
+**Type:** codebase
+
+## Key Paths
+
+- (add key paths here)
+
+## Notes
+
+(add notes here)
+```
 
 ### Remove a Reference
 
 ```bash
-flint workspace remove monorepo
+flint workspace remove <name>
 ```
 
-Removes the entry from `flint.toml` (keeps the `.md` reference file).
-
-## Integration
-
-### Referencing from Mesh
-
-Link to workspace items using the `Workspace/` prefix:
-
-```markdown
-See implementation in [Workspace/Monorepo#Key Paths](/docs/workspace-monorepo-key-paths).
-
-The codebase follows [Workspace/Monorepo](/docs/workspace-monorepo) conventions.
-```
-
-### With Exports
-
-Workspace references in compiled exports resolve to their descriptions, not raw file contents. This keeps exports portable.
-
-### Symlinks for Direct Access
-
-For frequent access to external resources, you can create symlinks manually:
+Removes both the declaration from `flint.toml` and the fulfillment file from `Workspace/References/`.
 
 ```bash
-# Create symlink manually
-ln -s /path/to/external Workspace/Links/external
+flint workspace remove OldProject
 ```
 
-This gives fast access but breaks if the source moves.
+### Reference Command (Legacy)
+
+```bash
+flint workspace reference <name> [path] [--type <type>]
+```
+
+Combines `add` and `fulfill` in one step. If you provide a path, the reference is immediately fulfilled.
+
+```bash
+# Declare and fulfill in one step
+flint workspace reference Monorepo /Users/me/dev/main
+
+# Just declare (same as 'add')
+flint workspace reference Monorepo
+```
+
+## Reference File Format
+
+Each `rf-*.md` file in `Workspace/References/` follows this format:
+
+```markdown
+**Path:** /absolute/path/to/resource
+**Type:** codebase
+
+## Key Paths
+
+- packages/flint/ - Core Flint library
+- apps/flint-cli/ - CLI application
+
+## Notes
+
+Main development monorepo for the Flint project.
+Contains all packages and applications.
+```
+
+The file is parsed to extract:
+- **Path** - The machine-specific absolute path
+- **Type** - The reference type (for validation)
+
+The Key Paths and Notes sections are for documentation - they help collaborators understand the resource when they clone the Flint and need to fulfill the reference.
+
+## Portability
+
+The workspace system is designed for **portable Flints**:
+
+1. **Clone a Flint** - `flint.toml` tells you what external resources are needed
+2. **Run sync** - `flint sync` shows unfulfilled workspace references
+3. **Fulfill references** - `flint workspace fulfill` lets you provide local paths
+4. **Continue working** - Your local paths stay gitignored
+
+### Example: Cloning a Flint
+
+```bash
+# Clone a Flint that needs a monorepo reference
+git clone https://github.com/example/my-flint.git
+
+cd my-flint
+
+# See what's needed
+flint workspace list
+#   ○ Monorepo (codebase)
+#       (unfulfilled - no path configured)
+
+# Fulfill with your local path
+flint workspace fulfill Monorepo ~/code/main-project
+
+# Now ready to work
+flint sync
+```
 
 ## Sync Behavior
 
-When you run `flint sync`, workspace references are validated. If a path is missing or invalid, you'll be prompted to fix it. This ensures your workspace references stay accurate.
+When you run `flint sync`, workspace references are validated:
+
+1. **Migration** - Old workspace formats are migrated to the new system
+2. **Status check** - Each declared reference is checked for fulfillment
+3. **Path validation** - Fulfilled references are checked to ensure paths exist
+4. **Reporting** - Issues are displayed with guidance on how to fix them
+
+Example sync output with workspace issues:
+
+```
+Workspace:
+  ○ Assets (unfulfilled)
+  ! OldProject (path not found)
+
+  Run 'flint workspace fulfill' to provide local paths.
+```
+
+## Use Cases
+
+### Linking a Git Repository
+
+The most common use case - connecting your Flint to the codebase it documents.
+
+```bash
+# Declare the reference
+flint workspace add Monorepo --type codebase
+
+# Fulfill with path
+flint workspace fulfill Monorepo ~/dev/nuu/main
+```
+
+Now your Mesh notes can reference the codebase, and collaborators know the Flint needs access to a monorepo.
+
+### Linking an External Docs Folder
+
+Connect to a shared documentation folder or drive.
+
+```bash
+flint workspace add SharedDocs --type drive
+flint workspace fulfill SharedDocs "/Volumes/Team Drive/Documentation"
+```
+
+### Linking a Development Database
+
+Track external dependencies like databases.
+
+```bash
+flint workspace add DevDatabase --type database
+flint workspace fulfill DevDatabase "localhost:5432/devdb"
+```
+
+### Handling Missing References
+
+If a reference path no longer exists (resource moved or deleted):
+
+```bash
+# Check status
+flint workspace list
+#   ! OldProject (codebase)
+#       ~/dev/old-project
+#       (path not found)
+
+# Option 1: Update the path
+flint workspace fulfill OldProject ~/dev/new-location
+
+# Option 2: Remove if no longer needed
+flint workspace remove OldProject
+```
+
+## Referencing from Mesh
+
+Link to workspace references in your notes using Obsidian wiki-links:
+
+```markdown
+See the implementation in [Workspace/References/rf-monorepo](/workspace-references-rf-monorepo).
+
+The codebase follows the patterns documented in [Workspace/References/rf-monorepo#Key Paths](/workspace-references-rf-monorepo-key-paths).
+```
+
+Note: These links reference the fulfillment files, which contain documentation about the resource. The actual external paths are for tooling use, not direct linking.
 
 ## Best Practices
 
-**Document, don't dump.** Workspace references should have description files explaining what the resource is and how it relates to your Flint.
+**Declare all external dependencies.** If your Flint references external resources, declare them in workspace so collaborators know what's needed.
 
-**Keep scripts focused.** `Workspace/scripts/` is for Flint-specific automation. Don't recreate your entire toolchain here.
+**Document your references.** Add key paths and notes to your `rf-*.md` files. When someone clones your Flint, they should understand what each reference is for.
 
-**Use references for codebases.** External code should be referenced, not copied. Copying creates drift.
+**Use descriptive names.** "Monorepo" is better than "repo". "ClientAssets" is better than "assets".
 
-**Update paths on new machines.** After cloning a Flint, update `flint.toml` workspace paths for your machine. The reference docs tell you what to register.
+**Check status regularly.** Run `flint workspace list` to ensure your paths are still valid.
 
-**Prefer relative paths in docs.** When describing paths within a workspace resource, use relative paths from that resource's root.
+**Keep paths absolute.** Always use absolute paths when fulfilling references. Relative paths break when you work from different directories.
 
 ### Common Mistakes
 
-- **Copying code into Workspace** - Reference it; don't copy it
-- **Hardcoding paths in Mesh** - Use Workspace references for portability
-- **Ignoring reference docs** - They're how others understand your external dependencies
-- **Storing secrets in scripts** - Use environment variables, not committed files
+- **Committing reference files** - `Workspace/References/*.md` should be gitignored
+- **Using relative paths** - Always use absolute paths for fulfillment
+- **Forgetting to fulfill** - After cloning, run `flint workspace fulfill`
+- **Hardcoding paths in Mesh** - Reference the workspace, not raw file paths
 
 ## Related
 
-- [Module - Mesh](/docs/modules/mesh) - Notes that reference workspace resources
-- [Module - Exports](/docs/modules/exports) - Workspace references in exports
-- [Reference - Configuration](/docs/reference/configuration) - Workspace section in flint.toml
+- [Module - Mesh](/modules/mesh) - Notes that reference workspace resources
+- [Reference - Configuration](/reference/configuration) - Workspace section in flint.toml
+- [Command - Sync](/command-sync) - How sync validates workspace references

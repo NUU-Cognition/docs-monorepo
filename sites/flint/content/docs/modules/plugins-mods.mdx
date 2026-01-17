@@ -1,0 +1,460 @@
+---
+title: "Plugins & Mods"
+---
+
+**Extend Flint with skills, templates, and automation.**
+
+## Purpose
+
+Flint's core is intentionally minimal - a workspace structure and indexing. Everything else comes from plugins: project management workflows, increment tracking, planning systems, notepad capture.
+
+Plugins are markdown-based prompt packages. They provide context (init files that agents load), skills (repeatable tasks), templates (document structures), and workflows (multi-step processes). Installing a plugin gives your Flint - and the agents working in it - new capabilities.
+
+The plugin system is designed for AI agents. Plugins don't run code; they provide structured prompts that agents interpret. This makes plugins portable, inspectable, and safe.
+
+## Plugin Structure
+
+Each plugin lives in `Plugins/[Name]/` and follows a standard structure:
+
+```
+Plugins/
+├── Core/                       # Core plugin (base system)
+│   ├── plugin.yaml            # Plugin manifest
+│   ├── init-core.md           # Context for agents
+│   └── meta-core.md           # Plugin metadata
+├── Projects/                   # Task management
+│   ├── plugin.yaml
+│   ├── init-proj.md
+│   ├── setup-proj.md          # One-time setup
+│   ├── meta-proj.md
+│   ├── skills/
+│   │   ├── sk-proj-capture_as_task.md
+│   │   └── sk-proj-archive_tasks.md
+│   ├── templates/
+│   │   └── tmp-proj-task.md
+│   └── workflows/
+│       ├── wkfl-proj-create_task.md
+│       └── wkfl-proj-do_task.md
+└── Increments/                 # Version tracking
+    ├── plugin.yaml
+    ├── init-inc.md
+    ├── meta-inc.md
+    ├── skills/
+    │   ├── sk-inc-complete.md
+    │   ├── sk-inc-consolidate.md
+    │   ├── sk-inc-iterate.md
+    │   └── sk-inc-sync.md
+    └── templates/
+        └── tmp-inc-stream.md
+```
+
+### File Types
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `plugin.yaml` | Plugin manifest with version and dependencies | Required |
+| `init-[id].md` | Context loaded into agent sessions | `init-proj.md` |
+| `setup-[id].md` | One-time initialization instructions | `setup-proj.md` |
+| `meta-[id].md` | Plugin metadata for interop | `meta-proj.md` |
+| `sk-[id]-[name].md` | Repeatable skill | `sk-proj-archive_tasks.md` |
+| `tmp-[id]-[name].md` | Document template | `tmp-proj-task.md` |
+| `wkfl-[id]-[name].md` | Multi-step workflow | `wkfl-proj-create_task.md` |
+
+### Plugin Manifest (plugin.yaml)
+
+Every plugin has a `plugin.yaml` that defines its identity and requirements:
+
+```yaml
+version: "1.0.0"
+name: Projects
+shorthand: proj
+description: High-level planning and task management
+type: prompt
+depends:
+  - core
+  - ld
+
+install:
+  - source: (Dashboard) Backlog.md
+    dest: Mesh/(Dashboard) Backlog.md
+
+folders:
+  - Mesh/Tasks/
+  - Mesh/Archive/Tasks/
+```
+
+Key fields:
+- **version**: Semantic version
+- **shorthand**: Short identifier used in CLI commands
+- **depends**: Other plugins that must be installed first
+- **install**: Files to copy into the mesh on install
+- **folders**: Directories to create on install
+
+## Installing Plugins
+
+```bash
+flint plugin install <shorthand>
+```
+
+This copies the plugin from the registry to `Plugins/` and:
+1. Creates the plugin folder with all files
+2. Auto-installs any dependencies
+3. Creates declared folders in `Mesh/`
+4. Installs dashboard files and other declared files
+
+Example:
+```bash
+flint plugin install proj
+```
+
+Output:
+```
+Installed Projects
+  → /path/to/flint/Plugins/Projects
+```
+
+### Force Install
+
+Use `--force` to overwrite existing files:
+
+```bash
+flint plugin install proj --force
+```
+
+## Listing Plugins
+
+### Installed Plugins
+
+```bash
+flint plugin list
+```
+
+Shows plugins installed in this flint with their versions:
+
+```
+Installed plugins:
+
+  NAME              VERSION
+  Core              1.0.0
+  Living Documents  1.0.0
+  Projects          1.0.0
+  Increments        1.0.0
+```
+
+### Available Plugins
+
+```bash
+flint plugin list --available
+```
+
+Shows all plugins that can be installed:
+
+```
+Available plugins:
+
+  core - Core
+    Base plugin system and terminal agent conventions for all Flint agents.
+  ld - Living Documents
+    Track document lifecycle with living/dead tags
+  proj - Projects
+    High-level planning and task management
+  inc - Increments
+    Track work using increment.stream.iteration versioning
+  plan - Plan
+    High-level planning that maps directly to human intention
+  ntpd - Notepad
+    Document-based brainstorming with individual notepad files
+
+Install with: flint plugin install <shorthand>
+```
+
+## Updating Plugins
+
+```bash
+flint plugin update
+```
+
+Updates all installed plugins to their latest versions from the registry. This reinstalls each plugin while preserving document IDs in files that have already been customized.
+
+```
+Updating 4 plugin(s)...
+
+  ✓ Core
+  ✓ Living Documents
+  ✓ Projects
+  ✓ Increments
+
+Updated 4 plugin(s)
+```
+
+## Uninstalling Plugins
+
+```bash
+flint plugin uninstall <shorthand>
+```
+
+Removes the plugin folder and cleans up:
+- Files installed by the plugin (if unchanged)
+- Empty folders created by the plugin
+- Plugin state tracking
+
+Example:
+```bash
+flint plugin uninstall proj
+```
+
+Note: Files that have been modified since installation are preserved.
+
+## Available Plugins
+
+### Core (core)
+
+Base plugin system. Provides terminal agent conventions, navigation patterns, and file operation guidelines. Foundation for all other plugins.
+
+### Living Documents (ld)
+
+Track document lifecycle with `#ld/living` and `#ld/dead` tags. Documents marked as living are active specifications that should be kept current. Dead documents are archived reference material.
+
+### Projects (proj)
+
+Task management with status tracking. Creates `(Task)` documents in `Mesh/Tasks/` with frontmatter for status (`draft`, `todo`, `in-progress`, `review`, `done`), priority, and completion tracking.
+
+**Skills:**
+- `sk-proj-capture_as_task` - Convert notes or ideas into tasks
+- `sk-proj-archive_tasks` - Move completed tasks to archive
+
+### Increments (inc)
+
+Version-based work tracking using `X.Y.Z` notation:
+- **X** (Checkpoint): Major milestones
+- **Y** (Stream): Feature work or themes
+- **Z** (Iteration): Individual work sessions
+
+Creates `(Increment)` documents in `Mesh/Increments/`.
+
+**Skills:**
+- `sk-inc-complete` - Mark increment as complete
+- `sk-inc-consolidate` - Consolidate learnings
+- `sk-inc-iterate` - Create new iteration
+- `sk-inc-sync` - Sync increment status
+
+### Plan (plan)
+
+High-level planning that maps to human intention. Creates `(Plan)` documents in `Mesh/Plans/` with status progression: `draft` -> `approved` -> `spent`.
+
+**Skills:**
+- `sk-plan-refine` - Refine plan details
+
+### Notepad (ntpd)
+
+Document-based brainstorming. Creates dated notepad files in `Mesh/Notepads/` for quick capture before ideas become formal documents.
+
+### Meta-Tasks (mtsk)
+
+Higher-order goals achieved through completion of referenced artifacts. Creates `(Meta-Task)` documents that track completion across multiple related tasks.
+
+### Code Docs (cdocs)
+
+Exhaustive codebase documentation with coverage tracking. Creates documentation in `Mesh/Code Docs/` for tracking what parts of a codebase have been documented.
+
+### Reports (rpt)
+
+Create and organize reports - research findings, code reviews, concept explainers. Creates `(Report)` documents in `Mesh/Reports/`.
+
+### Compile (cmpr)
+
+Create curated collections of notes for compilation. Uses `#compile` tags to mark documents for inclusion in compiled outputs.
+
+### Plugin Template (tmpl)
+
+Meta-plugin for creating new Flint plugins. Provides templates and workflows for plugin authoring.
+
+## Using Plugins
+
+### Loading Context
+
+Agents load plugin context by reading the init file:
+
+```markdown
+@Plugins/Projects/init-proj.md
+```
+
+The init file explains the plugin's concepts, conventions, and available capabilities.
+
+### Using Skills
+
+Skills are invoked by reading the skill file:
+
+```markdown
+Use the archive skill: @Plugins/Projects/skills/sk-proj-archive_tasks.md
+```
+
+Skills contain step-by-step instructions the agent follows.
+
+### Using Templates
+
+Templates define document structures:
+
+```markdown
+Create a task using: @Plugins/Projects/templates/tmp-proj-task.md
+```
+
+Templates include placeholders and generation instructions.
+
+### Using Workflows
+
+Workflows are multi-step processes with human checkpoints:
+
+```markdown
+Follow: @Plugins/Projects/workflows/wkfl-proj-create_task.md
+```
+
+---
+
+# Mods
+
+Mods are environment modifications that configure external tools to work with Flint. Unlike plugins (which are prompt-based), mods create files and run hooks that integrate with the broader development environment.
+
+## Plugins vs Mods
+
+| Aspect | Plugins | Mods |
+|--------|---------|------|
+| Purpose | Extend agent capabilities | Configure environment |
+| Files | Markdown prompts | Config files, scripts |
+| Location | `Plugins/` folder | Various (CLAUDE.md, .gitignore, etc.) |
+| Execution | Interpreted by agents | Run by Flint or external tools |
+| Examples | Projects, Increments, Plan | Claude Code, Git |
+
+## Installing Mods
+
+```bash
+flint mod install <shorthand>
+```
+
+Example:
+```bash
+flint mod install cc
+```
+
+Output:
+```
+Installed mod Claude Code
+  Created files:
+    → CLAUDE.md
+    → .claude/settings.json
+```
+
+### Force Install
+
+Use `--force` to overwrite existing files:
+
+```bash
+flint mod install cc --force
+```
+
+## Listing Mods
+
+### Installed Mods
+
+```bash
+flint mod list
+```
+
+Shows mods installed in this flint:
+
+```
+Installed mods:
+
+  ● claude-code v1.0.0
+```
+
+### Available Mods
+
+```bash
+flint mod list --available
+```
+
+Shows all mods that can be installed:
+
+```
+Available mods:
+
+  cc - Claude Code
+    Configure Claude Code for this flint
+  git - Git
+    Git version control integration for Flint meshes
+
+Install with: flint mod install <shorthand>
+```
+
+## Updating Mods
+
+```bash
+flint mod update
+```
+
+Updates all installed mods, regenerating their configuration files.
+
+## Uninstalling Mods
+
+```bash
+flint mod uninstall <shorthand>
+```
+
+Removes files created by the mod and cleans up state.
+
+## Available Mods
+
+### Claude Code (cc)
+
+Configures Claude Code to work with this Flint. Creates:
+- `CLAUDE.md` - Instructions for Claude Code agents
+- `.claude/settings.json` - Claude Code settings
+
+This mod sets up the workspace so Claude Code understands Flint conventions and can navigate the mesh effectively.
+
+### Git (git)
+
+Git version control integration. Uses hooks to:
+- Initialize git repository on install
+- Sync git state during `flint sync`
+
+## Mod Hooks
+
+Mods can define hooks that run at specific points in the Flint lifecycle:
+
+| Hook | When |
+|------|------|
+| `onInstall` | After mod is installed |
+| `onUninstall` | Before mod is removed |
+| `onInit` | During `flint init` |
+| `onSync` | During `flint sync` |
+
+Hooks are TypeScript functions that receive the flint path and can perform any necessary setup or cleanup.
+
+---
+
+## Best Practices
+
+**Load plugins on demand.** Don't load every init file at session start. Load when you need that plugin's capabilities.
+
+**Read init before using.** The init file explains conventions. Don't guess - read the instructions.
+
+**Run setup once.** Setup files are one-time initialization. Don't re-run unless troubleshooting.
+
+**Respect plugin boundaries.** Each plugin manages its domain. Don't manually edit plugin-managed dashboards.
+
+**Check dependencies.** Some plugins depend on others. The CLI handles this automatically, but understand the relationships.
+
+### Common Mistakes
+
+- **Loading all plugins** - Context overload. Load what you need.
+- **Skipping setup** - Some plugins need setup to initialize the mesh
+- **Editing managed files** - Dashboards may be overwritten on update
+- **Ignoring conventions** - Each plugin has naming and tagging conventions. Follow them.
+
+## Related
+
+- [Module - Mesh](/modules/mesh) - Plugins create and manage Mesh documents
+- [Reference - CLI Commands](/reference/cli-commands) - Full CLI reference
+- [Reference - Configuration](/reference/configuration) - Plugin configuration in flint.toml

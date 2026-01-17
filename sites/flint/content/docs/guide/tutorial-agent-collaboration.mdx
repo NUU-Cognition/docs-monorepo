@@ -1,5 +1,5 @@
 ---
-title: "Agent Collaboration"
+title: "Tutorial: Agent Collaboration"
 ---
 
 Learn how to work effectively with AI agents in your Flint.
@@ -22,9 +22,10 @@ type = "flint"
 
 [plugins]
 required = [
+  "core",
   "living-documents",
   "increments",
-  "flint-terminal-agent"
+  "projects"
 ]
 
 [mods]
@@ -35,7 +36,7 @@ required = ["git", "claude-code"]
 flint sync
 ```
 
-This installs the Flint Terminal Agent plugin (agent conventions) and the Claude Code mod (tool integration).
+This installs plugins for structured work and the Claude Code mod for tool integration.
 
 ## Step 2: Prepare Your Init File
 
@@ -58,24 +59,25 @@ A workspace for [describe your project].
 
 ## Current Focus
 
-- Active increment: [Increment 1.0.0 - Foundation](/docs/increment-1-0-0-foundation)
-- Key tasks: [Task User Auth](/docs/task-user-auth), [Task API Design](/docs/task-api-design)
+- Active increment: [Increment 1.0.0 - Foundation](/increment-1-0-0-foundation)
+- Key tasks: [Task User Auth](/task-user-auth), [Task API Design](/task-api-design)
 
 ## Key Documents
 
 | Document | Purpose |
 |----------|---------|
-| [(Dashboard) Backlog](/docs/dashboard-backlog) | All planned work |
-| [(Dashboard) Increments](/docs/dashboard-increments) | Release tracking |
-| [Architecture](/docs/architecture) | System design |
+| [(Dashboard) Backlog](/dashboard-backlog) | All planned work |
+| [(Dashboard) Increments](/dashboard-increments) | Release tracking |
+| [Architecture](/architecture) | System design |
 
 ## Plugins
 
 | Plugin | Purpose |
 |--------|---------|
-| Living Document | Track document lifecycle |
+| Core | Base conventions and utilities |
+| Living Documents | Track document lifecycle |
 | Increments | Version releases |
-| Flint Terminal Agent | Agent conventions |
+| Projects | Task management |
 
 ## Agent Instructions
 
@@ -87,7 +89,7 @@ When working in this Flint:
 
 ## Workspace
 
-Codebase linked at [Workspace/Monorepo](/docs/workspace-monorepo)
+Codebase linked at [Workspace/Monorepo](/workspace-monorepo)
 ```
 
 ## Step 3: Start an Agent Session
@@ -117,23 +119,18 @@ The agent will:
 2. Follow the task template
 3. Create a properly structured task document
 
-### Archiving Completed Work
-
-```
-Use @Plugins/Archive/skills/sk-arc-archive.md to archive the
-completed authentication task.
-```
-
-The agent will:
-1. Read the archive skill
-2. Move the task to Archive/
-3. Update relevant dashboards
-
 ### Creating an Increment
 
 ```
 Read @Plugins/Increments/init-inc.md and create increment 2.0.0
 for the notification system.
+```
+
+### Using Notepad for Ideas
+
+```
+Read @Plugins/Notepad/init-ntpd.md and capture these ideas
+about the authentication flow.
 ```
 
 ## Step 5: Establish Conventions
@@ -157,7 +154,7 @@ Document your preferences in the init file:
 ### Workflow
 1. Tasks start in Backlog
 2. Active tasks get `status: active`
-3. Done tasks move to Archive
+3. Done tasks get `status: done`
 ```
 
 Agents will follow these conventions when creating documents.
@@ -176,8 +173,8 @@ Create a session note at start:
 ## Context
 
 Continuing work from yesterday:
-- Completed: [Task User Auth](/docs/task-user-auth)
-- In progress: [Task API Design](/docs/task-api-design)
+- Completed: [Task User Auth](/task-user-auth)
+- In progress: [Task API Design](/task-api-design)
 - Blocked: Waiting on design review
 
 ## Goals Today
@@ -206,7 +203,7 @@ Update the relevant dashboards and create a handoff note.
 
 **Grounded in context:**
 ```
-Looking at [Task API Design](/docs/task-api-design), what's the best approach
+Looking at [Task API Design](/task-api-design), what's the best approach
 for the authentication endpoints?
 ```
 
@@ -236,7 +233,7 @@ Write some API documentation.  ❌
 
 **Better:**
 ```
-Read [Architecture](/docs/architecture) and [Task API Design](/docs/task-api-design), then write
+Read [Architecture](/architecture) and [Task API Design](/task-api-design), then write
 API documentation for the auth endpoints.  ✓
 ```
 
@@ -245,11 +242,11 @@ API documentation for the auth endpoints.  ✓
 | Plugin | What Agents Can Do |
 |--------|-------------------|
 | **Core** | Navigate, search, create notes |
-| **Living Document** | Track status, manage lifecycle |
+| **Living Documents** | Track status, manage lifecycle |
 | **Increments** | Create/update version releases |
 | **Projects** | Manage tasks and backlog |
-| **Archive** | Move completed items |
 | **Notepad** | Quick capture of ideas |
+| **Plan** | High-level project planning |
 
 Load the relevant plugin init before asking for plugin-specific work.
 
@@ -305,6 +302,6 @@ check our current increment status.
 
 ## Next Steps
 
-- [Module - Plugins](/docs/modules/plugins) - Deep dive into available plugins
-- [Reference - CLI Commands](/docs/reference/cli) - All available commands
-- [Guide - Core Concepts](/docs/guide/core-concepts) - Review mental model
+- [Module - Plugins & Mods](/modules/plugins-mods) - Deep dive into available plugins
+- [Reference - CLI Commands](/reference/cli-commands) - All available commands
+- [Guide - Core Concepts](/guide/core-concepts) - Review mental model

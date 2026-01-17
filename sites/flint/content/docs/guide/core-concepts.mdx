@@ -1,184 +1,383 @@
 ---
-title: "Core Concepts"
+title: "Agent reads this to understand the Projects plugin"
 ---
 
 Understanding these concepts will make everything else click.
 
-## Bounded Cognitive Workspace
+## The Mental Model
 
-A Flint is a *bounded* workspace. It has clear edges - one folder containing everything related to a single domain of thought.
+Flint is a **bounded workspace** - a single folder that contains everything related to one domain of thought. This boundary is intentional and powerful.
 
-This is different from:
-- A file system (infinite, unstructured)
-- A database (infinite, but structured)
-- A wiki (can sprawl indefinitely)
+Think of a Flint as a self-contained unit of knowledge work:
 
-The boundary matters because:
-1. **Comprehensibility** - You can understand the whole thing
-2. **Portability** - You can move, share, or archive it as a unit
-3. **Agent context** - An AI can read the init file and understand the scope
+- **Bounded** - One folder with clear edges. When you move or share it, everything travels together.
+- **Structured** - Standard directories organize different types of content.
+- **Agent-friendly** - AI assistants can read a single init file and understand the whole context.
+- **Declarative** - You describe what you want in configuration files; Flint handles the details.
 
-When a Flint gets too big or unfocused, split it. Create a new Flint and use Imports/Connections to link them.
+This is different from a file system (infinite, unstructured), a database (infinite, structured), or a wiki (can sprawl indefinitely). The boundary matters because it enables comprehensibility, portability, and focused collaboration.
 
-## Modules
+## The Flint Folder
 
-Flint organizes content into 8 modules, each with a specific purpose:
+A Flint is a folder with a specific structure:
 
-| Module | Purpose | Question it Answers |
-|--------|---------|---------------------|
-| **Mesh** | Your thinking | What do I know/think? |
-| **Imports** | External context | What do others know? |
-| **Exports** | Shared outputs | What am I publishing? |
-| **Workspace** | External reality | What am I modeling? |
-| **Media** | Binary assets | What visuals support this? |
-| **Plugins** | Automation | What can agents do here? |
-| **Connections** | Messaging | Who am I coordinating with? |
-| **Subflints** | Nested workspaces | What needs isolation? |
+```
+(Flint) My Project/
+  flint.toml           # Configuration (you edit this)
+  .flint/              # Internal state (managed by Flint)
+    flint.lock         # Computed state
+    mesh.config.yaml   # Workspace identity
+  Mesh/                # Your notes and thinking
+  Plugins/             # Installed plugins
+  Workspace/           # References to external resources
+  Media/               # Binary assets
+  Imports/             # Content from other Flints
+  Exports/             # Content you share out
+```
 
-The mental model: **Mesh is the center**. Everything else either feeds into it (Imports, Workspace), flows out of it (Exports), supports it (Media, Plugins, Subflints), or coordinates around it (Connections).
+The folder naming convention `(Flint) Name` makes Flints visually distinct and sortable. The name inside `flint.toml` is the canonical name; the folder name follows it.
 
-## The Mesh: Notes as a Graph
+## Mesh: Your Thinking Space
 
-Your notes in `Mesh/` aren't isolated files - they're nodes in a graph. When you write `[Other Note](/docs/other-note)`, you create an edge. When you write `![Embedded Content](/docs/embedded-content)`, you create a transclusion.
+The `Mesh/` directory is the heart of a Flint. This is where your notes live - organized not as a hierarchy but as a connected graph.
 
-This graph enables:
+### Typed Prefixes
+
+Notes use typed prefixes to indicate their purpose:
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `(Task)` | Actionable work items | `(Task) Implement auth flow.md` |
+| `(Plan)` | High-level plans | `(Plan) Q1 Roadmap.md` |
+| `(Increment)` | Versioned work packages | `(Increment) 1.2.0 - UI Polish.md` |
+| `(Dashboard)` | Aggregation views | `(Dashboard) Backlog.md` |
+| `(System)` | Configuration/metadata | `(System) Flint Init.md` |
+| `(Doc)` | Documentation | `(Doc) Architecture Overview.md` |
+
+These prefixes aren't just conventions - they enable plugins to find and operate on specific note types. A Projects plugin knows to look for `(Task)` files; an Increments plugin tracks `(Increment)` files.
+
+### The Graph
+
+Notes connect through wikilinks: `[Other Note](/other-note)` creates a link, `![Embedded Content](/embedded-content)` transcludes content inline. This creates a graph where ideas link to related ideas.
+
+The graph enables:
 - **Navigation** - Follow links between concepts
-- **Discovery** - Find backlinks (what links *to* this?)
-- **Compilation** - Resolve transclusions into complete documents
+- **Discovery** - Find backlinks (what links to this?)
+- **Compilation** - Resolve transclusions into complete documents for export
 
-Think of Mesh as your external brain. Ideas go in as notes. Connections form through links. Insights emerge from the structure.
+Think of Mesh as your external brain for this domain. Ideas go in as notes. Connections form through links. Insights emerge from the structure.
 
-## Plugins: Cognitive Runtimes
+## Plugins: Prompt-Based Extensions
 
-Plugins extend what you (and agents) can do in a Flint. But they're not traditional code plugins - they're *prompt packages*.
+Plugins extend what you and AI agents can do in a Flint. Unlike traditional code plugins, Flint plugins are **prompt packages** - collections of markdown files that provide context, skills, and templates.
 
 A plugin contains:
-- **Init file** - Context agents load to understand the plugin
-- **Skills** - Repeatable tasks (archive a note, create an increment)
-- **Templates** - Document structures (task spec, increment log)
-- **Workflows** - Multi-step processes with human checkpoints
 
-Plugins don't run code by default. They provide structured prompts that agents interpret. This makes them:
-- Safe (no arbitrary code execution)
-- Inspectable (it's all markdown)
-- Portable (works with any capable agent)
+```
+Plugins/Projects/
+  plugin.yaml          # Plugin metadata and version
+  init-proj.md         # Context to load when using this plugin
+  skills/
+    sk-proj-create.md  # Repeatable task: create a task
+    sk-proj-archive.md # Repeatable task: archive completed tasks
+  templates/
+    tmp-proj-task.md   # Document structure for tasks
+  workflows/
+    wkfl-proj-do.md    # Multi-step process for completing a task
+```
 
-Load plugins on demand. Don't load everything at session start - that wastes context.
+### Why Prompt-Based?
 
-## Mods: Root-Level Modifications
+This approach is:
+- **Safe** - No arbitrary code execution. Plugins are just markdown that agents interpret.
+- **Inspectable** - You can read exactly what a plugin does.
+- **Portable** - Works with any capable AI agent.
 
-Mods modify how Flint itself works. Unlike plugins (which add agent capabilities), mods configure the system:
+### Loading Plugins
 
-- **git mod** - Initializes git, manages `.gitignore`
-- **claude-code mod** - Configures Claude Code integration
+Plugins are installed to `Plugins/` but not automatically loaded. An agent reads a plugin's init file when it needs that plugin's capabilities:
 
-Mods are declared in `flint.toml` and installed via `flint sync`.
+```
+# Agent reads this to understand the Projects plugin
+Plugins/Projects/init-proj.md
+```
 
-## Configuration Layers
+This on-demand loading keeps context focused. Don't load everything at session start - that wastes context window.
 
-Flint uses layered configuration:
+### Plugin Components
 
-1. **Global** - `~/.flint/config.toml` - User preferences (registry location)
-2. **Workspace** - `flint.toml` - This Flint's configuration
-3. **Lock** - `.flint/flint.lock` - Computed state (don't edit)
+- **Init file** (`init-*.md`) - Context that explains what the plugin does and how to use it
+- **Skills** (`skills/sk-*.md`) - Repeatable tasks with clear inputs and outputs
+- **Templates** (`templates/tmp-*.md`) - Document structures for creating new notes
+- **Workflows** (`workflows/wkfl-*.md`) - Multi-step processes with decision points
 
-Most configuration lives in `flint.toml`:
+### Declaring Plugins
+
+Plugins are declared in `flint.toml`:
+
+```toml
+[plugins]
+required = [
+  "core",
+  "projects",
+  "increments",
+]
+```
+
+Running `flint sync` installs declared plugins and removes undeclared ones.
+
+## Mods: Environment Modifications
+
+Mods modify how the Flint environment works. Unlike plugins (which add agent capabilities), mods configure the system itself.
+
+Examples:
+- **git** - Initializes git repository, manages `.gitignore` patterns
+- **claude-code** - Creates `CLAUDE.md` for Claude Code integration
+
+Mods can:
+- Create files and directories during installation
+- Run hooks during sync (`onSync`), init (`onInit`), etc.
+- Maintain state in `.flint/mods/`
+
+### Declaring Mods
+
+Mods are declared in `flint.toml`:
+
+```toml
+[mods]
+required = [
+  "git",
+  "claude-code",
+]
+```
+
+## Workspace: External References
+
+The `Workspace/` directory links your Flint to external resources - codebases, APIs, databases, or other services that your notes reference.
+
+### Reference Files
+
+Each reference is a markdown file in `Workspace/References/`:
+
+```
+Workspace/References/
+  rf-monorepo.md       # Reference to a codebase
+  rf-api.md            # Reference to an API
+```
+
+A reference file contains:
+- Human-readable description of what this resource is
+- Machine-specific path (gitignored, not committed)
+- Any relevant context for agents
+
+### Declaring References
+
+References are declared in `flint.toml`:
+
+```toml
+[workspace]
+references = [
+  { name = "Monorepo", type = "codebase" },
+  { name = "API", type = "api" },
+]
+```
+
+The declaration is portable (committed to git). The actual path is stored in `.flint/workspace.toml` (gitignored, machine-specific).
+
+This separation means:
+- You can clone a Flint and it knows what references it needs
+- You run `flint workspace fulfill` to set paths on your machine
+- Paths don't leak into version control
+
+## Media: Binary Assets
+
+The `Media/` directory stores binary files - images, PDFs, diagrams, and other assets that your notes reference.
+
+Keep Media organized however makes sense for your domain. Some patterns:
+- `Media/screenshots/` for UI captures
+- `Media/diagrams/` for architecture drawings
+- `Media/attachments/` for general files
+
+Media files are typically gitignored or stored in Git LFS depending on your needs.
+
+## Imports and Exports: Sharing Between Flints
+
+Flints can share content with each other through the import/export system.
+
+### Exports
+
+An export is a curated subset of your Mesh that you want to share. You define exports with manifest files in `Exports/`:
+
+```markdown
+# Exports/Guide.md
+---
+description: User guide for Flint
+depth: 1
+---
+
+This export includes the core documentation:
+
+- [Guide - Quick Start](/guide/quick-start)
+- [Guide - Core Concepts](/guide/core-concepts)
+- [Guide - CLI Reference](/guide-cli-reference)
+```
+
+Running `flint export build` processes these manifests:
+1. Resolves linked documents
+2. Follows transclusions to the specified depth
+3. Strips frontmatter
+4. Rewrites wikilinks with prefixes for disambiguation
+5. Outputs to `Exports/Guide/`
+
+### Imports
+
+To import another Flint's export, declare it in `flint.toml`:
+
+```toml
+[imports]
+required = [
+  "NUU Flint/Guide",
+]
+```
+
+Running `flint sync` pulls the export from the source Flint (which must be registered on your machine) into `Imports/NUU Flint/Guide/`.
+
+Import files are prefixed `E (Source Flint) Document Name.md` to prevent naming collisions.
+
+## Configuration Files
+
+### flint.toml
+
+The main configuration file. Human-editable, committed to version control.
 
 ```toml
 [flint]
-name = "my-project"
+name = "My Project"
 type = "flint"
 
 [plugins]
 required = [
-  "living-documents",
-  "increments"
+  "core",
+  "projects",
 ]
 
 [mods]
-required = ["git"]
+required = [
+  "git",
+]
+
+[imports]
+required = [
+  "NUU Flint/Guide",
+]
+
+[workspace]
+references = [
+  { name = "Monorepo", type = "codebase" },
+]
 ```
 
-## Types and Presets
+### .flint/flint.lock
 
-**Types** define what a note is for. Common types include:
-- `note` - General purpose
-- `task` - Actionable item
-- `increment` - Versioned work package
-- `system` - Configuration/navigation
+Generated state file. Managed by Flint, not edited directly.
 
-Types are indicated by frontmatter (`type: task`) or naming convention (`(Task) Name.md`).
+Contains:
+- Lock file version
+- Flint CLI version that created it
+- Creation and last sync timestamps
+- Installed mod versions
 
-**Presets** are templates for common Flint configurations. Instead of configuring from scratch, you can base your Flint on a preset that includes plugins, mods, and conventions for a specific use case (research, software project, writing).
+### .flint/ Directory
 
-## The Flow
-
-Here's how data typically flows through a Flint:
+The `.flint/` directory stores internal state:
 
 ```
-External World
-     │
-     ▼
-┌─────────┐     ┌──────────┐
-│Workspace│     │ Imports  │
-│(reality)│     │(context) │
-└────┬────┘     └────┬─────┘
-     │               │
-     └───────┬───────┘
-             ▼
-        ┌────────┐
-        │  Mesh  │ ← Your thinking happens here
-        │(notes) │
-        └────┬───┘
-             │
-     ┌───────┼───────┐
-     │       │       │
-     ▼       ▼       ▼
-┌───────┐ ┌──────┐ ┌───────────┐
-│Exports│ │Media │ │Connections│
-│(share)│ │(viz) │ │ (message) │
-└───────┘ └──────┘ └───────────┘
-             │
-             ▼
-      Other Flints / World
+.flint/
+  flint.lock           # Lock file
+  mesh.config.yaml     # Workspace identity (ID, type, created date)
+  workspace.toml       # Machine-specific paths (gitignored)
+  plugins/             # Plugin installation state
+  mods/                # Mod state
 ```
 
-1. **Workspace** grounds you in reality (codebases, data)
-2. **Imports** bring context from other Flints
-3. **Mesh** is where you think and work
-4. **Exports** publish your thinking
-5. **Media** supports visualization
-6. **Connections** coordinate with others
+This directory is partially gitignored - `flint.lock` and `mesh.config.yaml` are committed; `workspace.toml` and plugin/mod state are not.
 
-**Not shown in the flow diagram:**
-- **Plugins** extend agent capabilities (they're tools, not data)
-- **Subflints** are nested workspaces with their own complete structure
+## The Global Registry
 
-## Agent Mental Model
+Flint maintains a global registry at `~/.flint/` that tracks all Flints on your machine:
 
-If you're an AI agent operating in a Flint:
+```
+~/.flint/
+  config.toml          # Global user preferences
+  registry.json        # List of registered Flints
+```
 
-1. **Start with init** - Read `Mesh/(System) Flint Init.md`
-2. **Load plugins on demand** - Only what you need
-3. **Work in Mesh** - That's where thinking happens
-4. **Follow conventions** - Match existing naming patterns
-5. **Use `mesh query`** - Find what you need
-6. **Don't overreach** - Stay within the Flint's scope
+### config.toml
 
-The init file tells you everything you need to know about this specific workspace.
+Global preferences:
 
-## Key Principles
+```toml
+[open]
+apps = [
+  "obsidian",
+]
+```
 
-1. **One domain per Flint** - When it sprawls, split it
-2. **Modules have purposes** - Put things where they belong
-3. **Links create meaning** - Connect your ideas
-4. **Plugins are prompts** - Safe, inspectable, portable
-5. **Agents are first-class** - The system is designed for AI collaboration
-6. **Declare, don't code** - Configuration over programming
+### registry.json
+
+Tracks registered Flints by path:
+
+```json
+{
+  "version": 1,
+  "flints": [
+    {
+      "name": "My Project",
+      "path": "/Users/me/flints/(Flint) My Project",
+      "type": "flint",
+      "source": "local"
+    }
+  ]
+}
+```
+
+The registry enables:
+- `flint list` to show all your Flints
+- Import resolution (finding source Flints for imports)
+
+## Sync: Keeping Everything in Order
+
+The `flint sync` command is the reconciliation point. It ensures your Flint's actual state matches its declared configuration:
+
+1. **Bootstrap** - Creates `.flint/` and standard directories if missing
+2. **Plugins** - Installs declared plugins, removes undeclared ones
+3. **Mods** - Installs declared mods, removes undeclared ones
+4. **Imports** - Pulls required imports from source Flints
+5. **Workspace** - Checks that declared references have paths configured
+6. **Registry** - Updates the global registry if the Flint moved or renamed
+7. **Mod Hooks** - Runs `onSync` hooks for installed mods
+
+Sync is idempotent - running it multiple times produces the same result. It's safe to run after any change to `flint.toml`.
+
+### When to Sync
+
+- After cloning a Flint repository
+- After editing `flint.toml`
+- After pulling changes that modified `flint.toml`
+- When something seems out of sync
+
+## Putting It Together
+
+The Flint mental model:
+
+1. **One Flint per domain** - Keep workspaces focused. When it sprawls, split it.
+2. **Mesh is the center** - Everything else either feeds into your thinking (Imports, Workspace), flows out of it (Exports), or supports it (Media, Plugins).
+3. **Declare, then sync** - Edit `flint.toml` to describe what you want, run `flint sync` to make it so.
+4. **Plugins are prompts** - Safe, inspectable, portable extensions that agents interpret.
+5. **Agents are first-class** - The system is designed for AI collaboration from the ground up.
 
 ## Next Steps
 
-- [Guide - Tutorial Project Planning](/docs/guide/tutorial-project-planning) - See concepts in action
-- [Module - Mesh](/docs/modules/mesh) - Deep dive into the core module
-- [Module - Plugins](/docs/modules/plugins) - Understand the plugin system
-- [Module - Subflints](/docs/modules/subflints) - Nested workspaces
+- [Guide - Quick Start](/guide/quick-start) - Create your first Flint
+- [Reference - CLI Commands](/reference/cli-commands) - Complete command reference
+- [Guide - Plugins](/guide-plugins) - Deep dive into the plugin system

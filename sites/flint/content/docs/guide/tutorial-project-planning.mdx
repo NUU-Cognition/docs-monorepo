@@ -1,5 +1,5 @@
 ---
-title: "Project Planning"
+title: "Tutorial: Project Planning with Flint"
 ---
 
 Learn Flint by building a real project management workspace.
@@ -15,15 +15,15 @@ A Flint for managing a software project with:
 ## Step 1: Create the Flint
 
 ```bash
-flint init alpha-project
+flint init alpha-project --preset default
 cd "(Flint) alpha-project"
 ```
 
-The title will default to "alpha-project" - you can edit it in `flint.toml` after creation.
+The preset installs common plugins automatically.
 
 ## Step 2: Configure Plugins
 
-Edit `flint.toml`:
+Edit `flint.toml` if you want to customize:
 
 ```toml
 [flint]
@@ -32,17 +32,18 @@ type = "flint"
 
 [plugins]
 required = [
+  "core",
   "living-documents",
   "increments",
   "projects",
-  "archive"
+  "notepad"
 ]
 
 [mods]
 required = ["git"]
 ```
 
-Sync to install:
+Sync to apply changes:
 
 ```bash
 flint sync
@@ -70,16 +71,16 @@ document decisions, and maintain project history.
 
 ## Key Documents
 
-- [(Dashboard) Backlog](/docs/dashboard-backlog) - All planned work
-- [(Dashboard) Increments](/docs/dashboard-increments) - Version releases
-- [(System) Index](/docs/system-index) - Document index
+- [(Dashboard) Backlog](/dashboard-backlog) - All planned work
+- [(Dashboard) Increments](/dashboard-increments) - Version releases
+- [(System) Index](/system-index) - Document index
 
 ## Plugins
 
-- **Living Document** - Track document lifecycle
+- **Core** - Base conventions
+- **Living Documents** - Track document lifecycle
 - **Increments** - Manage versioned releases
 - **Projects** - Backlog and task management
-- **Archive** - Historical record
 ```
 
 ## Step 4: Create Your Backlog
@@ -98,9 +99,9 @@ tags:
 
 ## Active Tasks
 
-- [ ] [(Task) User Authentication](/docs/task-user-authentication)
-- [ ] [(Task) API Design](/docs/task-api-design)
-- [ ] [(Task) Database Schema](/docs/task-database-schema)
+- [ ] [(Task) User Authentication](/task-user-authentication)
+- [ ] [(Task) API Design](/task-api-design)
+- [ ] [(Task) Database Schema](/task-database-schema)
 
 ## Completed
 
@@ -146,8 +147,8 @@ Looking at Clerk vs Auth0 for managed auth.
 
 ## Related
 
-- [API Design](/docs/api-design)
-- [Database Schema](/docs/database-schema)
+- [API Design](/api-design)
+- [Database Schema](/database-schema)
 ```
 
 ## Step 6: Create an Increment
@@ -175,9 +176,9 @@ increment: "1.0.0"
 
 ## Tasks
 
-- [x] [(Task) Database Schema](/docs/task-database-schema)
-- [ ] [(Task) User Authentication](/docs/task-user-authentication)
-- [ ] [(Task) API Design](/docs/task-api-design)
+- [x] [(Task) Database Schema](/task-database-schema)
+- [ ] [(Task) User Authentication](/task-user-authentication)
+- [ ] [(Task) API Design](/task-api-design)
 
 ## Log
 
@@ -189,16 +190,16 @@ increment: "1.0.0"
 ## Step 7: Link Your Codebase
 
 ```bash
-flint workspace reference codebase /path/to/your/code
+flint workspace add codebase --type codebase
+flint workspace fulfill codebase /path/to/your/code
 ```
 
-Document it in `Workspace/Codebase.md`:
+The reference file at `Workspace/References/rf-codebase.md` documents the link:
 
 ```markdown
-# Codebase
+# Codebase Reference
 
 **Type:** codebase
-**Registered:** 2025-12-18
 
 ## Key Paths
 
@@ -211,35 +212,17 @@ Document it in `Workspace/Codebase.md`:
 ```bash
 npm run dev
 ```
-
-## Notes
-
-External resource at: /path/to/your/code
 ```
 
-## Step 8: Index Everything
+## Step 8: Sync Everything
 
 ```bash
 flint sync
 ```
 
-This adds IDs to all your new files.
+This adds IDs to all your new files and ensures everything is indexed.
 
-## Step 9: Query Your Project
-
-Find all active tasks:
-
-```bash
-mesh query --tag "#task"
-```
-
-Find the backlog:
-
-```bash
-mesh query --tag "#dashboard"
-```
-
-## Step 10: Create an Export
+## Step 9: Create an Export
 
 When ready to share, create `Exports/Spec.md` (the export manifest):
 
@@ -253,10 +236,10 @@ description: Project specification bundle
 
 Compile these documents into the project specification:
 
-[(System) Flint Init](/docs/system-flint-init)
-[(Task) User Authentication](/docs/task-user-authentication)
-[(Task) API Design](/docs/task-api-design)
-[(Task) Database Schema](/docs/task-database-schema)
+[(System) Flint Init](/system-flint-init)
+[(Task) User Authentication](/task-user-authentication)
+[(Task) API Design](/task-api-design)
+[(Task) Database Schema](/task-database-schema)
 ```
 
 Build the export:
@@ -281,14 +264,13 @@ Output appears in `Exports/Spec/`.
 1. Review increment progress
 2. Move completed tasks
 3. Update backlog priorities
-4. Archive completed increments
+4. Commit changes
 
 ### On Completion
 
 1. Mark tasks complete
 2. Update increment to done
-3. Archive with `@Plugins/Archive/skills/sk-arc-archive.md`
-4. Create new increment for next version
+3. Create new increment for next version
 
 ## What You've Learned
 
@@ -300,6 +282,6 @@ Output appears in `Exports/Spec/`.
 
 ## Next Steps
 
-- [Guide - Tutorial Research Notes](/docs/guide/tutorial-research-notes) - Different use case
-- [Guide - Tutorial Agent Collaboration](/docs/guide/tutorial-agent-collaboration) - Work with AI
-- [Module - Plugins](/docs/modules/plugins) - Deep dive into plugins
+- [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - Different use case
+- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Work with AI
+- [Module - Plugins & Mods](/modules/plugins-mods) - Deep dive into plugins

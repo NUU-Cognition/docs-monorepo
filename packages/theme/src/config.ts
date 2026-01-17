@@ -1,41 +1,52 @@
 /**
  * NUU Docs Theme Configuration
+ *
+ * Sites provide their own SiteConfig to customize the theme.
  */
 
-export interface DocsThemeConfig {
+import type { ReactNode } from "react";
+
+/**
+ * Configuration for a documentation site
+ */
+export interface SiteConfig {
   /** Site name shown in header */
   name: string;
+
   /** Site description for meta tags */
   description?: string;
-  /** GitHub repository URL */
+
+  /** Logo component or element to display in nav */
+  logo?: ReactNode;
+
+  /** Base path for docs (e.g., "/" or "/docs") */
+  basePath: string;
+
+  /** GitHub repository URL (optional) */
   github?: string;
-  /** Base path for docs (e.g., "/docs") */
-  basePath?: string;
+
   /** Navigation links */
-  nav?: {
-    title: string;
-    href: string;
-    external?: boolean;
-  }[];
-  /** Footer links */
-  footer?: {
-    title: string;
-    href: string;
+  links?: {
+    text: string;
+    url: string;
     external?: boolean;
   }[];
 }
 
-export const docsTheme = {
-  /**
-   * Default configuration for NUU docs sites
-   */
-  defaults: {
-    name: "NUU Documentation",
-    description: "Documentation for NUU Cognition products",
-    github: "https://github.com/NUU-Cognition",
-    footer: [
-      { title: "NUU Cognition", href: "https://nuucognition.com", external: true },
-      { title: "GitHub", href: "https://github.com/NUU-Cognition", external: true },
-    ],
-  } satisfies DocsThemeConfig,
+/**
+ * Default NUU branding values (sites can override)
+ */
+export const nuuDefaults = {
+  github: "https://github.com/NUU-Cognition",
+  links: [
+    {
+      text: "NUU Cognition",
+      url: "https://nuucognition.com",
+      external: true,
+    },
+  ],
 };
+
+// Re-export for backwards compatibility
+export interface DocsThemeConfig extends SiteConfig {}
+export const docsTheme = { defaults: nuuDefaults };

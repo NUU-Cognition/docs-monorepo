@@ -1,5 +1,5 @@
 ---
-title: "Troubleshooting"
+title: "Troubleshooting Guide"
 ---
 
 Common issues and how to resolve them.
@@ -15,7 +15,6 @@ flint --version
 # See current state
 flint plugin list
 flint workspace list
-flint connection list
 
 # Repair common issues
 flint repair --dry-run
@@ -53,7 +52,7 @@ flint repair
 
 ### Missing File IDs
 
-**Symptom:** Files don't appear in queries or have `id: undefined`.
+**Symptom:** Files don't appear in index or have `id: undefined`.
 
 **Solution:**
 
@@ -61,8 +60,8 @@ flint repair
 # Re-index to add IDs
 flint sync
 
-# Or specifically index
-mesh index
+# Or specifically rebuild the index
+flint index
 ```
 
 ### Plugin Not Working
@@ -103,24 +102,16 @@ This reads `flint.toml` and updates installed plugins, mods, and state.
 
 ### Broken Links
 
-**Symptom:** `[Note](/docs/note)` links don't resolve or show as broken.
+**Symptom:** `[Note](/note)` links don't resolve or show as broken.
 
 **Solutions:**
 
-```bash
-# Common causes:
-# 1. Typo in link - fix the spelling
-# 2. Note renamed - update links or use mesh rename
-# 3. Note deleted - remove or update references
+Common causes:
+1. Typo in link - fix the spelling
+2. Note renamed - update links manually
+3. Note deleted - remove or update references
 
-# Rename and update all references
-mesh rename "Old Name" "New Name"
-
-# Check what notes exist
-mesh query --tag "#some-tag"
-```
-
-Note: There is no `mesh query --broken` command. You need to manually check links.
+Check what notes exist by browsing `Mesh/` or using Obsidian's graph view.
 
 ### Git Conflicts in .flint/
 
@@ -143,7 +134,7 @@ flint sync
 
 ### Workspace References Missing
 
-**Symptom:** Workspace references show red dots or "missing".
+**Symptom:** Workspace references show as "missing".
 
 **Causes:**
 - Path doesn't exist on this machine
@@ -156,32 +147,11 @@ flint sync
 # Check references
 flint workspace list
 
-# Re-register with correct path
-flint workspace reference name /correct/path
+# Re-fulfill with correct path
+flint workspace fulfill <name> /correct/path
 
 # Or remove if no longer needed
-flint workspace remove name
-```
-
-### Connection Sync Fails
-
-**Symptom:** Messages not being delivered.
-
-**Solutions:**
-
-```bash
-# Check connection status
-flint connection status
-
-# Verify other Flint exists and is registered
-flint list
-
-# Check for write permissions
-ls -la /path/to/other/flint/Connections/
-
-# Re-add connection if needed
-flint connection remove name
-flint connection add name
+flint workspace remove <name>
 ```
 
 ### Export Compilation Fails
@@ -192,7 +162,7 @@ flint connection add name
 
 1. **Missing notes:**
    ```
-   Error: Note not found: [Missing Note](/docs/missing-note)
+   Error: Note not found: [Missing Note](/missing-note)
    ```
    Fix: Create the note or remove the reference from the export manifest.
 
@@ -216,9 +186,6 @@ flint export list
 
 # Build a specific export
 flint export build guide
-
-# Or use mesh compile for ad-hoc compilation
-mesh compile "Note Name"
 ```
 
 ### Index Corruption
@@ -276,8 +243,7 @@ find Mesh -name "*.md" | wc -l
 
 # If very large (1000+), consider:
 # 1. Archiving old content
-# 2. Splitting into subflints
-# 3. Using more specific queries
+# 2. Using more specific organization
 
 # Clear and rebuild index
 rm -rf .flint/
@@ -290,16 +256,20 @@ flint sync
 
 **Solutions:**
 
-The Flint CLI is part of a private monorepo. If you're developing locally:
+Reinstall via the install script:
 
 ```bash
-# From the monorepo root
-pnpm install
-pnpm build
+curl -fsSL https://raw.githubusercontent.com/NUU-Cognition/flint/main/install.sh | bash
+```
 
-# Link the CLI globally
-cd apps/flint-cli
-pnpm link --global
+If still not found, check your PATH:
+
+```bash
+# Check if the binary exists
+ls -la ~/.nuucognition/flint/
+
+# Add to PATH if needed
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ## Repair Command
@@ -348,8 +318,8 @@ Your notes in `Mesh/` are preserved.
 If these solutions don't work:
 
 1. **Check documentation:**
-   - [Reference - CLI Commands](/docs/reference/cli)
-   - [Reference - Configuration](/docs/reference/configuration)
+   - [Reference - CLI Commands](/reference/cli-commands)
+   - [Reference - Configuration](/reference/configuration)
 
 2. **Report issues:**
    https://github.com/nuu-cognition/flint/issues
@@ -362,6 +332,6 @@ Include:
 
 ## Related
 
-- [Reference - CLI Commands](/docs/reference/cli) - All commands
-- [Reference - Configuration](/docs/reference/configuration) - Configuration options
-- [Guide - Quick Start](/docs/guide/quick-start) - Getting started
+- [Reference - CLI Commands](/reference/cli-commands) - All commands
+- [Reference - Configuration](/reference/configuration) - Configuration options
+- [Guide - Quick Start](/guide/quick-start) - Getting started

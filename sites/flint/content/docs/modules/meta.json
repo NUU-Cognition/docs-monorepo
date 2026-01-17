@@ -5,9 +5,7 @@
     "imports",
     "exports",
     "workspace",
-    "plugins",
-    "connections",
-    "subflints",
+    "plugins-mods",
     "media"
   ]
 }

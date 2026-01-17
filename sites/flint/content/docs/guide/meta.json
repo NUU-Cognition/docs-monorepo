@@ -3,6 +3,9 @@
   "pages": [
     "quick-start",
     "core-concepts",
+    "creating-a-flint",
+    "registry-management",
+    "global-configuration",
     "tutorial-project-planning",
     "tutorial-research-notes",
     "tutorial-agent-collaboration"

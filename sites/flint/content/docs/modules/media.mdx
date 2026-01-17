@@ -52,13 +52,13 @@ From Mesh notes, embed assets with the transclusion syntax:
 
 ```markdown
 Here's the architecture diagram:
-![Media/diagrams/architecture.png](/docs/media-diagrams-architecture-png)
+![Media/diagrams/architecture.png](/media-diagrams-architecture-png)
 
 See the specification:
-![Media/references/specification.pdf](/docs/media-references-specification-pdf)
+![Media/references/specification.pdf](/media-references-specification-pdf)
 
 Listen to the discussion:
-![Media/recordings/meeting.mp3](/docs/media-recordings-meeting-mp3)
+![Media/recordings/meeting.mp3](/media-recordings-meeting-mp3)
 ```
 
 ### Image Sizing
@@ -66,17 +66,17 @@ Listen to the discussion:
 Some editors support size hints:
 
 ```markdown
-![500](/docs/media-diagram-png)        # 500px width
-![300x200](/docs/media-diagram-png)    # Explicit dimensions
+![500](/media-diagram-png)        # 500px width
+![300x200](/media-diagram-png)    # Explicit dimensions
 ```
 
 ### Linking vs Embedding
 
-Embed (`![...](/docs/)`) displays inline. Link (`[...](/docs/)`) creates a reference:
+Embed (`![...](/)`) displays inline. Link (`[...](/)`) creates a reference:
 
 ```markdown
-![Media/diagram.png](/docs/media-diagram-png)    # Shows the image
-[Media/diagram.png](/docs/media-diagram-png)     # Links to the file
+![Media/diagram.png](/media-diagram-png)    # Shows the image
+[Media/diagram.png](/media-diagram-png)     # Links to the file
 ```
 
 ## Integration
@@ -89,7 +89,7 @@ Media is referenced from Mesh notes. The notes provide context; Media provides v
 # Architecture Overview
 
 The system has three layers:
-![Media/diagrams/three-layer.png](/docs/media-diagrams-three-layer-png)
+![Media/diagrams/three-layer.png](/media-diagrams-three-layer-png)
 
 As shown above, Layer A communicates with Layer B via...
 ```
@@ -136,6 +136,6 @@ Media files are skipped during indexing (they're binary and not searchable). Onl
 
 ## Related
 
-- [Module - Mesh](/docs/modules/mesh) - Notes that embed media assets
-- [Module - Exports](/docs/modules/exports) - Media references in compiled exports
-- [Module - Workspace](/docs/modules/workspace) - For code, use Workspace not Media
+- [Module - Mesh](/modules/mesh) - Notes that embed media assets
+- [Module - Exports](/modules/exports) - Media references in compiled exports
+- [Module - Workspace](/modules/workspace) - For code, use Workspace not Media

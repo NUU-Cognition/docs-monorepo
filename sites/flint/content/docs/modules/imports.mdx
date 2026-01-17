@@ -2,126 +2,227 @@
 title: "Imports"
 ---
 
-**Bring cognitive context from other Flints into your workspace.**
+Pull content from other Flints into your workspace.
 
 ## Purpose
 
-The Imports module lets you pull content from other Flint workspaces into your own. When you're working on a project that relates to another domain (maybe your architecture notes live in a separate Flint from your implementation notes), Imports bridges that gap.
+The Imports module lets you bring exported content from other registered Flints into your own workspace. When another Flint has published an export bundle (via the Exports module), you can import that bundle to reference their documentation, templates, or shared resources.
 
-Unlike Connections (which is for messaging between Flints), Imports is for bringing in *content* - actual notes you want to reference, quote, or build upon. Think of it as importing a library: you get read access to another Mesh's exports.
+Imports are one-way and read-only. The source Flint publishes to its `Exports/` folder; you import that export into your `Imports/` folder. The source maintains control over the content - you receive a copy that gets updated when you sync.
 
-Imports are one-way. The source Flint publishes to its Exports folder; you import that export into your Imports folder. Updates flow downstream - you pull, they push.
+## Import Structure
 
-## Structure
+Imported files are organized by source Flint and export name:
 
 ```
 Imports/
-├── (Import) Architecture/      # Imported from Architecture Flint
-│   └── api-bundle/             # The specific export
-│       ├── (Import) (Architecture) API Patterns.md
-│       └── (Import) (Architecture) System Design.md
-└── (Import) Research/          # Another import
-    └── Main/
-        └── (Import) (Research) Literature Review.md
+└── NUU Flint/              # Source flint name
+    └── Guide/              # Export name
+        ├── E (NUU Flint) Index.md
+        ├── E (NUU Flint) Quick Start.md
+        └── E (NUU Flint) CLI Commands.md
 ```
 
 ### File Naming
 
-Imported files are prefixed with `(Import) (SourceName)` to clearly indicate their origin and prevent conflicts with local Mesh files.
+Imported files retain their export naming convention:
+- Files are prefixed with `E (Source Flint)` to indicate their origin
+- This prevents naming conflicts with your local Mesh files
+- The prefix also serves as attribution to the source
 
-### Import Tracking
+## Configuring Imports
 
-Import state is tracked in `.flint/flint.lock`:
+Imports are configured in the `[imports]` section of `flint.toml`:
 
-```yaml
-imports:
-  - mesh: "(Mesh) Architecture"
-    meshId: "uuid-here"
-    export: "api-bundle"
-    path: "Imports/(Import) Architecture/api-bundle"
-    lastSync: "2025-12-18T10:00:00.000Z"
+```toml
+[imports]
+required = [
+  "NUU Flint/Guide",
+  "NUU Mesh/Reference"
+]
 ```
 
-## Commands
+Each entry follows the format `"<flint-name>/<export-name>"`:
+- **flint-name**: The name of the source Flint (as registered in the Flint registry)
+- **export-name**: The specific export bundle to import
+
+## The `flint import` Command
+
+The import command manages your workspace's imports.
 
 ### List Available Imports
 
 ```bash
+# Show all flints with exports
 flint import list
-flint import list "Architecture"  # From specific Flint
+
+# Show exports from a specific flint
+flint import list "NUU Flint"
 ```
 
-Shows available exports from connected Flints and current imports.
+The list command shows:
+- All registered Flints that have exports available
+- Each export bundle within those Flints
+- Your current imports (from flint.toml)
 
-### Import from Another Flint
+### Add an Import
 
 ```bash
-flint import add "Architecture/api-bundle"
+flint import add "NUU Flint/Guide"
 ```
 
-Copies the named export from the other Flint into `Imports/`.
+This adds the import reference to your `flint.toml`. The actual files are not copied until you run `flint sync`.
 
-### Update an Import
+**Requirements:**
+- The source Flint must be registered (`flint register` in that Flint)
+- The export must exist (created via `flint export build` in the source)
+
+### Remove an Import
 
 ```bash
-flint import sync
-flint import sync "Architecture/api-bundle"
+# Remove from flint.toml only
+flint import remove "NUU Flint/Guide"
+
+# Remove from config and delete imported files
+flint import remove "NUU Flint/Guide" --delete-files
 ```
 
-Re-syncs from the source, pulling any changes.
+Without `--delete-files`, the import is removed from configuration but files remain until the next sync cleans them up.
 
-## Integration
+## Import Sources
 
-### Referencing Imports from Mesh
+Imports work with the Flint registry system. A Flint can be imported if:
 
-Once imported, reference notes using the full path:
+1. It is registered in your global Flint registry (`flint register`)
+2. It has built exports (`flint export build`)
 
-```markdown
-According to [Imports/(Import) Architecture/api-bundle/(Import) (Architecture) API Patterns](/docs/imports-import-architecture-api-bundle-import-architecture-api-patterns), we should...
+The registry tracks each Flint's available exports, making them discoverable via `flint import list`.
+
+## Sync Behavior
+
+Imports are synced during `flint sync`. The sync process:
+
+1. **Reads required imports** from `flint.toml`
+2. **Locates source Flints** in the registry
+3. **Builds exports fresh** from the source (ensures up-to-date content)
+4. **Copies files** to your `Imports/` folder
+5. **Cleans up stale imports** - removes any imported content no longer in your required list
+
+### Sync Results
+
+After sync, you will see import status for each configured import:
+
+| Status | Meaning |
+|--------|---------|
+| synced | Successfully pulled and updated |
+| not_found | Source Flint or export not in registry |
+| not_built | Export manifest exists but build failed |
+| removed | Import was in Imports/ but no longer required |
+| error | An error occurred during sync |
+
+### Automatic Cleanup
+
+When you remove an import from `flint.toml`, the next `flint sync` will:
+- Delete the corresponding folder from `Imports/`
+- Clean up empty parent directories
+
+## Use Cases
+
+### Sharing Documentation
+
+A central "docs" Flint can export style guides, templates, or reference material that other project Flints import:
+
+```toml
+# In your project flint.toml
+[imports]
+required = ["Company Docs/Style Guide"]
 ```
 
-Or use the simpler display alias:
+### Referencing Architecture Docs
 
-```markdown
-[API Patterns](/docs/imports-import-architecture-api-bundle-import-architecture-api-patterns)
+When building an implementation, import the architecture Flint's exports:
+
+```toml
+[imports]
+required = ["System Architecture/API Reference"]
 ```
 
-### With Exports
+### Template Distribution
 
-You can re-export imported content (with attribution). Useful for creating derivative works or curated collections.
+A templates Flint can export common document structures:
 
-### Difference from Connections
+```toml
+[imports]
+required = ["Templates/Project Templates"]
+```
 
-| Imports | Connections |
-|---------|-------------|
-| Pull content from exports | Send/receive messages |
-| One-way (source → you) | Two-way communication |
-| Bundles of notes | Individual messages |
-| Read-only | Read-write |
+## Examples
 
-Use Imports when you need reference material. Use Connections when you need ongoing dialogue.
+### Adding Your First Import
+
+```bash
+# 1. Check what's available
+flint import list
+
+# Output:
+# Available Imports
+#
+# NUU Flint
+#   - Guide
+#   - Reference
+
+# 2. Add an import
+flint import add "NUU Flint/Guide"
+
+# Output:
+# Added NUU Flint/Guide to flint.toml
+# Run 'flint sync' to pull the files.
+
+# 3. Sync to get the files
+flint sync
+```
+
+### How Imported Files Appear
+
+After syncing `NUU Flint/Guide`:
+
+```
+Imports/
+└── NUU Flint/
+    └── Guide/
+        ├── E (NUU Flint) Index.md
+        ├── E (NUU Flint) Quick Start.md
+        ├── E (NUU Flint) CLI Commands.md
+        └── E (NUU Flint) Configuration.md
+```
+
+### Keeping Imports Up to Date
+
+```bash
+# Regular sync updates all imports
+flint sync
+
+# View sync results
+# Imports:
+#   NUU Flint/Guide: synced (4 files)
+```
+
+Each sync rebuilds exports from source, ensuring you always have the latest content.
 
 ## Best Practices
 
-**Import exports, not raw Meshes.** The source Flint should prepare an export bundle. Don't import their entire Mesh - that's coupling too tightly.
+**Import curated exports, not everything.** Source Flints should prepare focused export bundles. Import only what you need.
 
-**Use copy for stability.** Imports are copied, not linked. This gives you a stable snapshot that doesn't break if the source moves.
+**Treat imports as read-only.** Imported files will be overwritten on the next sync. If you need to modify content, copy it to your Mesh first.
 
-**Document your imports.** Note in your Mesh why you imported something and how it relates to your work.
+**Keep imports organized.** The folder structure (`Imports/<Flint>/<Export>/`) keeps sources clear. Reference files using their full paths.
 
-**Keep imports focused.** Import specific bundles you need, not everything. Your Imports folder shouldn't dwarf your Mesh.
+**Sync regularly.** Run `flint sync` to pull updates from source Flints. This keeps your imported content current.
 
-**Update deliberately.** Review changes before pulling - the source may have reorganized.
-
-### Common Mistakes
-
-- **Importing full Meshes** - Import curated exports instead
-- **Circular imports** - Don't import from a Flint that imports from you
-- **Stale imports** - Check `flint import list` periodically
-- **Editing imported files** - They'll be overwritten on next sync; copy to Mesh first
+**Reference imports in your Mesh.** Link to imported docs from your own notes to maintain context about why you imported them.
 
 ## Related
 
-- [Module - Exports](/docs/modules/exports) - Create exports that others can import
-- [Module - Connections](/docs/modules/connections) - Two-way messaging (vs one-way import)
-- [Module - Mesh](/docs/modules/mesh) - Where imported content is referenced
+- [Module - Exports](/modules/exports) - Create exports that others can import
+- [Module - Mesh](/modules/mesh) - Where imported content is referenced
+- [Reference - CLI Commands](/reference/cli-commands) - Full command reference

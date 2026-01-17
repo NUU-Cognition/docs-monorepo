@@ -1,0 +1,180 @@
+---
+title: "Global Configuration"
+---
+
+How to manage global Flint settings that apply across all your workspaces.
+
+## Overview
+
+Flint stores global user configuration in `~/.flint/config.toml`. This is separate from per-workspace `flint.toml` files and controls CLI-wide behavior.
+
+```
+~/.flint/
+├── config.toml      ← Global user settings (this guide)
+├── registry.json    ← Local flint registry
+└── presets/         ← Custom presets
+```
+
+## Configuration Structure
+
+The global config uses TOML format:
+
+```toml
+# Feature mode (managed via `flint mode`)
+mode = "production"
+```
+
+### Available Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `mode` | `string` | Build default | Feature mode: `production`, `experimental`, or `dev` |
+
+## Basic Usage
+
+### View All Configuration
+
+```bash
+flint config
+```
+
+Output:
+```
+Global Flint Configuration
+Path: /Users/you/.flint/config.toml
+
+mode = "production"
+  (use `flint mode` to manage)
+```
+
+If no config is set:
+```
+Global Flint Configuration
+Path: /Users/you/.flint/config.toml
+
+No configuration set. Using defaults.
+```
+
+### Get a Specific Value
+
+```bash
+flint config get mode
+# or shorthand:
+flint config mode
+```
+
+### Set a Value
+
+```bash
+flint config set mode production
+```
+
+Output:
+```
+Set mode = "production"
+```
+
+## Feature Modes
+
+The `mode` setting controls which features are available. While you *can* set it via `flint config`, the dedicated `flint mode` command provides a better experience.
+
+### Mode Hierarchy
+
+```
+Production        Experimental         Dev
+────────────      ────────────────     ─────────────────
+Core commands     + Opt-in features    + All features
+Always stable     Being tested         Development only
+```
+
+### Using `flint mode`
+
+```bash
+# Show current mode and available features
+flint mode
+
+# Change mode
+flint mode experimental
+flint mode production
+
+# List all features by tier
+flint mode --list
+```
+
+### Why Use `flint mode` Instead of `config`?
+
+| `flint config set mode` | `flint mode` |
+|-------------------------|--------------|
+| Just sets the value | Shows feature availability |
+| No validation | Validates mode values |
+| Generic interface | Purpose-built UX |
+
+If you do use `flint config set mode`, you'll see a hint:
+```
+Hint: Use `flint mode <mode>` for mode management.
+It provides feature listings and validation.
+```
+
+## Validation
+
+The config command validates your input:
+
+### Unknown Keys
+
+```bash
+flint config set foo.bar baz
+```
+```
+Warning: "foo.bar" is not a known config key.
+Known keys: mode
+
+Set foo.bar = "baz"
+```
+
+The value is still set, but you're warned it may not do anything.
+
+## Command Reference
+
+```bash
+flint config                    # View all config
+flint config get <key>          # Get value by key
+flint config <key>              # Shorthand for get
+flint config set <key> <value>  # Set a value
+```
+
+## File Location
+
+The config file lives at:
+
+| Platform | Path |
+|----------|------|
+| macOS/Linux | `~/.flint/config.toml` |
+| Windows | `%USERPROFILE%\.flint\config.toml` |
+
+You can also edit this file directly—it's plain TOML:
+
+```toml
+mode = "production"
+```
+
+## Best Practices
+
+### Use `flint mode` for Mode Changes
+
+```bash
+# Better than flint config set mode
+flint mode experimental
+```
+
+### Check Config After Issues
+
+If commands aren't working as expected:
+```bash
+flint config
+```
+
+## Related
+
+- [Reference - CLI Commands](/reference/cli-commands) — Full command reference
+- [Reference - Configuration](/reference/configuration) — Per-workspace configuration
+- [Guide - Quick Start](/guide/quick-start) — Getting started with Flint

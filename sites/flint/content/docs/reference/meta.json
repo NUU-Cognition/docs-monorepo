@@ -1,7 +1,7 @@
 {
   "title": "Reference",
   "pages": [
-    "cli",
+    "cli-commands",
     "configuration",
     "troubleshooting"
   ]

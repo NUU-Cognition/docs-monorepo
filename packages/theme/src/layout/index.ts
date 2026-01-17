@@ -1,8 +1,8 @@
 /**
  * Layout exports for Fumadocs integration
  *
- * These provide the layout configuration for docs sites.
+ * Sites should use createDocsLayoutOptions(config) with their site config.
  */
 
-export { baseOptions } from "./base-options";
-export { docsLayoutOptions } from "./docs-layout";
+export { createBaseOptions, baseOptions } from "./base-options";
+export { createDocsLayoutOptions, docsLayoutOptions } from "./docs-layout";

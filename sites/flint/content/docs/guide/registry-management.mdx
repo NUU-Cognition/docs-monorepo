@@ -1,0 +1,255 @@
+---
+title: "Registry Management"
+---
+
+How to manage the Flint registry for tracking and discovering workspaces.
+
+## Overview
+
+The Flint registry is a local database that tracks all your flint workspaces. It follows a **git-like local-first model** — your flints are identified by their filesystem path, not by UUIDs. Cloud features (when available) will add remote tracking, similar to `git remote`.
+
+```
+Local Registry (~/.flint/registry.json)
+─────────────────────────────────────────
+{
+  "version": 1,
+  "flints": [
+    { "name": "My Project", "path": "/path/to/flint", "type": "flint" }
+  ]
+}
+```
+
+## Registry Structure
+
+Each registry entry contains:
+
+| Field | Description |
+|-------|-------------|
+| `name` | Human-readable name from `flint.toml` |
+| `path` | Absolute filesystem path (primary identifier) |
+| `type` | The flint type (typically `flint`) |
+
+**Note:** There are no UUIDs or timestamps in the local registry. The path uniquely identifies each flint, just like a git repository is identified by its directory.
+
+## Commands
+
+### flint registry validate
+
+Validate and clean the registry:
+
+```bash
+# Validate and auto-fix issues
+flint registry validate
+
+# Check only, don't make changes
+flint registry validate --dry-run
+
+# Skip confirmation prompt
+flint registry validate --force
+
+# Output as JSON
+flint registry validate --json
+```
+
+**What it does:**
+1. **Cleans registry structure** — Removes deprecated fields (`id`, `created`) from old entries
+2. **Handles corruption** — Recreates registry if JSON is invalid
+3. **Removes invalid entries** — Entries missing required `name` or `path`
+4. **Finds broken paths** — Entries pointing to non-existent directories
+5. **Auto-fixes** — Removes broken entries (unless `--dry-run`)
+
+**Example output:**
+```
+Registry Validation
+
+Registry: ~/.flint/registry.json (23 entries)
+
+  ✓ Cleaned 5 entries (removed deprecated fields)
+
+Found 2 issues:
+
+Broken paths (2):
+  ✗ Old Project: ~/projects/deleted-project
+  ✗ Test Flint: ~/temp/test
+
+Remove 2 broken entries? (y/N) y
+
+  ✓ Removed Old Project
+  ✓ Removed Test Flint
+
+Cleaned 2 broken entries
+```
+
+### flint list
+
+View all registered flints:
+
+```bash
+# List all flints
+flint list
+
+# Show path validity status
+flint list --status
+
+# Output as JSON
+flint list --json
+```
+
+### flint register
+
+Add a flint to the registry:
+
+```bash
+# Register current directory
+flint register
+
+# Register specific path
+flint register /path/to/flint
+
+# Scan and register multiple flints
+flint register --scan ~/projects
+
+# Force re-register (update existing entry)
+flint register --force
+```
+
+### flint unregister
+
+Remove a flint from the registry:
+
+```bash
+# Unregister current directory
+flint unregister
+
+# Unregister specific path
+flint unregister /path/to/flint
+
+# Skip confirmation
+flint unregister --force
+```
+
+**Note:** This only removes from the registry. The flint files remain on disk.
+
+## Common Scenarios
+
+### After Cloning a Flint
+
+```bash
+git clone <repo> "(Flint) my-project"
+cd "(Flint) my-project"
+flint register
+flint sync
+```
+
+### After Moving a Flint
+
+```bash
+# The old path becomes broken
+flint registry validate
+# Removes the broken entry
+
+# Register at new location
+cd /new/path/to/flint
+flint register
+```
+
+### Cleaning Up Old Entries
+
+```bash
+# See what's broken
+flint registry validate --dry-run
+
+# Fix everything
+flint registry validate --force
+```
+
+### Finding Unregistered Flints
+
+```bash
+# Scan a directory tree
+flint register --scan ~/dev
+
+# Preview what would be registered
+flint register --scan ~/dev --dry-run
+```
+
+## Registry File Location
+
+The registry is stored at `~/.flint/registry.json`. This is a global file shared across all terminals and applications.
+
+```
+~/.flint/
+├── registry.json      # Flint registry
+├── config.toml        # Global configuration
+└── presets/           # Custom presets
+```
+
+## Automatic Registration
+
+Flints are automatically registered when:
+- Created with `flint init`
+- Registered manually with `flint register`
+
+Flints are automatically unregistered when:
+- Removed with `flint unregister`
+- Cleaned by `flint registry validate` (broken paths only)
+
+## Migration from Old Registry
+
+If your registry has old-format entries (with `id`, `created`, or other deprecated fields), running `flint registry validate` will automatically clean them:
+
+```bash
+$ flint registry validate
+
+Registry Validation
+
+Registry: ~/.flint/registry.json (15 entries)
+
+  ✓ Cleaned 15 entries (removed deprecated fields)
+
+✓ Registry is valid - no issues found
+```
+
+This migration happens automatically and preserves all your flint entries.
+
+## Troubleshooting
+
+### "Flint not found in registry"
+
+The flint isn't registered. Either:
+```bash
+# Register it
+flint register /path/to/flint
+
+# Or scan for unregistered flints
+flint register --scan ~/projects
+```
+
+### Duplicate entries after moving
+
+If you moved a flint without unregistering:
+```bash
+# Clean up broken entries
+flint registry validate
+```
+
+### Registry appears corrupted
+
+```bash
+# Validate will fix corruption
+flint registry validate
+```
+
+If the JSON is unparseable, it will create a fresh empty registry.
+
+### Flint shows as "broken" but exists
+
+The path in the registry doesn't match the actual location. Either:
+1. The flint was moved — register at the new location
+2. The path has special characters — check for encoding issues
+
+## Related
+
+- [Guide - Creating a Flint](/guide/creating-a-flint) — Creating and initializing flints
+- [Reference - CLI Commands](/reference/cli-commands) — Full command reference
+- [Guide - Global Configuration](/guide/global-configuration) — Global settings

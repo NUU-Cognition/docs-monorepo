@@ -1,35 +1,24 @@
 ---
-title: "Quick Start"
+title: "Quick Start: Your First Flint"
 ---
 
-Get from zero to a working Flint workspace in minutes.
+Get from zero to a working Flint workspace.
 
 ## Prerequisites
 
-- **Node.js 20+** installed
-- **pnpm** package manager
-- **Terminal access**
-- **Text editor** (VS Code, Obsidian, or any markdown editor)
+- **Node.js 20+** - Check with `node --version`
+- **macOS or Linux** (Windows users: use WSL)
+- **Obsidian** (optional but recommended) - For the best editing experience
 
 ## Step 1: Install the CLI
 
-Flint CLI is part of a monorepo. To set up for local development:
+Install Flint using the install script:
 
 ```bash
-# Clone the monorepo
-git clone https://github.com/nuu-cognition/main.git
-cd main
-
-# Install dependencies
-pnpm install
-
-# Build packages
-pnpm build
-
-# Link CLI globally
-cd apps/flint-cli
-pnpm link --global
+curl -fsSL https://raw.githubusercontent.com/NUU-Cognition/flint/main/install.sh | bash
 ```
+
+This downloads the latest release and installs it to `~/.nuucognition/flint/`.
 
 Verify installation:
 
@@ -37,162 +26,267 @@ Verify installation:
 flint --version
 ```
 
-## Step 2: Create a Flint
+### Update
+
+To update to the latest version, run the same command:
 
 ```bash
-flint init my-research
+curl -fsSL https://raw.githubusercontent.com/NUU-Cognition/flint/main/install.sh | bash
 ```
 
-This creates the folder structure:
+### Uninstall
+
+```bash
+rm -rf ~/.nuucognition/flint
+sudo rm /usr/local/bin/flint  # or ~/.local/bin/flint
+```
+
+Your data (`~/.flint/`) is preserved.
+
+## Step 2: Create Your First Flint
+
+Navigate to where you want your workspace and create a new Flint:
+
+```bash
+flint init "My Project"
+```
+
+This creates the folder `(Flint) My Project/` with the essential structure.
+
+**Using a preset** (recommended for new users):
+
+```bash
+flint init "My Project" --preset default
+```
+
+The `default` preset includes common plugins like projects, increments, and notepad.
+
+## Step 3: Explore the Structure
+
+Navigate into your new Flint:
+
+```bash
+cd "(Flint) My Project"
+```
+
+Here's what was created:
 
 ```
-(Flint) my-research/
+(Flint) My Project/
 ├── flint.toml           # Configuration file
+├── flint.lock           # Computed state (auto-generated)
 ├── .flint/              # Runtime data (gitignored)
 ├── Mesh/                # Your notes go here
 │   └── (System) Flint Init.md
-├── Imports/             # External Flint content
-├── Exports/             # Compiled outputs
-├── Workspace/           # External resource links
-├── Media/               # Images and files
+├── Imports/             # Content from other Flints
+├── Exports/             # Compiled outputs for sharing
+├── Workspace/           # Links to external resources
+├── Media/               # Images, PDFs, assets
 └── Plugins/             # Automation capabilities
 ```
 
-Additional folders are created on-demand:
-- `Connections/` - When you add a connection to another Flint
-- `Subflints/` - When you create nested Flint workspaces
-
-## Step 3: Navigate to Your Flint
-
-```bash
-cd "(Flint) my-research"
-```
+If you used `--preset default`, you'll also see plugins installed in `Plugins/`.
 
 ## Step 4: Read the Init File
 
-Open `Mesh/(System) Flint Init.md`. This file explains:
-- What this Flint is for
-- How it's organized
-- What plugins are installed
+Open `Mesh/(System) Flint Init.md` in any text editor. This file:
 
-Every agent session should start by reading this file.
+- Explains what this Flint is for
+- Describes the folder structure
+- Lists installed plugins
+- Provides guidance for AI agents working in this space
 
-## Step 5: Create Your First Note
+Every time you (or an AI agent) starts working in a Flint, reading the init file first ensures you understand the workspace context.
 
-Create a file in `Mesh/`:
+## Step 5: Open in Obsidian
+
+For the best editing experience, open your Flint folder directly in Obsidian as a vault:
+
+1. Open Obsidian
+2. Click "Open folder as vault"
+3. Select your `(Flint) My Project/` folder
+
+Flint's conventions (wiki-links, YAML frontmatter, folder structure) are fully compatible with Obsidian's features.
+
+## Step 6: Create Your First Note
+
+Create a file in `Mesh/`. You can use the command line, your editor, or Obsidian.
+
+Example note at `Mesh/Project Ideas.md`:
 
 ```markdown
-# My First Concept
+---
+id: auto-generated-by-sync
+tags:
+  - "#brainstorm"
+---
 
-This is my first note in Flint.
+# Project Ideas
 
-It can link to [Other Notes](/docs/other-notes) using wiki-style links.
+Initial thoughts for the project.
 
-Tags go in frontmatter or inline like #draft.
+## Mobile App
+
+A mobile companion would help with [On-the-Go Access](/on-the-go-access).
+
+## Integration
+
+Consider connecting to [External Services](/external-services).
 ```
 
-Save as `Mesh/My First Concept.md`.
+Key concepts:
+- **Frontmatter** - YAML at the top with metadata
+- **Wiki links** - `[Note Name](/note-name)` links to other notes
+- **Tags** - Use `#tag` format in frontmatter or inline
+- **IDs** - Auto-generated by sync (unique identifiers)
 
-## Step 6: Index Your Files
+## Step 7: Sync Your Workspace
+
+Run sync to update the workspace state:
 
 ```bash
 flint sync
 ```
 
-This:
-- Adds unique IDs to files without them
+Sync performs several operations:
+- Adds unique IDs to files that don't have them
+- Installs/updates plugins declared in `flint.toml`
 - Updates the index in `.flint/`
-- Syncs installed plugins and mods
 
-## Step 7: Query Your Notes
+**Run sync regularly** - after adding notes, changing configuration, or when plugins need updating.
 
-```bash
-mesh query --tag "#draft"
-```
-
-## You're Done!
-
-You now have a working Flint workspace. Here's what to do next:
-
-### Open in an Editor
-
-```bash
-flint open           # Opens in configured apps
-```
-
-Or open the folder directly in VS Code or Obsidian.
+## Step 8: Basic Workflows
 
 ### Add Plugins
 
-Edit `flint.toml`:
+Edit `flint.toml` to add plugins:
 
 ```toml
+[flint]
+name = "My Project"
+type = "flint"
+
 [plugins]
 required = [
   "core",
   "living-documents",
-  "increments"
+  "increments",
+  "projects"
 ]
 ```
 
-Then sync:
+Then sync to install them:
 
 ```bash
 flint sync
 ```
 
-### Link a Codebase
+### List Installed Plugins
 
 ```bash
-flint workspace reference monorepo /path/to/your/code
+flint plugin list
 ```
 
-### Create More Notes
+To see all available plugins:
 
-Every note in `Mesh/` is automatically indexed. Use `[links](/docs/links)` to connect them.
+```bash
+flint plugin list --available
+```
 
-## Essential Commands
+### Link a Codebase
+
+If your Flint relates to a codebase, create a workspace reference:
+
+```bash
+flint workspace add monorepo --type codebase
+flint workspace fulfill monorepo /path/to/your/code
+```
+
+This creates `Workspace/References/rf-monorepo.md` documenting the link.
+
+### Index Your Notes
+
+To manually rebuild the index:
+
+```bash
+flint index
+```
+
+This scans all markdown files and updates `.flint/index.json`.
+
+## Essential Commands Reference
 
 | Command | What it does |
 |---------|--------------|
 | `flint init <name>` | Create a new Flint |
 | `flint sync` | Sync config, plugins, index |
-| `flint open` | Open in configured apps |
-| `mesh index` | Index Mesh files |
-| `mesh query --tag X` | Find notes by tag |
-| `mesh compile <note>` | Compile with transclusions |
+| `flint list` | List registered Flints |
+| `flint index` | Rebuild the index |
 | `flint plugin list` | Show installed plugins |
+| `flint plugin list --available` | Show available plugins |
 | `flint repair` | Fix common issues |
+| `flint --help` | See all commands |
 
-## File Format Quick Reference
+## File Naming Conventions
 
-Every markdown file can have YAML frontmatter:
+Flint uses typed prefixes to indicate document purpose:
 
-```markdown
----
-id: auto-generated-uuid
-tags:
-  - "#concept"
-  - "#draft"
----
+| Pattern | Purpose |
+|---------|---------|
+| `(System) *.md` | Configuration and navigation |
+| `(Task) *.md` | Actionable work items |
+| `(Dashboard) *.md` | Overview documents |
+| `(Plan) *.md` | High-level plans |
+| `(Increment) *.md` | Version work packages |
+| `*.md` | Regular notes |
 
-# Note Title
+Example: `(Task) Implement Auth.md`, `(System) Flint Init.md`
 
-Content with [wiki links](/docs/wiki-links) and ![embeds](/docs/embeds).
-```
+## What's Next?
 
-The `id` is auto-generated by `flint sync`. Tags can also be written inline as `#tag`.
+You now have a working Flint workspace. Here's where to go from here:
 
-## Common Naming Patterns
+### Learn More
 
-- `(System) Name.md` - Configuration and navigation
-- `(Dashboard) Name.md` - Overview documents
-- `(Task) Name.md` - Actionable work items
-- `Name.md` - Regular concept notes
+- [Guide - Core Concepts](/guide/core-concepts) - Understand the mental model
+- [Guide - Introduction](/) - The philosophy behind Flint
+- [Reference - CLI Commands](/reference/cli-commands) - Complete command reference
 
-## Next Steps
+### Try the Tutorials
 
-- [Guide - Core Concepts](/docs/guide/core-concepts) - Understand the architecture
-- [Guide - Tutorial Project Planning](/docs/guide/tutorial-project-planning) - See Flint in action
-- [Module - Mesh](/docs/modules/mesh) - Deep dive into the Mesh module
-- [Reference - CLI Commands](/docs/reference/cli) - Complete command reference
+- [Guide - Tutorial Project Planning](/guide/tutorial-project-planning) - Plan a project with tasks and increments
+- [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - Organize research with linked notes
+- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Work effectively with AI agents
+
+### Explore Modules
+
+- [Module - Mesh](/modules/mesh) - Deep dive into your notes system
+- [Module - Plugins & Mods](/modules/plugins-mods) - Extend with automation
+- [Module - Workspace](/modules/workspace) - Connect to external resources
+
+### Configuration
+
+- [Reference - Configuration](/reference/configuration) - Global and workspace settings
+- [Guide - Global Configuration](/guide/global-configuration) - Set up your preferences
+- [Guide - Registry Management](/guide/registry-management) - Manage your Flint collection
+
+## Troubleshooting
+
+**"Command not found: flint"**
+- Make sure the install completed successfully
+- Check if `~/.local/bin` is in your PATH
+- Try: `export PATH="$HOME/.local/bin:$PATH"`
+
+**"Not inside a Flint"**
+- Make sure you're in a folder with `flint.toml`
+- Navigate into the `(Flint) Name/` folder, not its parent
+
+**Obsidian doesn't see the folder**
+- Use "Open folder as vault" in Obsidian
+- Point it to the `(Flint) Name/` directory
+
+**Sync shows errors**
+- Run `flint repair` to fix common issues
+- Check `flint.toml` for syntax errors
+
+For more troubleshooting, see [Reference - Troubleshooting](/reference/troubleshooting).

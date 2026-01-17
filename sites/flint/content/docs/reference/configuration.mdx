@@ -1,24 +1,24 @@
 ---
-title: "Configuration"
+title: "Configuration Reference"
 ---
 
 Complete guide to Flint configuration files and options.
 
-## Configuration Hierarchy
+## Configuration Files Overview
 
-Flint uses layered configuration:
-
-1. **Global** - `~/.flint/config.toml` - User defaults
-2. **Workspace** - `flint.toml` - This Flint's configuration
-3. **Lock** - `.flint/flint.lock` - Computed state (don't edit)
-
-Lower layers override higher layers.
+| File | Location | Purpose | Edit |
+|------|----------|---------|------|
+| `flint.toml` | Flint root | Workspace configuration | Yes |
+| `flint.lock` | `.flint/` | Installed state tracking | No |
+| `mesh.config.yaml` | `.flint/` | Mesh indexing metadata | No |
+| `config.toml` | `~/.flint/` | Global user settings | Yes |
+| `registry.json` | `~/.flint/` | Global Flint registry | No |
 
 ## flint.toml
 
-The main configuration file for your Flint.
+The main configuration file for your Flint workspace. Located at the root of your Flint.
 
-### Basic Structure
+### Complete Structure
 
 ```toml
 [flint]
@@ -27,36 +27,51 @@ type = "flint"
 
 [plugins]
 required = [
+  "core",
   "living-documents",
   "increments",
-  "projects"
+  "projects",
 ]
 
 [mods]
 required = [
-  "git",
-  "claude-code"
+  "claude-code",
+]
+
+[workspace]
+references = [
+  { name = "monorepo", type = "codebase" },
+  { name = "design-docs", type = "drive" },
+]
+
+[imports]
+required = [
+  "NUU Flint/Guide",
 ]
 ```
 
 ### [flint] Section
 
-Core workspace configuration.
+Core workspace identity.
 
 ```toml
 [flint]
-name = "my-project"           # Required: folder/registry name
-type = "flint"                # flint | subflint
+name = "my-project"
+type = "flint"
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `name` | Yes | Unique identifier, matches folder name |
-| `type` | Yes | Workspace type (`flint` or `subflint`) |
+| Field | Required | Values | Description |
+|-------|----------|--------|-------------|
+| `name` | Yes | string | Unique identifier, typically matches folder name |
+| `type` | Yes | `flint` | Workspace type |
+
+The `name` field is used:
+- As the display name in `flint list`
+- In import references from other Flints
 
 ### [plugins] Section
 
-Declare installed plugins using the `required` array.
+Declare plugins to install in this workspace.
 
 ```toml
 [plugins]
@@ -65,212 +80,265 @@ required = [
   "living-documents",
   "increments",
   "projects",
-  "archive"
+  "notepad",
+  "plan",
 ]
 ```
 
-Plugins are specified by their kebab-case names. Use `flint plugin list --available` to see all available plugins.
+Plugins are specified by kebab-case name. Run `flint plugin list --available` to see all plugins.
 
-**Available plugins:**
-- `core` - Core conventions
+**Core plugins:**
+- `core` - Base conventions and agent setup
 - `living-documents` - Document lifecycle tracking
 - `increments` - Version stream management
 - `projects` - Task and backlog management
-- `archive` - Archival operations
-- `notepad` - Quick capture
-- `comments` - Note discussions
-- `flint-terminal-agent` - Agent conventions
-- `autonomy` - Autonomous workflows
-- `testing` - Test tracking
-- `compiler` - Export compilation
-- `connections` - Connection management
-- `models` - Model tracking
-- `documentation` - Documentation generation
-- `timelines` - Timeline visualization
+- `notepad` - Quick capture and brainstorming
+- `plan` - High-level planning
 
 ### [mods] Section
 
-Declare installed mods using the `required` array.
+Declare mods (integrations) to install.
 
 ```toml
 [mods]
 required = [
-  "git",
-  "claude-code"
+  "claude-code",
 ]
 ```
 
 **Available mods:**
-- `git` - Git integration with `.gitignore` management
-- `claude-code` - Claude Code integration with `CLAUDE.md`
+- `claude-code` - Claude Code integration with `CLAUDE.md` generation
 
 ### [workspace] Section
 
-External resource references (machine-specific, gitignored).
+Declare external resource references. These are portable declarations of what external resources the workspace connects to.
 
 ```toml
 [workspace]
-monorepo = { path = "/Users/nathan/dev/nuu/main" }
-design-docs = { path = "/Users/nathan/design/docs" }
-```
-
-This section is typically gitignored since paths are machine-specific.
-
-### [imports] Section
-
-Import definitions from other Flints.
-
-```toml
-[imports]
-meshes = [
-  { name = "Architecture", export = "api-bundle" }
+references = [
+  { name = "monorepo", type = "codebase" },
+  { name = "design-docs", type = "drive" },
+  { name = "api", type = "api" },
 ]
 ```
 
-## Global Configuration
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Reference identifier (creates `Workspace/References/rf-<name>.md`) |
+| `type` | Yes | Resource type |
 
-User-wide settings in `~/.flint/config.toml`.
+**Reference types:**
+- `codebase` - Source code repository
+- `drive` - File system directory
+- `api` - External API
+- `database` - Database connection
+- `service` - External service
+
+Machine-specific paths are stored in `.flint/workspace.toml` (gitignored), not in `flint.toml`.
+
+### [imports] Section
+
+Import exports from other registered Flints.
 
 ```toml
-[open]
-apps = ["obsidian", "cursor"]
+[imports]
+required = [
+  "NUU Flint/Guide",
+  "NUU Parse/API Docs",
+]
 ```
 
-### Available Options
+Format: `"<Flint Name>/<Export Name>"`
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `open.apps` | `[]` | Applications to open Flints in |
+The source Flint must be registered and have the specified export configured.
 
-The global config is minimal. Most settings are per-workspace in `flint.toml`.
+---
 
-## Lock File
+## flint.lock
 
-`.flint/flint.lock` tracks computed state. **Do not edit manually.**
+Generated lock file tracking installed state. Located at `.flint/flint.lock`. **Do not edit manually.**
+
+### Structure
 
 ```yaml
 version: 1
-flintVersion: "1.0.0"
-created: 2025-12-18T09:00:00.000Z
-synced: 2025-12-18T10:00:00.000Z
-
+flintVersion: 1.0.0
+created: 2026-01-04T10:30:05.953Z
+synced: 2026-01-04T10:30:05.953Z
 plugins:
   - name: living-documents
-    version: "1.0.0"
-    installedAt: 2025-12-18T09:00:00.000Z
-
+    version: 1.0.0
+    installedAt: 2026-01-04T09:00:00.000Z
 mods:
-  - name: git
-    version: "1.0.0"
-    installedAt: 2025-12-18T09:00:00.000Z
-
-imports:
-  - mesh: "(Mesh) Architecture"
-    meshId: "uuid-here"
-    export: "api-bundle"
-    path: "Imports/(Import) Architecture/api-bundle"
-    lastSync: 2025-12-18T10:00:00.000Z
+  - name: claude-code
+    version: 1.0.0
+    installedAt: 2026-01-04T10:30:05.953Z
 ```
 
-The lock file:
-- Tracks what's actually installed
-- Records versions and timestamps
-- Stores import state
-- Regenerated by `flint sync`
+| Field | Description |
+|-------|-------------|
+| `version` | Lock file format version |
+| `flintVersion` | Flint CLI version that created/synced |
+| `created` | When the lock file was created |
+| `synced` | Last sync timestamp |
+| `plugins` | Array of installed plugins |
+| `mods` | Array of installed mods |
 
-## Connections
-
-Connections to other Flints are stored in `.flint/connections.json`, not in `flint.toml`.
-
-```json
-{
-  "version": 1,
-  "connections": [
-    {
-      "name": "Architecture",
-      "path": "/path/to/architecture-flint",
-      "created": "2025-12-18T10:00:00.000Z"
-    }
-  ]
-}
-```
-
-Use `flint connection add <name>` to add connections. The target must be a registered Flint.
-
-## Subflints
-
-Subflints are tracked in `.flint/subflints.json`.
-
-```json
-{
-  "version": 1,
-  "subflints": [
-    {
-      "name": "Docs",
-      "relativePath": "Subflints/(Flint) Docs",
-      "path": "/full/path/to/subflint",
-      "created": "2025-12-18T10:00:00.000Z",
-      "preset": "blank"
-    }
-  ]
-}
-```
-
-## Plugin Configuration
-
-Plugins are configured through their init files (`init-[id].md`) and setup skills (`setup-[id].md`). There is no separate config file - plugin behavior is defined by markdown prompts that agents interpret.
-
-See each plugin's init file for its conventions and options.
-
-## .gitignore
-
-Flint manages `.gitignore` through the git mod. Default entries:
-
-```text
-# === Flint Managed (do not edit) ===
-.flint/
-
-# Machine-specific workspace references
-Workspace/*/
-
-# Keep workspace reference docs
-!Workspace/*.md
-
-# OS files
-.DS_Store
-Thumbs.db
-# === End Flint Managed ===
-```
-
-Run `flint git sync` to regenerate after configuration changes.
-
-## File Frontmatter
-
-Every markdown file can have YAML frontmatter:
+### Plugin/Mod Entry
 
 ```yaml
----
-id: uuid-v4                    # Required (auto-generated)
-tags:                          # Optional
-  - "#tag1"
-  - "#tag2"
----
+- name: living-documents
+  version: 1.0.0
+  installedAt: 2026-01-04T09:00:00.000Z
 ```
 
-### Auto-managed Fields
+| Field | Description |
+|-------|-------------|
+| `name` | Kebab-case identifier |
+| `version` | Installed version |
+| `installedAt` | Installation timestamp |
+
+The lock file is regenerated by `flint sync`.
+
+---
+
+## mesh.config.yaml
+
+Mesh indexing configuration. Located at `.flint/mesh.config.yaml`. **Do not edit manually.**
+
+### Structure
+
+```yaml
+version: 1
+id: a8f63611-9af9-4bd5-9c73-84d22fdfb201
+type: flint
+created: 2026-01-04T10:30:05.856Z
+```
 
 | Field | Description |
 |-------|-------------|
-| `id` | UUID, added by `flint sync` or `mesh index` |
+| `version` | Config format version |
+| `id` | UUID for this mesh |
+| `type` | Mesh type (`flint`) |
+| `created` | Creation timestamp |
 
-### Common User Fields
+This file is created during `flint init` and should not be modified.
 
-| Field | Description |
-|-------|-------------|
-| `tags` | Array of tags |
-| `template` | Source template name |
+---
 
-Note: Fields like `created`, `modified`, `type`, and `status` are stored in the index, not in file frontmatter.
+## Global Configuration
+
+User-wide settings stored at `~/.flint/config.toml`.
+
+### Structure
+
+```toml
+mode = "production"
+```
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `mode` | `production` | Feature mode |
+
+### Feature Mode
+
+Controls which features are available:
+
+| Mode | Description |
+|------|-------------|
+| `production` | Stable features only (default) |
+| `experimental` | Include experimental features |
+| `dev` | All features including development |
+
+Manage with the `flint mode` command (see below).
+
+### flint config Command
+
+View and modify global configuration.
+
+```bash
+# View all config
+flint config
+
+# Get a specific value
+flint config get mode
+
+# Set a value
+flint config set mode production
+```
+
+### flint mode Command
+
+Manage feature mode with better UX than direct config editing.
+
+```bash
+# Show current mode
+flint mode
+
+# Set mode
+flint mode production
+flint mode experimental
+flint mode dev
+
+# List all features and availability
+flint mode --list
+
+# Reset to default
+flint mode --reset
+```
+
+---
+
+## Global Registry
+
+Registry of all Flints on this machine. Located at `~/.flint/registry.json`. Managed by CLI commands.
+
+### Structure
+
+```json
+{
+  "version": 1,
+  "flints": [
+    {
+      "name": "NUU Flint",
+      "path": "/Users/nathan/dev/nuu/nuu-flints/(Flint) NUU Flint",
+      "type": "flint",
+      "source": "local",
+      "exports": ["Guide"]
+    }
+  ]
+}
+```
+
+### Flint Entry Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Flint name (from `flint.toml`) |
+| `path` | Yes | Absolute path to Flint |
+| `type` | No | Workspace type |
+| `source` | No | Currently always `local` |
+| `exports` | No | Array of export names |
+
+### Managing the Registry
+
+```bash
+# List registered Flints
+flint list
+
+# Register current directory
+flint register
+
+# Register specific path
+flint register /path/to/flint
+
+# Unregister
+flint unregister
+```
+
+---
 
 ## Configuration Patterns
 
@@ -295,21 +363,21 @@ required = [
   "living-documents",
   "increments",
   "projects",
-  "archive",
-  "flint-terminal-agent"
+  "plan",
 ]
 
 [mods]
 required = [
-  "git",
-  "claude-code"
+  "claude-code",
 ]
 
 [workspace]
-codebase = { path = "/path/to/code" }
+references = [
+  { name = "repo", type = "codebase" },
+]
 ```
 
-### Research Project
+### Research/Notes
 
 ```toml
 [flint]
@@ -321,27 +389,23 @@ required = [
   "core",
   "living-documents",
   "notepad",
-  "archive"
-]
-
-[mods]
-required = [
-  "git"
 ]
 ```
 
-### Documentation Subflint
+---
 
-```toml
-[flint]
-name = "docs"
-type = "subflint"
-```
+## File Locations Summary
 
-Subflints inherit from parent and typically have minimal configuration.
+| File | Location | Git |
+|------|----------|-----|
+| `flint.toml` | `<flint>/` | Committed |
+| `.flint/flint.lock` | `<flint>/.flint/` | Gitignored |
+| `.flint/mesh.config.yaml` | `<flint>/.flint/` | Gitignored |
+| `.flint/workspace.toml` | `<flint>/.flint/` | Gitignored |
+| `~/.flint/config.toml` | Home directory | N/A |
+| `~/.flint/registry.json` | Home directory | N/A |
 
 ## Related
 
-- [Reference - CLI Commands](/docs/reference/cli) - Command reference
-- [Reference - Troubleshooting](/docs/reference/troubleshooting) - Common issues
-- [Guide - Quick Start](/docs/guide/quick-start) - Getting started
+- [Reference - CLI Commands](/reference/cli-commands) - Full command reference
+- [Guide - Quick Start](/guide/quick-start) - Getting started guide

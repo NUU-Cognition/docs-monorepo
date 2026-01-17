@@ -1,26 +1,37 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { Logo } from "../components/logo";
+import type { SiteConfig } from "../config";
+import { nuuDefaults } from "../config";
 
 /**
- * Base layout options for all NUU docs sites
+ * Create base layout options for a documentation site
  *
- * Customize per-site by spreading and overriding.
+ * @param config - Site-specific configuration
+ * @returns BaseLayoutProps configured for the site
+ */
+export function createBaseOptions(config: SiteConfig): BaseLayoutProps {
+  return {
+    nav: {
+      title: config.logo ? (
+        <div className="flex items-center gap-2">
+          {config.logo}
+          <span className="font-semibold">{config.name}</span>
+        </div>
+      ) : (
+        <span className="font-semibold">{config.name}</span>
+      ),
+    },
+    githubUrl: config.github ?? nuuDefaults.github,
+    links: config.links ?? nuuDefaults.links,
+  };
+}
+
+/**
+ * @deprecated Use createBaseOptions(config) instead
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: (
-      <div className="flex items-center gap-2">
-        <Logo className="text-foreground" />
-        <span className="font-semibold">NUU Docs</span>
-      </div>
-    ),
+    title: <span className="font-semibold">NUU Docs</span>,
   },
-  githubUrl: "https://github.com/NUU-Cognition",
-  links: [
-    {
-      text: "NUU Cognition",
-      url: "https://nuucognition.com",
-      external: true,
-    },
-  ],
+  githubUrl: nuuDefaults.github,
+  links: nuuDefaults.links,
 };

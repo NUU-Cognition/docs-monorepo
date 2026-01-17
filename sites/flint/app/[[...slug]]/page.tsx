@@ -18,10 +18,23 @@ export default async function Page(props: {
   const MDX = page.data.body;
 
   return (
-    <DocsPage toc={page.data.toc}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      tableOfContent={{
+        style: "clerk",
+        single: false,
+      }}
+      breadcrumb={{
+        enabled: (params.slug?.length ?? 0) > 1,
+        includePage: false,
+      }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
+      <DocsDescription className="mb-8 text-base leading-relaxed">
+        {page.data.description}
+      </DocsDescription>
+      <DocsBody className="prose-lg">
         <MDX components={defaultMdxComponents} />
       </DocsBody>
     </DocsPage>
