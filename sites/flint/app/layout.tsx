@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   },
   description: "Documentation for NUU Flint - the structured workspace system for knowledge work",
   icons: {
-    icon: "/logo-with-bg.png",
+    icon: "/docs/logo-with-bg.png",
   },
 };
 
