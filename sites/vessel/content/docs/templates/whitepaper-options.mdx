@@ -1,0 +1,228 @@
+---
+title: "Whitepaper Template Options"
+---
+
+Complete reference for the `whitepaper` template configuration options. These are set under the `options` field in a [vessel definition](/module-vessel-definitions).
+
+---
+
+## Quick Example
+
+```yaml
+options:
+  title: "Structured Publishing for the Open Web"
+  subtitle: "A technical whitepaper on NUU Vessel"
+  abstract: "This document describes the architecture and design..."
+  sidebar: true
+  showTimeline: true
+  showVersionBadges: true
+  links:
+    - label: "GitHub"
+      url: "https://github.com/example/repo"
+      icon: "github"
+  sections:
+    - id: "design"
+      title: "Design Principles"
+      content: "[Design Principles](/design-principles)"
+      description: "Core design philosophy"
+      version: "v1.0"
+      updated: "Feb 2026"
+      audiences:
+        - audience: "Developers"
+          content: "[Design Principles - Developer Focus](/design-principles-developer-focus)"
+        - audience: "Operators"
+          content: "[Design Principles - Ops Focus](/design-principles-ops-focus)"
+    - id: "api-ref"
+      title: "API Reference"
+      external: "https://docs.example.com/api"
+  timeline:
+    - version: "v1.0"
+      date: "2026-02-01"
+      summary: "Initial public release"
+      link: "design"
+      linkLabel: "See what shipped"
+    - version: "v0.5"
+      date: "2025-12-15"
+      summary: "Internal draft"
+```
+
+---
+
+## Homepage Views
+
+The whitepaper homepage has two views, toggled via a segmented control:
+
+- **Full Paper** (default) — Renders all section content in sequence as a single continuous document. When audience variants are available, an audience selector appears allowing readers to switch between General and audience-specific content for each section.
+- **Sections** — Grid of section cards for browsing. Clicking a card navigates to the individual section page.
+
+The view toggle appears automatically when there are sections with content.
+
+---
+
+## Display Options
+
+### `title`
+
+- **Type:** `string`
+- **Default:** Vessel name
+
+Override the whitepaper title shown on the homepage and in navigation. If omitted, the vessel's `name` field is used.
+
+### `subtitle`
+
+- **Type:** `string`
+- **Default:** none
+
+Subtitle displayed below the title on the homepage.
+
+### `sidebar`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a sidebar with section navigation when viewing individual sections. On desktop, the sidebar is a fixed panel on the left. On mobile, it collapses into a slide-out sheet menu.
+
+When `false`, individual sections render in a clean single-column layout with a fixed back arrow in the top-left corner.
+
+### `showVersionBadges`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show version badges on section cards and section headers. Reads from the `version` field on each section.
+
+---
+
+## Abstract
+
+### `abstract`
+
+- **Type:** `string`
+- **Default:** none
+
+Markdown content for the abstract section displayed on the homepage below the links and above the view toggle. Supports full markdown including wiki links.
+
+---
+
+## Links
+
+### `links`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+External links displayed as pill buttons right below the title/subtitle on the homepage. Each link opens in a new tab.
+
+#### Link Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `label` | `string` | Yes | Button text |
+| `url` | `string` | Yes | Link URL |
+| `icon` | `string` | No | Icon name (see icon list below) |
+
+#### Available Icons
+
+`target`, `code`, `users`, `book`, `book-open`, `file-text`, `github`, `discord`, `message`, `globe`, `link`, `mail`, `settings`, `shield`, `zap`, `star`, `home`, `package`, `layers`, `database`, `terminal`, `palette`, `heart`, `lightbulb`, `rocket`, `map`
+
+---
+
+## Sections
+
+### `sections`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+Ordered list of whitepaper sections. Each section appears as a card in the sections grid and as a navigable page. In the full paper view, sections are rendered in order as a continuous document.
+
+#### Section Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes | URL slug for the section (e.g., `"design"`) |
+| `title` | `string` | Yes | Display title |
+| `content` | `string` | No | Default content — wiki link reference (e.g., `"[Design Principles](/design-principles)"`) |
+| `audiences` | `array` | No | Audience-specific content variants (see below) |
+| `description` | `string` | No | Short description shown on the homepage card and full paper view |
+| `version` | `string` | No | Version badge (e.g., `"v1.0"`) |
+| `updated` | `string` | No | Updated date badge (e.g., `"Feb 2026"`) — displayed as an outline badge on cards and headers |
+| `external` | `string` | No | External URL — section links out instead of showing internal content |
+
+When `external` is set, the section card links to that URL in a new tab and is excluded from prev/next navigation and the full paper view.
+
+When `content` is set to a `[Title](/title)` wiki link, the template matches it against published mesh documents by title and renders the matched document's content.
+
+Tags from the matched content document's frontmatter are displayed as badges in the top right of the section title.
+
+#### Audience Variant Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `audience` | `string` | Yes | Audience name (e.g., `"Developers"`, `"Operators"`) |
+| `content` | `string` | Yes | Wiki link to audience-specific content (e.g., `"[Design - Developer Focus](/design-developer-focus)"`) |
+
+Audience variants allow the same section to have different content for different readers. In the full paper view, the audience selector switches between variants. When a variant exists for the selected audience, its content is shown; otherwise the section falls back to the default `content`.
+
+**Example:**
+
+```yaml
+- id: architecture
+  title: Architecture
+  content: [Architecture Overview](/architecture-overview)           # General audience (default)
+  audiences:
+    - audience: Developers
+      content: [Architecture Deep Dive](/architecture-deep-dive)       # More technical detail
+    - audience: Operators
+      content: [Architecture - Ops Runbook](/architecture-ops-runbook)   # Operations-focused
+```
+
+---
+
+## Timeline
+
+### `showTimeline`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the version timeline on the homepage below the content views.
+
+### `timeline`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+Chronological entries for the version timeline.
+
+#### Timeline Entry Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `version` | `string` | Yes | Version label (e.g., `"v1.0"`) |
+| `date` | `string` | Yes | ISO date string (e.g., `"2026-02-01"`) |
+| `summary` | `string` | Yes | Brief description of what changed |
+| `link` | `string` | No | Section ID (e.g., `"architecture"`) or external URL (e.g., `"https://..."`) |
+| `linkLabel` | `string` | No | Custom link text (defaults to `summary`) |
+
+Dates are displayed as short format (e.g., "Feb 2026").
+
+When `link` is set, the summary text becomes a clickable link. If `link` starts with `http`, it opens in a new tab as an external link. Otherwise it's treated as a section ID and links to that section within the vessel. Use `linkLabel` to show different text than the summary.
+
+---
+
+## Content File Frontmatter
+
+Section content documents can include any frontmatter fields. The fields below are recognized by the template:
+
+| Field | Type | Used by |
+|-------|------|---------|
+| `tags` | `string[]` | Displayed as badges next to the section title |
+
+---
+
+See also:
+- [Module - Templates](/module-templates) - Template system overview
+- [Module - Vessel Definitions](/module-vessel-definitions) - How to configure vessels
+- [Reference - Vessel Schema](/reference-vessel-schema) - Complete vessel YAML schema
+- [Reference - Blog Options](/templates/blog-options) - Blog template options

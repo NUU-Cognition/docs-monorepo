@@ -1,0 +1,11 @@
+// @ts-nocheck -- skip type checking
+import * as docs_6 from "../content/docs/templates/whitepaper-options.mdx?collection=docs&hash=1770715781368"
+import * as docs_5 from "../content/docs/templates/project-options.mdx?collection=docs&hash=1770715781368"
+import * as docs_4 from "../content/docs/templates/blog-options.mdx?collection=docs&hash=1770715781368"
+import * as docs_3 from "../content/docs/guide/publishing.mdx?collection=docs&hash=1770715781368"
+import * as docs_2 from "../content/docs/guide/introduction.mdx?collection=docs&hash=1770715781368"
+import * as docs_1 from "../content/docs/guide/getting-started.mdx?collection=docs&hash=1770715781368"
+import * as docs_0 from "../content/docs/index.mdx?collection=docs&hash=1770715781368"
+import { _runtime } from "fumadocs-mdx/runtime/next"
+import * as _source from "../source.config"
+export const docs = _runtime.docs<typeof _source.docs>([{ info: {"path":"index.mdx","fullPath":"content/docs/index.mdx"}, data: docs_0 }, { info: {"path":"guide/getting-started.mdx","fullPath":"content/docs/guide/getting-started.mdx"}, data: docs_1 }, { info: {"path":"guide/introduction.mdx","fullPath":"content/docs/guide/introduction.mdx"}, data: docs_2 }, { info: {"path":"guide/publishing.mdx","fullPath":"content/docs/guide/publishing.mdx"}, data: docs_3 }, { info: {"path":"templates/blog-options.mdx","fullPath":"content/docs/templates/blog-options.mdx"}, data: docs_4 }, { info: {"path":"templates/project-options.mdx","fullPath":"content/docs/templates/project-options.mdx"}, data: docs_5 }, { info: {"path":"templates/whitepaper-options.mdx","fullPath":"content/docs/templates/whitepaper-options.mdx"}, data: docs_6 }], [{"info":{"path":"meta.json","fullPath":"content/docs/meta.json"},"data":{"title":"NUU Vessel","pages":["index","guide","templates"]}}, {"info":{"path":"guide/meta.json","fullPath":"content/docs/guide/meta.json"},"data":{"title":"Guide","pages":["introduction","getting-started","publishing"]}}, {"info":{"path":"templates/meta.json","fullPath":"content/docs/templates/meta.json"},"data":{"title":"Templates","pages":["blog-options","project-options","whitepaper-options"]}}])

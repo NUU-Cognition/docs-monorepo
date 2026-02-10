@@ -1,0 +1,143 @@
+---
+title: "Blog Template Options"
+---
+
+Complete reference for the `blog` template configuration options. These are set under the `options` field in a [vessel definition](/module-vessel-definitions).
+
+---
+
+## Quick Example
+
+```yaml
+options:
+  title: "My Engineering Blog"
+  description: "Thoughts on software and systems"
+  sidebar: false
+  showDates: true
+  showAuthor: true
+  showReadTime: true
+  featured: "welcome-post"
+  sortBy: "date"
+  sortDirection: "desc"
+  listDetail: "date"
+```
+
+---
+
+## Display Options
+
+### `title`
+
+- **Type:** `string`
+- **Default:** Vessel name
+
+Override the blog title shown on the homepage. If omitted, the vessel's `name` field is used.
+
+### `description`
+
+- **Type:** `string`
+- **Default:** Vessel description
+
+Override the blog description shown below the title on the homepage. If omitted, the vessel's `description` field is used.
+
+### `sidebar`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a sidebar with post navigation when viewing individual posts. On desktop, the sidebar is a fixed panel on the left. On mobile, it collapses into a slide-out sheet menu.
+
+When `false`, individual posts render in a clean single-column layout.
+
+### `showDates`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show dates on individual post pages and featured cards. Reads from the `date` frontmatter field on each content file.
+
+### `showAuthor`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show author attribution on individual post pages. Reads from the `author` frontmatter field on each content file.
+
+### `showReadTime`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show estimated reading time on individual post pages and featured cards. Calculated automatically from content length (~200 words per minute).
+
+---
+
+## Featured Post
+
+### `featured`
+
+- **Type:** `string`
+- **Default:** none
+
+Title or slug of a post to feature as a hero card at the top of the homepage. The featured post is displayed in a bordered card above the post list with its excerpt (if the post has an `excerpt` frontmatter field).
+
+When searching, the featured card is hidden and the featured post appears in the filtered results.
+
+---
+
+## Sorting
+
+### `sortBy`
+
+- **Type:** `string`
+- **Default:** none (default order)
+
+Frontmatter field name to sort posts by in the list. Can also be set to `"title"` to sort alphabetically by post title.
+
+The sort is type-aware: if the field values are parseable as dates, they're compared chronologically. Otherwise, they're compared as strings using locale-aware ordering.
+
+Common values: `"date"`, `"title"`, `"order"`, `"author"`
+
+### `sortDirection`
+
+- **Type:** `"asc"` | `"desc"`
+- **Default:** `"desc"`
+
+Sort direction. Use `"desc"` for newest-first date sorting or reverse alphabetical, `"asc"` for oldest-first or A-Z.
+
+Only takes effect when `sortBy` is set.
+
+---
+
+## Post List
+
+### `listDetail`
+
+- **Type:** `string`
+- **Default:** `"date"`
+
+Frontmatter field to display on the right side of each post row in the homepage list. The value is auto-formatted: date strings are displayed as short dates (e.g., "Jan 5, 2025"), other values are shown as-is.
+
+Set to `""` (empty string) to hide the detail column entirely.
+
+Common values: `"date"`, `"author"`, `"category"`, `""`
+
+---
+
+## Content File Frontmatter
+
+Blog posts can include any frontmatter fields. The fields below are recognized by the template:
+
+| Field | Type | Used by |
+|-------|------|---------|
+| `date` | `string` (ISO date) | `showDates`, `sortBy`, `listDetail` |
+| `author` | `string` | `showAuthor`, `listDetail` |
+| `excerpt` | `string` | Featured card description |
+| Any custom field | `string` or `number` | `sortBy`, `listDetail` |
+
+---
+
+See also:
+- [Module - Templates](/module-templates) - Template system overview
+- [Module - Vessel Definitions](/module-vessel-definitions) - How to configure vessels
+- [Reference - Vessel Schema](/reference-vessel-schema) - Complete vessel YAML schema

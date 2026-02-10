@@ -1,0 +1,100 @@
+---
+title: "Introduction"
+---
+
+Vessel is a publishing layer for markdown workspaces. You write content locally in your Flint, declare what to share through a simple definition file, and publish with a single command. The web gets a rendered view. Your content stays where it is.
+
+Most publishing tools ask you to move your content somewhere else — a CMS, a hosting platform, a separate authoring environment. Vessel doesn't. It treats publication as a *projection* of your existing notes, not a migration.
+
+## The Core Idea
+
+A vessel is a view of your workspace, published to the web.
+
+You define it in a single markdown file: which notes to include, which template to use, and how to configure the presentation. The CLI reads that definition, bundles the referenced content, and deploys a rendered website. When your content changes, you publish again. The definition stays in your workspace alongside everything else.
+
+This is declarative publishing. You describe what you want published. Vessel handles the rendering, hosting, and delivery.
+
+## Why This Approach
+
+**Your content stays local.** Vessel reads from your workspace at publish time. It doesn't own your content, sync it to a database, or require you to edit in a web interface. Your files stay as markdown on your machine, versioned with git, editable in any tool.
+
+**No build system.** There's no static site generator to configure, no build pipeline to maintain, no framework to keep updated. You define a vessel, run `vessel publish`, and the site is live. Templates handle the presentation.
+
+**One source of truth.** The vessel definition is a markdown file in your workspace. It links to other markdown files in your workspace. There's no separate config repository, no dashboard state, no out-of-sync deployment. Everything is files you can read and edit.
+
+**Templates, not themes.** Vessel templates aren't cosmetic skins — they're purpose-built rendering engines for specific content types. A blog template understands chronological posts, featured articles, and reading time. A project template understands milestones, status tracking, and scope. A whitepaper template understands audience variants and version timelines. You pick the template that matches your content type, and it handles the rest.
+
+## How It Works
+
+### Vessel Definitions
+
+A vessel definition is a markdown file named `(Vessel) Name.md` that contains a YAML configuration block:
+
+```yaml
+template: blog
+visibility: public
+
+content:
+  - [First Post](/first-post)
+  - [Second Post](/second-post)
+
+options:
+  title: "My Blog"
+  showDates: true
+```
+
+The `content` field uses wikilinks to reference other files in your workspace. At publish time, the CLI resolves those links, reads the content, and bundles everything together.
+
+The `options` field is template-specific. Each template defines what it accepts — the blog template takes `showDates` and `featured`, the project template takes `milestones` and `status`, the whitepaper template takes `sections` with audience variants.
+
+### Templates
+
+Vessel ships with three templates:
+
+**Blog** — Chronological posts with dates, authors, tags, featured articles, search, and sidebar navigation. For teams publishing engineering blogs, changelogs, or newsletters.
+
+**Project** — A project homepage with status badge, section-based documentation, milestone timeline, update feed, scope tracking, and external links. For open source projects, internal tools, or product pages.
+
+**Whitepaper** — Long-form structured documents with a dual-view homepage (continuous paper view and section grid), audience-based content variants, table of contents, and version timeline. For technical papers, RFCs, or documentation that serves multiple audiences.
+
+Templates are opinionated. They make layout, navigation, and typography decisions so you don't have to. You configure them through `options` — you don't build them from scratch.
+
+### Publishing
+
+Publishing is a single command:
+
+```bash
+vessel publish "My Blog"
+```
+
+The CLI:
+1. Reads the vessel definition
+2. Resolves all content references (wikilinks → actual files)
+3. Uploads media (images, PDFs) to cloud storage
+4. Deploys the vessel to its public URL
+
+Publishing is a full replace every time. There are no diffs, no partial updates, no merge conflicts. The latest publish is the truth.
+
+Your vessel is live at `vessel.nuucognition.com/v/{publisher}/{vessel-slug}`.
+
+### Publishers
+
+Publishers are namespaces. They appear in the URL and group related vessels together. A personal publisher might hold your blog and portfolio. A team publisher might hold documentation and project pages.
+
+You create a publisher once, then publish vessels under it. Multiple people can publish under the same publisher for team collaboration.
+
+## What Vessel Is Not
+
+**Not a CMS.** There's no web editor, no content management interface, no approval workflows. You edit markdown files locally and publish from the command line.
+
+**Not a static site generator.** There's no build step you manage, no framework configuration, no plugin ecosystem to navigate. Vessel is a hosted service — you publish content, it renders pages.
+
+**Not a design tool.** You don't customize CSS, choose fonts, or arrange layouts. Templates handle presentation. You configure them through structured options, not code.
+
+## Next Steps
+
+- [Getting Started](/guide/getting-started) — Install the CLI and publish your first vessel
+- [Publishing](/guide/publishing) — Vessel definitions, content references, media, and visibility
+- [Reference - Blog Options](/templates/blog-options) — Blog template configuration
+- [Reference - Project Options](/templates/project-options) — Project template configuration
+- [Reference - Whitepaper Options](/templates/whitepaper-options) — Whitepaper template configuration

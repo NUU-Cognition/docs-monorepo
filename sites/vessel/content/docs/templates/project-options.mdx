@@ -1,0 +1,257 @@
+---
+title: "Project Template Options"
+---
+
+Complete reference for the `project` template configuration options. These are set under the `options` field in a [vessel definition](/module-vessel-definitions).
+
+---
+
+## Quick Example
+
+```yaml
+options:
+  title: "My Project"
+  subtitle: "Building something great"
+  status: active
+  overview: "A markdown overview of the project..."
+  sidebar: true
+  showMilestones: true
+  showUpdates: true
+  showScope: true
+  updatesOnHomepage: 3
+```
+
+---
+
+## Display Options
+
+### `title`
+
+- **Type:** `string`
+- **Default:** Vessel name
+
+Override the project title shown on the homepage. If omitted, the vessel's `name` field is used.
+
+### `subtitle`
+
+- **Type:** `string`
+- **Default:** none
+
+Subtitle shown below the title on the homepage.
+
+### `overview`
+
+- **Type:** `string`
+- **Default:** none
+
+Markdown text rendered as the project overview on the homepage. Supports full NCM markdown including wikilinks.
+
+### `status`
+
+- **Type:** `"announced"` | `"active"` | `"on-hold"` | `"completed"` | `"archived"`
+- **Default:** `"active"`
+
+Project status displayed as a colored badge next to the title.
+
+| Value | Color |
+|-------|-------|
+| `announced` | Blue |
+| `active` | Green |
+| `on-hold` | Yellow |
+| `completed` | Purple |
+| `archived` | Gray |
+
+### `sidebar`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a sidebar with section navigation when viewing individual sections. On desktop, the sidebar is a fixed panel on the left. On mobile, it collapses into a slide-out sheet menu.
+
+---
+
+## Sections
+
+### `sections`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+Custom content sections displayed as a grid on the homepage. Each section can link to internal content or an external URL.
+
+```yaml
+sections:
+  - id: string             # Route segment (used in URL)
+    title: string          # Section title
+    content: string        # [wikilink](/wikilink) to content page (optional)
+    external: string       # External URL — opens in new tab (optional)
+    icon: string           # Lucide icon name (optional)
+    description: string    # Section description (optional)
+```
+
+**Internal sections** use `content` to link to a note. The note's markdown is rendered on the section page at `/{section-id}`.
+
+**External sections** use `external` to link to a URL. The card shows an external link icon next to the title and opens in a new tab. External sections also display as external links in the sidebar.
+
+A section should have either `content` or `external`, not both.
+
+---
+
+## Milestones
+
+### `milestones`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+Project milestones displayed as a vertical timeline on the homepage. Sorted by date (earliest first).
+
+```yaml
+milestones:
+  - title: string          # Milestone name
+    date: string           # Target/completion date (ISO format, e.g., "2026-03-01")
+    status: string         # "planned" | "in-progress" | "completed" | "delayed"
+    summary: string        # Details (optional)
+    content: string        # [wikilink](/wikilink) to content page (optional)
+```
+
+**Status indicators:**
+
+| Status | Icon |
+|--------|------|
+| `completed` | Green circle with check |
+| `in-progress` | Blue circle with filled dot |
+| `delayed` | Yellow circle with alert |
+| `planned` | Gray empty circle |
+
+When `content` is set, the entire milestone row is clickable and links to the referenced content page.
+
+### `showMilestones`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the milestones timeline on the homepage.
+
+---
+
+## Updates
+
+### `updates`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+Project updates shown as a feed. On the homepage, only the most recent updates are shown (controlled by `updatesOnHomepage`). The full list is accessible at the `/updates` route.
+
+```yaml
+updates:
+  - date: string           # Update date (ISO format)
+    title: string          # Update title
+    summary: string        # Update summary
+    content: string        # [wikilink](/wikilink) to detailed content (optional)
+```
+
+On the homepage, update titles are clickable links when `content` is set. The linked document's frontmatter `date` is used if available, falling back to the inline `date`.
+
+On the full updates page (`/updates`), updates are grouped by month. If `content` resolves to a document, its full markdown is rendered. Otherwise the `summary` is shown.
+
+### `showUpdates`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the recent updates section on the homepage.
+
+### `updatesOnHomepage`
+
+- **Type:** `number`
+- **Default:** `3`
+
+Number of recent updates to display on the homepage. If more updates exist, a "View all" link appears.
+
+---
+
+## Scope
+
+### `scope`
+
+- **Type:** `object`
+- **Default:** none
+
+Project scope displayed as a two-column grid on the homepage.
+
+```yaml
+scope:
+  included:                # What's in scope (required)
+    - "Feature A"
+    - "Feature B"
+  excluded:                # What's out of scope (optional)
+    - "Feature C"
+```
+
+### `showScope`
+
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the scope section on the homepage.
+
+---
+
+## External Links
+
+### `links`
+
+- **Type:** `array`
+- **Default:** `[]`
+
+External links displayed as a row of button-like pills below the header on the homepage.
+
+```yaml
+links:
+  - label: string          # Link text
+    url: string            # URL
+    icon: string           # Lucide icon name (optional)
+```
+
+---
+
+## Icons
+
+All icon fields accept [Lucide](https://lucide.dev/icons/) icon names. Built-in mappings include: `target`, `code`, `users`, `book`, `github`, `discord`, `globe`, `shield`, `zap`, `star`, `home`, `package`, `layers`, `database`, `terminal`, `palette`, `heart`, `lightbulb`, `rocket`, `map`.
+
+---
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/v/{publisher}/{vessel}` | Homepage |
+| `/v/{publisher}/{vessel}/updates` | Full updates list grouped by month |
+| `/v/{publisher}/{vessel}/{section-id}` | Section content with sidebar |
+| `/v/{publisher}/{vessel}/{content-slug}` | Standalone content page |
+
+Route priority: `updates` > section ID match > content slug match > 404.
+
+---
+
+## Homepage Layout Order
+
+The homepage renders these sections in order (each hidden if empty or toggled off):
+
+1. Header (title, subtitle, status badge)
+2. External links
+3. Overview (markdown)
+4. Scope (included/excluded)
+5. Sections grid
+6. Recent updates
+7. Milestones timeline
+
+---
+
+See also:
+- [Module - Templates](/module-templates) - Template system overview
+- [Module - Vessel Definitions](/module-vessel-definitions) - How to configure vessels
+- [Reference - Vessel Schema](/reference-vessel-schema) - Complete vessel YAML schema
+- [Reference - Blog Options](/templates/blog-options) - Blog template options

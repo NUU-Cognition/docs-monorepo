@@ -1,0 +1,158 @@
+---
+title: "Publishing"
+---
+
+How to configure vessels, reference content, handle media, and control visibility.
+
+## Vessel Definitions
+
+A vessel definition is a markdown file that declares what to publish and how. It follows the naming convention:
+
+```
+(Vessel) Name.md
+```
+
+The file contains a YAML configuration block inside a fenced code block:
+
+```markdown
+# My Documentation
+
+Description of this vessel.
+
+​```yaml
+template: project
+visibility: public
+
+content:
+  - [Getting Started Guide](/getting-started-guide)
+  - [API Reference](/api-reference)
+  - [Architecture Overview](/architecture-overview)
+
+options:
+  title: "Acme Docs"
+  subtitle: "Developer documentation for the Acme platform"
+  status: active
+​```
+```
+
+### Required Fields
+
+| Field | Description |
+|-------|-------------|
+| `template` | Template to render with: `blog`, `project`, or `whitepaper` |
+| `visibility` | Access level: `public`, `unlisted`, or `private` |
+
+### Optional Fields
+
+| Field | Description |
+|-------|-------------|
+| `content` | Array of `[wikilink](/wikilink)` references to include |
+| `options` | Template-specific configuration (see template references) |
+| `homepage` | Homepage layout options (template-dependent) |
+
+The H1 heading becomes the vessel's display name. The paragraph before the YAML block becomes the description.
+
+## Content References
+
+Use wikilinks to reference other markdown files in your workspace:
+
+```yaml
+content:
+  - [Document Title](/document-title)
+  - [Subfolder/Another Document](/subfolder-another-document)
+```
+
+Wikilinks match by document title (case-insensitive). At publish time, the CLI resolves each link to the actual file, reads its content and frontmatter, and bundles it into the vessel.
+
+## Content Frontmatter
+
+Individual content files can include YAML frontmatter:
+
+```markdown
+---
+title: Custom Display Title
+date: 2026-01-15
+author: Jane Smith
+tags:
+  - engineering
+  - architecture
+description: A brief summary for listings
+---
+
+# Your content here
+```
+
+Which fields are used depends on the template. Blog uses `date`, `author`, and `tags`. Project and whitepaper templates use `tags` for badge display. All templates use `title` as a display name override.
+
+### Slug Generation
+
+Content URLs are derived from filenames:
+- `My First Post.md` → `/my-first-post`
+- Lowercase, spaces become hyphens, special characters removed
+
+## Media
+
+Images and other media referenced in your content are automatically uploaded when you publish.
+
+### Supported Syntax
+
+```markdown
+![Alt text](path/to/image.png)
+```
+
+```html
+<img src="path/to/image.png">
+```
+
+```markdown
+![image.png](/image-png)
+```
+
+All three formats work. Obsidian embeds (`![...](/)`) are converted to standard markdown.
+
+### How It Works
+
+1. The CLI scans your content for media references
+2. Files are resolved relative to the content file, then relative to the workspace root
+3. Files are uploaded to cloud storage
+4. Local paths are rewritten to CDN URLs in the published content
+
+External URLs (`https://...`) are left unchanged.
+
+### Supported Formats
+
+Images (PNG, JPG, GIF, SVG, WebP), video (MP4, WebM), audio (MP3, WAV), and PDF.
+
+## Visibility
+
+| Value | Description |
+|-------|-------------|
+| `public` | Anyone can view. Appears in listings and search. |
+| `unlisted` | Accessible via direct URL only. Not indexed. |
+| `private` | Requires authentication. Only publisher members can view. |
+
+## Publishing & Unpublishing
+
+```bash
+# Publish a specific vessel
+vessel publish "My Blog"
+
+# Publish all vessels in workspace
+vessel publish --all
+
+# Publish under a specific publisher
+vessel publish "Docs" --publisher acme-labs
+
+# Remove a published vessel
+vessel unpublish my-blog-slug
+```
+
+Publishing is a full replace — every publish uploads all content and media fresh. There are no partial updates or diffs.
+
+## Template Options
+
+Each template accepts different `options`. See the full references:
+
+- [Reference - Blog Options](/templates/blog-options) — dates, authors, featured posts, sorting, sidebar
+- [Reference - Project Options](/templates/project-options) — status, milestones, updates, scope, sections with icons
+- [Reference - Whitepaper Options](/templates/whitepaper-options) — audience variants, table of contents, timeline, version badges

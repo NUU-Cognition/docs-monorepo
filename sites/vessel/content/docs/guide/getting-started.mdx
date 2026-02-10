@@ -1,0 +1,100 @@
+---
+title: "Getting Started"
+---
+
+NUU Vessel turns your markdown workspace into a hosted website. You write content locally, define what to publish in a simple YAML file, and deploy with a single command.
+
+## Install the CLI
+
+```bash
+pnpm add -g @nuucognition/vessel-cli
+```
+
+Requires Node.js 18+.
+
+## Login
+
+```bash
+vessel login
+```
+
+Opens your browser to authenticate. Once complete, you're ready to publish.
+
+## Create a Publisher
+
+Publishers are the namespace for your vessels — they appear in the URL as `/v/{publisher}/{vessel}`.
+
+```bash
+vessel publishers create
+```
+
+Follow the prompts to set a display name and slug (e.g., `acme-labs`).
+
+## Create a Vessel
+
+Create a file named `(Vessel) My Blog.md` in your workspace:
+
+```markdown
+# My Blog
+
+A personal engineering blog.
+
+​```yaml
+template: blog
+visibility: public
+
+content:
+  - [My First Post](/my-first-post)
+  - [Second Post](/second-post)
+
+options:
+  title: "My Blog"
+  showDates: true
+​```
+```
+
+The YAML block tells Vessel which template to use, what content to include (via `[wikilinks](/wikilinks)` to other markdown files), and how to configure the template.
+
+## Publish
+
+```bash
+vessel publish "My Blog"
+```
+
+The CLI bundles your content, uploads media, and deploys. Your vessel is live at:
+
+```
+https://vessel.nuucognition.com/v/{publisher}/{vessel-slug}
+```
+
+## Templates
+
+Vessel ships with three templates, each designed for a different content type:
+
+| Template | Best For |
+|----------|----------|
+| **blog** | Posts, articles, newsletters — chronological content with dates, authors, and tags |
+| **project** | Project pages — status tracking, milestones, updates, scope, and section-based documentation |
+| **whitepaper** | Long-form documents — audience-based content variants, table of contents, version timeline |
+
+Each template has its own `options` — see the template references for full configuration:
+
+- [Reference - Blog Options](/templates/blog-options)
+- [Reference - Project Options](/templates/project-options)
+- [Reference - Whitepaper Options](/templates/whitepaper-options)
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `vessel login` | Authenticate via browser |
+| `vessel logout` | Clear stored credentials |
+| `vessel whoami` | Show current user |
+| `vessel publish [name]` | Publish a vessel (or `--all` for all vessels) |
+| `vessel unpublish <slug>` | Remove a published vessel |
+| `vessel status` | List local vessel definitions |
+| `vessel publishers list` | List your publishers |
+| `vessel publishers create` | Create a new publisher |
+| `vessel publishers switch [slug]` | Set default publisher for this workspace |
+
+Use `--publisher <slug>` with `publish` or `unpublish` to target a specific publisher.

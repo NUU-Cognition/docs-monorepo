@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source "../node_modules/fumadocs-ui/dist/**/*.js";
+@source "../../packages/theme/src/**/*.{js,ts,jsx,tsx}";
+
+/* NUU custom fonts */
+@theme {
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+/* Slightly smaller base font */
+html {
+  font-size: 15px;
+}
+
+/* Full width layout, sidebar at edge */
+:root {
+  --fd-layout-width: 100vw;
+  --fd-page-width: 1100px;
+}
+
+/* Tighter heading spacing */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child {
+  margin-top: 0;
+}
+
+/* Footer navigation spacing */
+article > div:last-child:has(a[href]) {
+  margin-top: 3rem;
+}
+
+/* Hide empty sidebar footer border */
+#nd-sidebar > div:last-child {
+  border-top: none;
+}

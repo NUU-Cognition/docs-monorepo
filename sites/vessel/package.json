@@ -1,9 +1,9 @@
 {
-  "name": "@nuucognition/flint-docs",
+  "name": "@nuucognition/vessel-docs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 30060",
+    "dev": "next dev --port 30061",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
