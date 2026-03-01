@@ -14,7 +14,13 @@ Local Registry (~/.flint/registry.json)
 {
   "version": 1,
   "flints": [
-    { "name": "My Project", "path": "/path/to/flint", "type": "flint" }
+    {
+      "name": "My Project",
+      "path": "/path/to/flint",
+      "type": "flint",
+      "tags": ["active"],
+      "description": "Main workspace"
+    }
   ]
 }
 ```
@@ -28,8 +34,10 @@ Each registry entry contains:
 | `name` | Human-readable name from `flint.toml` |
 | `path` | Absolute filesystem path (primary identifier) |
 | `type` | The flint type (typically `flint`) |
+| `tags` | Optional array of tags for categorization |
+| `description` | Optional brief description |
 
-**Note:** There are no UUIDs or timestamps in the local registry. The path uniquely identifies each flint, just like a git repository is identified by its directory.
+**Note:** The path uniquely identifies each flint, just like a git repository is identified by its directory. Tags and description are synced from `flint.toml` and can also be managed via `flint registry tag`.
 
 ## Commands
 
@@ -189,10 +197,25 @@ The registry is stored at `~/.flint/registry.json`. This is a global file shared
 Flints are automatically registered when:
 - Created with `flint init`
 - Registered manually with `flint register`
+- Synced with `flint sync` (updates name/path if changed)
 
 Flints are automatically unregistered when:
 - Removed with `flint unregister`
 - Cleaned by `flint registry validate` (broken paths only)
+
+### Tagging Flints
+
+You can add tags to registered flints for organization:
+
+```bash
+# Add a tag
+flint registry tag "My Project" "important"
+
+# Remove a tag
+flint registry untag "My Project" "old-tag"
+```
+
+Tags are also synced from the `tags` field in `flint.toml` during `flint sync`.
 
 ## Migration from Old Registry
 

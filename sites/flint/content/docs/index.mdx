@@ -35,19 +35,19 @@ The `Mesh/` folder is where your notes live. Every markdown file in Mesh is auto
 
 Mesh is the center of your workspace. Everything else either feeds into it (context, resources) or flows out of it (exports, outputs).
 
-### Plugins: Agent Capabilities
+### Shards: Agent Capabilities
 
-The `Plugins/` folder extends what you and AI agents can do. Plugins are markdown-based prompt packages - they provide context, skills, templates, and workflows that agents can follow.
+The `Shards/` folder extends what you and AI agents can do. Shards are markdown-based prompt packages - they provide context, skills, templates, workflows, and knowledge that agents can follow.
 
-For example, the Increments plugin helps you track versioned work. The Living Documents plugin manages document lifecycle. The Projects plugin provides task tracking patterns.
+For example, the Increments shard helps you track versioned work. The Projects shard provides task management patterns. The Plan shard enables structured planning workflows.
 
-Plugins are safe and inspectable. They don't run arbitrary code - they provide structured prompts that agents interpret.
+Shards are safe and inspectable. They don't run arbitrary code - they provide structured prompts that agents interpret. Each shard has a `shard.yaml` manifest defining its identity, version, dependencies, and install behavior.
 
 ### Mods: Environment Integration
 
-Mods configure how Flint integrates with your environment. The **git mod** initializes a git repository and manages `.gitignore`. The **claude-code mod** generates `CLAUDE.md` for Claude Code integration.
+Mods configure how Flint integrates with your environment. The **claude-code mod** generates `CLAUDE.md` and `.claude/settings.json` for Claude Code integration. The **agents mod** configures `AGENTS.md` for multi-agent workflows.
 
-Mods run on install and sync, setting up configuration files that help Flint work seamlessly with your existing tools.
+Mods can install files, run shell commands at lifecycle points (`onInstall`, `onSync`), and provide executable scripts. Unlike shards (which are prompt-based), mods are infrastructure-focused and actively modify your environment.
 
 ### Workspace: External Resources
 
@@ -59,7 +59,8 @@ Declare workspace references in `flint.toml`, fulfill them with local paths, and
 
 ```
 (Flint) my-project/
-├── flint.toml           # Configuration file
+├── flint.toml           # Configuration (you edit this)
+├── flint.json           # Identity and state (managed by Flint)
 ├── .flint/              # Runtime data (gitignored)
 ├── Mesh/                # Your notes and documents
 │   └── (System) Flint Init.md
@@ -67,7 +68,10 @@ Declare workspace references in `flint.toml`, fulfill them with local paths, and
 ├── Exports/             # Compiled outputs for sharing
 ├── Workspace/           # External resource links
 ├── Media/               # Images, PDFs, assets
-└── Plugins/             # Automation capabilities
+├── Shards/              # Agent capabilities (prompt packages)
+├── Mods/                # Environment modifications
+├── Connections/         # Links to other Flints (gitignored)
+└── Subflints/           # Nested Flint workspaces
 ```
 
 Each folder has a specific purpose:
@@ -79,7 +83,10 @@ Each folder has a specific purpose:
 | `Exports/` | Compiled outputs for sharing |
 | `Workspace/` | Links to codebases and resources |
 | `Media/` | Binary assets (images, PDFs) |
-| `Plugins/` | Agent capabilities and automation |
+| `Shards/` | Agent capabilities and automation |
+| `Mods/` | Environment integrations |
+| `Connections/` | References to other Flints |
+| `Subflints/` | Nested workspaces |
 
 ## Obsidian Integration
 
@@ -88,7 +95,33 @@ Flint workspaces work seamlessly with Obsidian. Open any Flint folder as an Obsi
 - **Graph view** of your note connections
 - **Backlinks** panel showing what links to each note
 - **Quick switcher** for fast navigation
-- **Link completion** as you type `[bash
+- **Link completion** as you type `[`
+- **Preview** of linked and embedded content
+
+Flint's conventions (wiki-links, YAML frontmatter, folder structure) are fully compatible with Obsidian's features. You can use Obsidian as your primary editor while the Flint CLI handles syncing and automation.
+
+## AI Agent Collaboration
+
+Flint is designed for human-AI collaboration. The structure provides what agents need to be genuinely useful:
+
+**Clear entry point.** Every Flint has `Mesh/(System) Flint Init.md` - an overview that agents read at session start. It explains what this workspace is for, how it's organized, and what the current focus is.
+
+**Structured context.** Shards provide init files that agents load on demand. Instead of dumping everything into context, agents load what they need when they need it.
+
+**Defined capabilities.** Shard skills give agents clear instructions for common tasks. "Archive completed tasks" or "Create a new increment" become reliable operations, not improvised attempts.
+
+**Knowledge references.** Shards include knowledge files (`knw-*.md`) that provide deep reference material on specific topics, giving agents expert-level understanding when needed.
+
+**Inspectable state.** Everything is markdown. Agents can read any file, understand the structure, and work within established patterns.
+
+The result: shorter sessions, less explanation, more useful output. Your agent understands where things go and how they connect.
+
+## Getting Started
+
+Install Flint via npm:
+
+```bash
+npm install -g @nuucognition/flint
 ```
 
 Then create your first workspace:
@@ -97,26 +130,27 @@ Then create your first workspace:
 flint init my-project
 ```
 
-This creates the folder structure, initializes configuration, and registers the Flint. From there:
+This creates the folder structure, initializes configuration, registers the Flint, and syncs configured features. From there:
 
 1. **Open the folder** in Obsidian or your preferred editor
 2. **Read the init file** at `Mesh/(System) Flint Init.md`
 3. **Create notes** in `Mesh/` - they're automatically indexed
-4. **Run `flint sync`** to index files and sync plugins
+4. **Run `flint sync`** anytime you change `flint.toml`
 
-See [[Guide - Quick Start](/preview-of-linked-and-embedded-content-flint-s-conventions-wiki-links-yaml-frontmatter-folder-structure-are-fully-compatible-with-obsidian-s-features-you-can-use-obsidian-as-your-primary-editor-while-the-flint-cli-handles-indexing-and-automation-ai-agent-collaboration-flint-is-designed-for-human-ai-collaboration-the-structure-provides-what-agents-need-to-be-genuinely-useful-clear-entry-point-every-flint-has-mesh-system-flint-init-md-an-overview-that-agents-read-at-session-start-it-explains-what-this-workspace-is-for-how-it-s-organized-and-what-the-current-focus-is-structured-context-plugins-provide-init-files-that-agents-load-on-demand-instead-of-dumping-everything-into-context-agents-load-what-they-need-when-they-need-it-defined-capabilities-plugin-skills-give-agents-clear-instructions-for-common-tasks-archive-this-note-or-create-a-new-increment-become-reliable-operations-not-improvised-attempts-inspectable-state-everything-is-markdown-agents-can-read-any-file-understand-the-structure-and-work-within-established-patterns-the-result-shorter-sessions-less-explanation-more-useful-output-your-agent-understands-where-things-go-and-how-they-connect-getting-started-install-flint-with-a-single-command-bash-curl-fssl-https-raw-githubusercontent-com-nuu-cognition-flint-main-install-sh) for a complete walkthrough.
+See [[Guide - Quick Start](/preview-of-linked-and-embedded-content-flint-s-conventions-wiki-links-yaml-frontmatter-folder-structure-are-fully-compatible-with-obsidian-s-features-you-can-use-obsidian-as-your-primary-editor-while-the-flint-cli-handles-syncing-and-automation-ai-agent-collaboration-flint-is-designed-for-human-ai-collaboration-the-structure-provides-what-agents-need-to-be-genuinely-useful-clear-entry-point-every-flint-has-mesh-system-flint-init-md-an-overview-that-agents-read-at-session-start-it-explains-what-this-workspace-is-for-how-it-s-organized-and-what-the-current-focus-is-structured-context-shards-provide-init-files-that-agents-load-on-demand-instead-of-dumping-everything-into-context-agents-load-what-they-need-when-they-need-it-defined-capabilities-shard-skills-give-agents-clear-instructions-for-common-tasks-archive-completed-tasks-or-create-a-new-increment-become-reliable-operations-not-improvised-attempts-knowledge-references-shards-include-knowledge-files-knw-md-that-provide-deep-reference-material-on-specific-topics-giving-agents-expert-level-understanding-when-needed-inspectable-state-everything-is-markdown-agents-can-read-any-file-understand-the-structure-and-work-within-established-patterns-the-result-shorter-sessions-less-explanation-more-useful-output-your-agent-understands-where-things-go-and-how-they-connect-getting-started-install-flint-via-npm-bash-npm-install-g-nuucognition-flint-then-create-your-first-workspace-bash-flint-init-my-project-this-creates-the-folder-structure-initializes-configuration-registers-the-flint-and-syncs-configured-features-from-there-1-open-the-folder-in-obsidian-or-your-preferred-editor-2-read-the-init-file-at-mesh-system-flint-init-md-3-create-notes-in-mesh-they-re-automatically-indexed-4-run-flint-sync-anytime-you-change-flint-toml-see-guide-quick-start) for a complete walkthrough.
 
 ## Key Commands
 
 | Command | What it does |
 |---------|--------------|
 | `flint init <name>` | Create a new Flint |
-| `flint sync` | Sync config, plugins, index |
+| `flint sync` | Sync config, shards, mods, imports |
 | `flint list` | List registered Flints |
-| `flint index` | Index Mesh files |
-| `flint plugin list` | Show installed plugins |
-| `flint plugin install X` | Install a plugin |
-| `flint repair` | Fix common issues |
+| `flint shard list` | Show installed shards |
+| `flint shard install <source>` | Install a shard |
+| `flint mod list` | Show installed mods |
+| `flint connection list` | Show connections to other Flints |
+| `flint workspace list` | Show workspace references |
 
 ## What Makes Flint Different
 
@@ -126,7 +160,7 @@ See [[Guide - Quick Start](/preview-of-linked-and-embedded-content-flint-s-conve
 
 **Declarative configuration.** Everything is declared in TOML and markdown. You describe what you want, not how to achieve it. Configuration is readable and portable.
 
-**Agent-native design.** The init file convention, plugin system, and structured context are designed for AI collaboration from the ground up.
+**Agent-native design.** The init file convention, shard system, and structured context are designed for AI collaboration from the ground up.
 
 **Just files.** No database, no proprietary format. Your Flint is a folder of markdown files that you can read, edit, and move with any tool.
 
@@ -137,4 +171,4 @@ See [[Guide - Quick Start](/preview-of-linked-and-embedded-content-flint-s-conve
 - [Guide - Tutorial Project Planning](/guide/tutorial-project-planning) - See Flint in action for software projects
 - [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - See Flint for research and writing
 - [Module - Mesh](/modules/mesh) - Deep dive into the core module
-- [Module - Plugins & Mods](/modules/plugins-mods) - Understand the plugin system
+- [Module - Shards & Mods](/modules/shards-mods) - Understand the extension system

@@ -2,7 +2,7 @@
 title: "CLI Reference: Complete Command Guide"
 ---
 
-Complete reference for all Flint CLI commands in v1.
+Complete reference for all Flint CLI commands.
 
 ## Overview
 
@@ -37,22 +37,19 @@ flint init <name> [options]
 Init creates the essential Flint structure, then runs `sync` to install configured features:
 
 ```
-init:  name -> folder -> directories -> .flint/ -> flint.toml -> flint.lock -> registry
-sync:  plugins -> mods -> .obsidian -> mod hooks
+init:  name -> folder -> directories -> .flint/ -> flint.toml -> flint.json -> registry
+sync:  migrations -> .obsidian -> shards -> mods -> imports -> workspace -> connections -> .gitignore
 ```
 
 **Available presets:**
-- `default` - Common plugins (core, living-documents, increments, projects, etc.)
-- `blank` - Empty flint, no plugins or mods
-- `spec` - For specifications
-- `vessel` - For publishing
+- `blank` - Empty flint, no shards or mods (default when no preset specified)
+- `default` - All standard shards and mods
 
 **Examples:**
 ```bash
-flint init my-project                    # Minimal flint
-flint init research --preset default     # With common plugins
+flint init my-project                    # Empty flint (blank)
+flint init research --preset default     # With all shards and mods
 flint init docs --path ~/projects        # In specific directory
-flint init notes --preset blank          # Explicitly empty
 ```
 
 ---
@@ -88,7 +85,7 @@ flint list --full-path      # Show complete paths
 
 ### flint sync
 
-Synchronize configuration with actual state. Installs plugins, mods, and runs migrations.
+Synchronize configuration with actual state. Installs shards, mods, and runs migrations.
 
 **Usage:**
 ```bash
@@ -102,13 +99,18 @@ flint sync [options]
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 
 **What it does:**
-- Runs pending migrations
-- Clones `.obsidian/` configuration if missing
-- Installs/updates plugins declared in `flint.toml`
-- Installs/updates mods declared in `flint.toml`
-- Runs mod hooks (e.g., git sync)
-- Syncs imports from other Flints
-- Updates registry if name/path changed
+1. Creates missing directories
+2. Runs pending migrations
+3. Clones `.obsidian/` configuration if missing
+4. Installs/updates shards declared in `flint.toml`
+5. Installs/updates mods declared in `flint.toml`
+6. Pulls required imports
+7. Validates workspace references
+8. Updates registry if name/path changed
+9. Validates and reports connection status
+10. Updates `.gitignore`
+11. Runs mod `onSync` hooks
+12. Stamps sync timestamp in `flint.json`
 
 **Examples:**
 ```bash
@@ -144,42 +146,100 @@ flint index --verbose       # See each file processed
 
 ---
 
-## Plugin System
+### flint delete
 
-### flint plugin
-
-Manage Flint plugins. Plugins extend workspaces with context, skills, templates, and workflows.
-
-#### flint plugin list
-
-List installed or available plugins.
+Permanently delete a Flint (removes folder and unregisters).
 
 **Usage:**
 ```bash
-flint plugin list [options]
+flint delete [name-or-path]
+```
+
+**Arguments:**
+- `[name-or-path]` — Flint name or path (defaults to current directory)
+
+Requires typing the Flint name as confirmation before deletion.
+
+**Examples:**
+```bash
+flint delete                        # Delete current Flint
+flint delete "Old Project"          # Delete by name
+flint delete /path/to/flint         # Delete by path
+```
+
+---
+
+### flint repair
+
+Repair a Flint to match current specifications.
+
+**Usage:**
+```bash
+flint repair [options]
 ```
 
 **Options:**
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--available` | Show available plugins instead of installed | false |
+| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
+| `-n, --dry-run` | Show what would be fixed without making changes | false |
+
+**What it checks:**
+- Missing standard directories (`Mesh/`, `Shards/`, `Mods/`, etc.)
+- Missing `flint.toml` or `flint.json`
+- Missing registry entry
+- Missing or outdated `.gitignore`
+- Missing `.obsidian/` configuration
+
+**Examples:**
+```bash
+flint repair                        # Repair current Flint
+flint repair --dry-run              # Preview what would be fixed
+flint repair --path ~/my-flint      # Repair specific Flint
+```
+
+---
+
+## Shard System
+
+### flint shard
+
+Manage Flint shards. Shards extend workspaces with context, skills, templates, workflows, and knowledge.
+
+#### flint shard list
+
+List installed shards.
+
+**Usage:**
+```bash
+flint shard list [options]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--sources` | Show source declarations from flint.toml | false |
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 
 **Examples:**
 ```bash
-flint plugin list               # Show installed plugins with versions
-flint plugin list --available   # Show plugins available to install
+flint shard list               # Show installed shards with versions
+flint shard list --sources     # Show source declarations
 ```
 
-#### flint plugin install
+#### flint shard install
 
-Install a plugin by its shorthand.
+Install a shard from GitHub or a local path.
 
 **Usage:**
 ```bash
-flint plugin install <shorthand> [options]
+flint shard install <source> [options]
 ```
+
+**Arguments:**
+- `<source>` — Source reference (e.g., `NUU-Cognition/shard-projects`, `path:./local/path`)
 
 **Options:**
 
@@ -188,62 +248,268 @@ flint plugin install <shorthand> [options]
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 | `-f, --force` | Overwrite existing files | false |
 
+**What it does:**
+1. Clones the shard repository (if from GitHub)
+2. Reads `shard.yaml` manifest
+3. Auto-installs dependencies (circular deps prevented)
+4. Creates the shard folder with all files
+5. Creates declared folders in `Mesh/`
+6. Installs files from `install/` with template processing
+7. Clones declared repos to `Shards/(System) Repos/`
+8. Creates state file if configured
+9. Adds declaration to `flint.toml`
+
 **Examples:**
 ```bash
-flint plugin install ld         # Install living-documents plugin
-flint plugin install inc        # Install increments plugin
-flint plugin install proj       # Install projects plugin
+flint shard install NUU-Cognition/shard-projects         # From GitHub
+flint shard install github:owner/repo                    # Explicit GitHub
+flint shard install path:./Shards/(Dev) My Shard         # From local path
+flint shard install NUU-Cognition/shard-projects --force  # Force overwrite
 ```
 
-#### flint plugin uninstall
+#### flint shard uninstall
 
-Uninstall a plugin.
+Uninstall a shard.
 
 **Usage:**
 ```bash
-flint plugin uninstall <shorthand> [options]
+flint shard uninstall <name> [options]
+```
+
+**What it does:**
+- Removes the shard folder
+- Removes installed files, declared folders (if empty), and repos
+- Removes the `flint.toml` declaration
+
+**Examples:**
+```bash
+flint shard uninstall Projects     # Uninstall by name
+```
+
+#### flint shard update
+
+Update all installed shards from their remote sources. Dev shards are skipped.
+
+**Usage:**
+```bash
+flint shard update [options]
 ```
 
 **Options:**
 
 | Flag | Description | Default |
 |------|-------------|---------|
+| `--reinstall` | Force re-download all shards | false |
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 
 **Examples:**
 ```bash
-flint plugin uninstall ld       # Remove living-documents plugin
+flint shard update              # Update all non-dev shards
+flint shard update --reinstall  # Force re-download all
 ```
 
-#### flint plugin update
+#### flint shard create
 
-Update all installed plugins from source.
+Scaffold a new dev shard for local authoring.
 
 **Usage:**
 ```bash
-flint plugin update [options]
+flint shard create <name> [options]
 ```
 
 **Options:**
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
+| `-s, --shorthand <sh>` | Shard shorthand identifier | Auto-generated |
+| `-d, --description <desc>` | Shard description | Empty |
+| `--setup` | Include a setup file | false |
+| `--state` | Create state file | false |
 
 **Examples:**
 ```bash
-flint plugin update             # Update all plugins to latest versions
+flint shard create "My Shard" -s ms -d "My custom shard"
+```
+
+Creates `Shards/(Dev) My Shard/` with standard structure and records in `flint.toml` with `dev = true`.
+
+#### flint shard dev
+
+Clone an existing shard for local development.
+
+**Usage:**
+```bash
+flint shard dev <source>
+```
+
+**Examples:**
+```bash
+flint shard dev NUU-Cognition/shard-projects
+```
+
+Copies the resolved shard into `Shards/(Dev) Name/` with `dev = true`.
+
+#### flint shard check
+
+Check shard system health.
+
+**Usage:**
+```bash
+flint shard check
+```
+
+Reports issues with installed shards (missing files, broken dependencies, etc.).
+
+#### flint shard heal
+
+Fix issues in a specific shard.
+
+**Usage:**
+```bash
+flint shard heal <name> [options]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--dry-run` | Show what would be fixed | false |
+
+**Examples:**
+```bash
+flint shard heal Projects            # Fix issues
+flint shard heal Projects --dry-run  # Preview fixes
+```
+
+#### flint shard reinstall
+
+Reinstall a shard's install entries (files declared in `shard.yaml`).
+
+**Usage:**
+```bash
+flint shard reinstall <name> [options]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--force` | Overwrite existing files | false |
+
+**Examples:**
+```bash
+flint shard reinstall Projects          # Reinstall (respects once/force)
+flint shard reinstall Projects --force  # Force overwrite all
+```
+
+#### flint shard scripts
+
+List available scripts in a shard.
+
+**Usage:**
+```bash
+flint shard scripts <name>
+```
+
+#### flint shard \<name\> \<script\>
+
+Run a script from a shard.
+
+**Usage:**
+```bash
+flint shard <name> <script-name> [args...]
+```
+
+Scripts run with the flint root as working directory and receive `FLINT_ROOT` and `FLINT_SHARD` environment variables.
+
+**Examples:**
+```bash
+flint shard Projects newtasknum        # Run a script
+flint shard Projects exec ls           # Run arbitrary command in shard dir
+```
+
+#### flint shard gitinit
+
+Initialize git for a dev shard.
+
+**Usage:**
+```bash
+flint shard gitinit <name> <url>
+```
+
+**Examples:**
+```bash
+flint shard gitinit my-shard https://github.com/org/repo.git
+```
+
+#### flint shard push
+
+Push changes for a dev shard.
+
+**Usage:**
+```bash
+flint shard push <name> -m <message>
+```
+
+**Examples:**
+```bash
+flint shard push my-shard -m "Add new skill"
+```
+
+#### flint shard pull
+
+Pull/sync shard repos declared in `shard.yaml`.
+
+**Usage:**
+```bash
+flint shard pull [name]
+```
+
+#### flint shard info
+
+Show detailed information about a shard.
+
+**Usage:**
+```bash
+flint shard info <name>
+```
+
+#### flint shard add
+
+Add a shard declaration to `flint.toml` without installing it.
+
+**Usage:**
+```bash
+flint shard add <source>
+```
+
+#### flint shard remove
+
+Remove a shard declaration from `flint.toml` only (does not uninstall files).
+
+**Usage:**
+```bash
+flint shard remove <name>
+```
+
+#### flint shard register
+
+Register an existing folder in `Shards/` as a dev shard.
+
+**Usage:**
+```bash
+flint shard register <folder>
 ```
 
 ---
 
 ### flint mod
 
-Manage Flint mods (environment modifications like git integration, Claude Code support, etc.).
+Manage Flint mods (environment modifications like Claude Code support).
 
 #### flint mod list
 
-List installed or available mods.
+List installed mods.
 
 **Usage:**
 ```bash
@@ -254,22 +520,22 @@ flint mod list [options]
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--available` | Show available mods instead of installed | false |
+| `--sources` | Show source declarations from flint.toml | false |
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 
 **Examples:**
 ```bash
 flint mod list                  # Show installed mods
-flint mod list --available      # Show mods available to install
+flint mod list --sources        # Show source declarations
 ```
 
 #### flint mod install
 
-Install a mod by its shorthand.
+Install a mod from GitHub or a local path.
 
 **Usage:**
 ```bash
-flint mod install <shorthand> [options]
+flint mod install <source> [options]
 ```
 
 **Options:**
@@ -281,8 +547,9 @@ flint mod install <shorthand> [options]
 
 **Examples:**
 ```bash
-flint mod install git           # Install git mod
-flint mod install cc            # Install Claude Code mod
+flint mod install NUU-Cognition/flint-mod-claude-code         # From GitHub
+flint mod install path:./Mods/(Dev) My Mod                    # From local path
+flint mod install NUU-Cognition/flint-mod-claude-code --force # Force overwrite
 ```
 
 #### flint mod uninstall
@@ -291,38 +558,195 @@ Uninstall a mod.
 
 **Usage:**
 ```bash
-flint mod uninstall <shorthand> [options]
+flint mod uninstall <name> [options]
 ```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
 
 **Examples:**
 ```bash
-flint mod uninstall git         # Remove git mod
+flint mod uninstall claude-code     # Remove mod
 ```
 
 #### flint mod update
 
-Update all installed mods.
+Update all installed mods from remote sources. Dev mods are skipped.
 
 **Usage:**
 ```bash
 flint mod update [options]
 ```
 
+**Examples:**
+```bash
+flint mod update                # Update all non-dev mods
+```
+
+#### flint mod create
+
+Scaffold a new dev mod for local authoring.
+
+**Usage:**
+```bash
+flint mod create <name> [options]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-s, --shorthand <sh>` | Mod shorthand identifier | Auto-generated |
+| `-d, --description <desc>` | Mod description | Empty |
+
+**Examples:**
+```bash
+flint mod create "My Mod" -s mm -d "My custom mod"
+```
+
+#### flint mod dev
+
+Clone an existing mod for local development.
+
+**Usage:**
+```bash
+flint mod dev <source>
+```
+
+**Examples:**
+```bash
+flint mod dev NUU-Cognition/flint-mod-claude-code
+```
+
+#### flint mod check
+
+Check mod system health.
+
+**Usage:**
+```bash
+flint mod check
+```
+
+#### flint mod heal
+
+Fix issues in a specific mod.
+
+**Usage:**
+```bash
+flint mod heal <name> [--dry-run]
+```
+
+#### flint mod reinstall
+
+Reinstall a mod's install entries.
+
+**Usage:**
+```bash
+flint mod reinstall <name> [--force]
+```
+
+#### flint mod info
+
+Show detailed information about a mod.
+
+**Usage:**
+```bash
+flint mod info <name>
+```
+
+#### flint mod add
+
+Add a mod declaration to `flint.toml` without installing.
+
+**Usage:**
+```bash
+flint mod add <source>
+```
+
+#### flint mod remove
+
+Remove a mod declaration from `flint.toml` only.
+
+**Usage:**
+```bash
+flint mod remove <name>
+```
+
+#### flint mod register
+
+Register an existing folder in `Mods/` as a dev mod.
+
+**Usage:**
+```bash
+flint mod register <folder>
+```
+
+#### flint mod gitinit
+
+Initialize git for a dev mod.
+
+**Usage:**
+```bash
+flint mod gitinit <name> <url>
+```
+
+#### flint mod push
+
+Push changes for a dev mod.
+
+**Usage:**
+```bash
+flint mod push <name> -m <message>
+```
+
+#### flint mod pull
+
+Pull/sync mod repos.
+
+**Usage:**
+```bash
+flint mod pull [name]
+```
+
+#### flint mod scripts
+
+List and run mod scripts.
+
+**Usage:**
+```bash
+flint mod scripts <name>
+flint mod <name> <script-name> [args...]
+```
+
+---
+
+## Helper Commands
+
+### flint helper
+
+Utility commands for common workflow operations.
+
+#### flint helper type newnumber
+
+Get the next available number for a typed artifact.
+
+**Usage:**
+```bash
+flint helper type newnumber <type> [options]
+```
+
+**Arguments:**
+- `<type>` - Type name (Task, Plan, Notepad, etc.)
+
 **Options:**
 
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
+| `--raw` | Output raw number without zero-padding | false |
 
 **Examples:**
 ```bash
-flint mod update                # Update all mods to latest versions
+flint helper type newnumber Task          # Returns "076"
+flint helper type newnumber Plan          # Returns "003"
+flint helper type newnumber --raw Task    # Returns "76" (no padding)
 ```
 
 ---
@@ -331,42 +755,24 @@ flint mod update                # Update all mods to latest versions
 
 ### flint git
 
-Git operations with Flint awareness. Provides special subcommands and passes through standard git commands.
+Git operations with Flint awareness.
 
 **Usage:**
 ```bash
 flint git [args...] [options]
 ```
 
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
 #### flint git (no args)
 
-Show git status with Flint context (branch, staged, unstaged, untracked files).
-
-```bash
-flint git                       # Show Flint-aware git status
-```
+Show git status with Flint context.
 
 #### flint git init
 
-Initialize git with the git mod. Creates `.gitignore` with Flint defaults.
-
-```bash
-flint git init                  # Initialize git and install git mod
-```
+Initialize git with appropriate `.gitignore`.
 
 #### flint git sync
 
 Update `.gitignore` for current Flint configuration.
-
-```bash
-flint git sync                  # Refresh .gitignore
-```
 
 #### Git passthrough
 
@@ -377,7 +783,6 @@ flint git status
 flint git add .
 flint git commit -m "message"
 flint git push
-flint git log --oneline -5
 ```
 
 ---
@@ -386,7 +791,7 @@ flint git log --oneline -5
 
 ### flint register
 
-Register an existing Flint in the global registry (`~/.flint/registry.json`).
+Register an existing Flint in the global registry.
 
 **Usage:**
 ```bash
@@ -406,9 +811,8 @@ flint register [paths...] [options]
 ```bash
 flint register                          # Register current directory
 flint register /path/to/flint           # Register specific path
-flint register --scan ~/dev             # Scan and interactively select Flints
+flint register --scan ~/dev             # Scan and register Flints
 flint register --scan ~/dev --dry-run   # Preview what would be found
-flint register --force                  # Update existing entry
 ```
 
 ---
@@ -432,14 +836,13 @@ flint unregister [path] [options]
 ```bash
 flint unregister                        # Unregister current directory
 flint unregister /path/to/flint         # Unregister specific path
-flint unregister --force                # Skip confirmation
 ```
 
 ---
 
 ### flint registry validate
 
-Validate and clean the registry. Removes broken entries and deprecated fields.
+Validate and clean the registry.
 
 **Usage:**
 ```bash
@@ -455,17 +858,35 @@ flint registry validate [options]
 | `-f, --force` | Skip confirmation prompt | false |
 
 **What it does:**
-1. Cleans deprecated fields from old registry entries
+1. Cleans deprecated fields from old entries
 2. Handles corrupted registry (recreates if needed)
 3. Removes invalid entries (missing name/path)
-4. Finds and removes broken paths (non-existent directories)
+4. Finds and removes broken paths
+
+---
+
+### flint registry tag
+
+Add tags to a registered Flint.
+
+**Usage:**
+```bash
+flint registry tag <flint-name> <tag>
+```
 
 **Examples:**
 ```bash
-flint registry validate                 # Validate and fix
-flint registry validate --dry-run       # Check only
-flint registry validate --force         # Fix without prompting
-flint registry validate --json          # JSON output
+flint registry tag "My Project" "important"
+flint registry tag "My Project" "active"
+```
+
+### flint registry untag
+
+Remove tags from a registered Flint.
+
+**Usage:**
+```bash
+flint registry untag <flint-name> <tag>
 ```
 
 ---
@@ -474,34 +895,25 @@ flint registry validate --json          # JSON output
 
 ### flint config
 
-View or set global Flint configuration (`~/.flint/config.toml`).
+View or set global Flint configuration.
 
 **Usage:**
 ```bash
 flint config [action] [key] [value]
 ```
 
-**Actions:**
-- (no action) - Show all configuration
-- `get <key>` - Get a specific value
-- `set <key> <value>` - Set a value
-
-**Known config keys:**
-- `mode` - Feature mode (use `flint mode` for better UX)
-- `open.apps` - Array of apps to open Flints with (e.g., `["obsidian", "cursor"]`)
-
 **Examples:**
 ```bash
 flint config                            # Show all configuration
 flint config get open.apps              # Get specific value
-flint config set open.apps '["obsidian", "cursor"]'  # Set value (JSON)
+flint config set open.apps '["obsidian", "cursor"]'  # Set value
 ```
 
 ---
 
 ### flint mode
 
-Manage feature mode (production, experimental, dev). Controls which CLI features are available.
+Manage feature mode.
 
 **Usage:**
 ```bash
@@ -515,51 +927,12 @@ flint mode [mode] [options]
 | `-l, --list` | List all features and their availability | false |
 | `-r, --reset` | Reset mode to build default | false |
 
-**Modes:**
-- `production` - Stable features only
-- `experimental` - Include experimental features
-- `dev` - All features including development tools
-
 **Examples:**
 ```bash
 flint mode                      # Show current mode
 flint mode production           # Set to production mode
-flint mode experimental         # Enable experimental features
 flint mode dev                  # Enable all features
 flint mode --list               # Show all features by tier
-flint mode --reset              # Reset to default
-```
-
----
-
-### flint repair
-
-Fix common workspace issues. Repairs missing folders, config files, and registry entries.
-
-**Usage:**
-```bash
-flint repair [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-| `-n, --dry-run` | Show what would be fixed without making changes | false |
-
-**What it fixes:**
-- Missing standard folders (Mesh/, Exports/, Imports/, Workspace/, Plugins/, Media/, .flint/)
-- Missing or invalid flint.toml
-- Missing flint.lock
-- Missing registry entries
-- Missing .gitignore (if git is initialized)
-
-**Examples:**
-```bash
-flint repair                    # Repair current workspace
-flint repair --dry-run          # Preview repairs
-flint repair --path ~/my-flint  # Repair specific workspace
 ```
 
 ---
@@ -572,44 +945,19 @@ Manage exports to share content with other Flints.
 
 #### flint export list
 
-List all exports in the current Flint.
+List all exports. Discovers `(Export)` files in `Mesh/`.
 
-**Usage:**
 ```bash
-flint export list [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint export list               # Show all exports and build status
+flint export list
 ```
 
 #### flint export build
 
-Build an export from its manifest file.
+Build exports from `(Export)` documents.
 
-**Usage:**
-```bash
-flint export build [name] [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-| `--all` | Build all exports | false |
-
-**Examples:**
 ```bash
 flint export build              # Build all exports
-flint export build guide        # Build specific export
+flint export build Guide        # Build specific export
 flint export build --all        # Explicitly build all
 ```
 
@@ -617,20 +965,8 @@ flint export build --all        # Explicitly build all
 
 Show export build status.
 
-**Usage:**
 ```bash
-flint export status [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint export status             # Show which exports are built
+flint export status
 ```
 
 ---
@@ -641,20 +977,6 @@ Manage imports from other Flints' exports.
 
 #### flint import list
 
-List available imports from registered Flints.
-
-**Usage:**
-```bash
-flint import list [flint] [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
 ```bash
 flint import list               # Show all flints with exports
 flint import list "NUU Flint"   # Show exports from specific flint
@@ -662,97 +984,26 @@ flint import list "NUU Flint"   # Show exports from specific flint
 
 #### flint import add
 
-Add an import to flint.toml.
-
-**Usage:**
 ```bash
-flint import add <ref> [options]
+flint import add "NUU Flint/Guide"    # Add and pull import
 ```
-
-**Arguments:**
-- `<ref>` - Import reference in format `"<flint>/<export>"`
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint import add "NUU Flint/Guide"      # Add import reference
-flint import add "Architecture/api"     # Add another import
-```
-
-After adding, run `flint sync` to pull the imported files.
 
 #### flint import remove
 
-Remove an import from flint.toml.
-
-**Usage:**
 ```bash
-flint import remove <ref> [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-| `--delete-files` | Also delete imported files from Imports/ | false |
-
-**Examples:**
-```bash
-flint import remove "NUU Flint/Guide"   # Remove from config only
-flint import remove "NUU Flint/Guide" --delete-files  # Also delete files
+flint import remove "NUU Flint/Guide"                  # Remove from config
+flint import remove "NUU Flint/Guide" --delete-files   # Also delete files
 ```
 
 ---
 
 ### flint obsidian
 
-Manage `.obsidian/` configuration (Obsidian vault settings).
+Manage `.obsidian/` configuration.
 
-#### flint obsidian update
-
-Force pull latest `.obsidian` from remote template repo. Discards local changes.
-
-**Usage:**
 ```bash
-flint obsidian update [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint obsidian update           # Update to latest from template
-```
-
-#### flint obsidian reset
-
-Delete and re-clone `.obsidian` from template repo. Use when update fails or config is corrupted.
-
-**Usage:**
-```bash
-flint obsidian reset [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-| `-f, --force` | Skip confirmation prompt | false |
-
-**Examples:**
-```bash
-flint obsidian reset            # Reset with confirmation
+flint obsidian update           # Pull latest from template
+flint obsidian reset            # Delete and re-clone
 flint obsidian reset --force    # Reset without confirmation
 ```
 
@@ -760,122 +1011,77 @@ flint obsidian reset --force    # Reset without confirmation
 
 ### flint workspace
 
-Manage workspace references to external resources (codebases, drives, APIs, etc.).
+Manage workspace references and repositories. See [Module - Workspace](/modules/workspace) for details.
 
-#### flint workspace list
-
-List workspace references and their status.
-
-**Usage:**
 ```bash
-flint workspace list [options]
+flint workspace list                                    # List references
+flint workspace add <name> [--type <type>]              # Add reference
+flint workspace reference <name> [path]                 # Add and optionally fulfill
+flint workspace fulfill [name] [path]                   # Provide local path
+flint workspace remove <name>                           # Remove reference
+flint workspace addrepo <name> <url>                    # Clone repository
+flint workspace listrepo                                # List repositories
+flint workspace updaterepo <name>                       # Re-fetch repository
+flint workspace removerepo <name> [--force]             # Remove repository
+flint workspace addreferencerepo <name> <url>           # Clone source repository
+flint workspace listreferencerepo                       # List source repositories
+flint workspace updatereferencerepo <name>              # Re-fetch source repository
+flint workspace removereferencerepo <name> [--force]    # Remove source repository
 ```
 
-**Options:**
+---
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
+### flint connection
 
-**Status indicators:**
-- `(fulfilled)` - Path is configured and exists
-- `(missing)` - Path is configured but doesn't exist
-- `(unfulfilled)` - No path configured yet
+Manage connections to other Flints. See [Module - Connections](/modules/connections) for details.
 
-**Examples:**
 ```bash
-flint workspace list            # Show all references
+flint connection add <name> [--no-fulfill]              # Add connection
+flint connection remove <name>                          # Remove connection
+flint connection list                                   # List all connections
+flint connection fulfill [name] [--all] [--target <path>] # Provide local paths
+flint connection status                                 # Check connection health
 ```
 
-#### flint workspace add
+---
 
-Add a workspace reference declaration to flint.toml.
+### flint subflint
 
-**Usage:**
+Manage nested Flint workspaces. See [Module - Subflints](/modules/subflints) for details.
+
 ```bash
-flint workspace add <name> [options]
+flint subflint create <name> [--preset <preset>] [-d <desc>]  # Create subflint
+flint subflint list                                            # List subflints
+flint subflint sync                                            # Sync index
+flint subflint remove <name> [-y]                              # Remove subflint
+flint subflint promote <name> -t <destination>                 # Promote to registered
+flint subflint <name> <command...>                             # Run command in subflint
 ```
 
-**Options:**
+---
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-t, --type <type>` | Type of reference | codebase |
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
+## Runtime Commands
 
-**Valid types:** `codebase`, `drive`, `api`, `database`, `service`
+> **Note:** Runtime commands require dev mode (`flint mode dev`).
 
-**Examples:**
+### flint server
+
+Manage the Flint runtime server.
+
 ```bash
-flint workspace add monorepo                    # Add codebase reference
-flint workspace add docs --type drive           # Add drive reference
-flint workspace add backend-api --type api      # Add API reference
+flint server start              # Start server on 127.0.0.1:7433
+flint server status             # Check health and active runtimes
+flint server stop               # Stop all runtimes and server
 ```
 
-After adding, run `flint workspace fulfill` to set the local path.
+### flint runtime
 
-#### flint workspace reference
+Manage individual Flint runtimes. Requires the server to be running.
 
-Declare a workspace reference (alias for `add` with optional immediate fulfillment).
-
-**Usage:**
 ```bash
-flint workspace reference <name> [targetPath] [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-t, --type <type>` | Type of reference | codebase |
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint workspace reference monorepo              # Declare, fulfill later
-flint workspace reference monorepo ~/dev/main   # Declare and fulfill now
-```
-
-#### flint workspace fulfill
-
-Provide local paths for unfulfilled workspace references.
-
-**Usage:**
-```bash
-flint workspace fulfill [name] [targetPath] [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint workspace fulfill                         # Interactive prompt for all unfulfilled
-flint workspace fulfill monorepo                # Prompt for specific reference
-flint workspace fulfill monorepo ~/dev/main     # Set path directly
-```
-
-#### flint workspace remove
-
-Remove a workspace reference from flint.toml and delete its reference file.
-
-**Usage:**
-```bash
-flint workspace remove <name> [options]
-```
-
-**Options:**
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --path <dir>` | Path to Flint workspace | Auto-detect |
-
-**Examples:**
-```bash
-flint workspace remove monorepo         # Remove reference
+flint runtime start [path]      # Start runtime for a Flint
+flint runtime stop [id-or-path] # Stop a runtime
+flint runtime list              # List active runtimes
 ```
 
 ---
@@ -894,5 +1100,7 @@ Available on most commands:
 ## Related
 
 - [Reference - Configuration](/reference/configuration) - Configuration file reference
+- [Reference - Hooks Configuration](/reference/hooks-configuration) - Hooks configuration reference
 - [Reference - Troubleshooting](/reference/troubleshooting) - Common issues and solutions
+- [Module - Runtime](/modules/runtime) - Runtime system overview
 - [Guide - Quick Start](/guide/quick-start) - Getting started with Flint

@@ -18,10 +18,10 @@ Creating a flint is a two-phase process:
 │  Creates essential flint structure                              │
 │                                                                 │
 │  1. Create folder: (Flint) <name>/                              │
-│  2. Create standard directories (Mesh/, Media/, Plugins/, etc.) │
+│  2. Create standard directories (Mesh/, Media/, Shards/, etc.)  │
 │  3. Create .flint/ directory                                    │
-│  4. Create flint.toml with name, type, plugins, mods            │
-│  5. Create flint.lock                                           │
+│  4. Create flint.toml with name, type, shards, mods             │
+│  5. Create flint.json with identity (UUID, version, timestamp)  │
 │  6. Apply preset templates (if any)                             │
 │  7. Register in local registry (~/.flint/registry.json)         │
 └─────────────────────────────────────────────────────────────────┘
@@ -31,18 +31,22 @@ Creating a flint is a two-phase process:
 │  SYNC PHASE                                                     │
 │  Installs configured features from flint.toml                   │
 │                                                                 │
-│  1. Install plugins from [plugins].required                     │
-│  2. Install mods from [mods].required                           │
-│  3. Clone .obsidian/ configuration                              │
-│  4. Run mod hooks                                               │
+│  1. Run pending migrations                                      │
+│  2. Clone .obsidian/ configuration                              │
+│  3. Install shards from [shards] section                        │
+│  4. Install mods from [mods] section                            │
+│  5. Pull imports from [imports] section                          │
+│  6. Validate workspace references                               │
+│  7. Update .gitignore                                           │
+│  8. Run mod onSync hooks                                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 This separation means:
-- **Init creates structure** — everything that makes a flint a flint
-- **Sync installs features** — plugins, mods, and their effects
-- **Sync is idempotent** — run it anytime to reconcile configured state
-- **Config is truth** — the entire flint can be regenerated from `flint.toml`
+- **Init creates structure** - everything that makes a flint a flint
+- **Sync installs features** - shards, mods, imports, and their effects
+- **Sync is idempotent** - run it anytime to reconcile configured state
+- **Config is truth** - the entire flint can be regenerated from `flint.toml`
 
 ## Basic Usage
 
@@ -56,22 +60,34 @@ Creates:
 ```
 (Flint) my-project/
 ├── .flint/
-│   └── flint.lock
-├── .obsidian/
 ├── Mesh/
+│   └── (System) Flint Init.md
 ├── Media/
-├── Plugins/
+├── Shards/
+├── Mods/
 ├── Imports/
 ├── Exports/
 ├── Workspace/
-└── flint.toml
+├── flint.toml
+└── flint.json
 ```
 
-The `flint.toml` contains only:
+Without a preset, the `flint.toml` contains only:
 ```toml
 [flint]
 name = "my-project"
 type = "flint"
+```
+
+The `flint.json` contains identity:
+```json
+{
+  "version": "0.2.0",
+  "id": "a1b2c3d4-...",
+  "type": "flint",
+  "created": "2026-03-02T...",
+  "synced": "2026-03-02T..."
+}
 ```
 
 ### With a Preset
@@ -80,43 +96,48 @@ type = "flint"
 flint init my-project --preset default
 ```
 
-The preset adds plugins, mods, and template files:
+The `default` preset adds all standard shards and mods:
 ```toml
 [flint]
 name = "my-project"
 type = "flint"
 
-[plugins]
-required = ["core", "living-documents", "increments", "projects", "notepad", "plan"]
+[shards]
+increments = { source = "NUU-Cognition/shard-increments" }
+plan = { source = "NUU-Cognition/shard-plan" }
+notepad = { source = "NUU-Cognition/shard-notepad" }
+reports = { source = "NUU-Cognition/shard-reports" }
+comments = { source = "NUU-Cognition/shard-comments" }
+learn = { source = "NUU-Cognition/shard-learn" }
+flint = { source = "NUU-Cognition/shard-flint" }
+knap = { source = "NUU-Cognition/shard-knap" }
+orbcode = { source = "NUU-Cognition/shard-orbcode" }
+projects = { source = "NUU-Cognition/shard-projects" }
 
 [mods]
-required = ["git", "claude-code"]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
+agents = { source = "NUU-Cognition/flint-mod-agents" }
 ```
 
 ## Presets
 
-Presets are pre-configured flint templates that bundle plugins, mods, and starter files.
+Presets are pre-configured flint templates that bundle shards, mods, and starter files.
 
 ### Available Presets
 
-| Preset | Description | Plugins | Mods |
-|--------|-------------|---------|------|
-| `default` | Common setup for general use | core, living-documents, increments, projects, notepad, plan | git, claude-code |
-| `blank` | Empty flint, nothing installed | none | none |
-| `spec` | For specifications and documentation | core, living-documents | git |
-| `vessel` | For publishing projects | core, living-documents | git |
+| Preset | Description | Shards | Mods |
+|--------|-------------|--------|------|
+| `blank` | Empty flint, nothing installed (default) | none | none |
+| `default` | Full setup with all standard shards and mods | increments, plan, notepad, reports, comments, learn, flint, knap, orbcode, projects | claude-code, agents |
 
 ### Using Presets
 
 ```bash
-# Use default preset
-flint init research --preset default
-
-# Explicitly empty
-flint init scratch --preset blank
-
-# No preset = minimal (same as blank but no preset templates)
+# Empty flint (default behavior)
 flint init notes
+
+# Full setup with all shards and mods
+flint init research --preset default
 ```
 
 ### Preset Locations
@@ -142,11 +163,11 @@ Create a folder in `~/.flint/presets/` with a `preset.toml`:
 name = "my-preset"
 description = "My custom preset for research projects"
 
-[plugins]
-required = ["core", "living-documents", "notepad"]
+[shards]
+required = ["notepad", "reports"]
 
 [mods]
-required = ["git"]
+required = ["claude-code"]
 
 [templates](/templates)
 source = "templates/Overview.md"
@@ -154,9 +175,76 @@ target = "Mesh/Overview.md"
 ```
 
 Template files support variables:
-- `{{name}}` — flint name
-- `{{date}}` — creation date (YYYY-MM-DD)
-- `{{uuid}}` — unique identifier
+- `{{name}}` - flint name
+- `{{date}}` - creation date (YYYY-MM-DD)
+- `{{uuid}}` - unique identifier
+
+## Configuration Files
+
+### flint.toml (Source of Truth)
+
+Human-editable configuration, committed to git. Declares everything:
+
+```toml
+[flint]
+name = "My Project"
+type = "flint"
+tags = ["active", "dev"]
+description = "Main development workspace"
+
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+my-custom = { source = "path:./Shards/(Dev) My Custom", dev = true }
+
+[mods]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
+
+[imports]
+required = [
+  "NUU Flint/Guide",
+]
+
+[workspace]
+references = [
+  { name = "monorepo", type = "codebase" },
+]
+repositories = [
+  { name = "example-api", url = "https://github.com/user/example-api" },
+]
+
+[connections]
+flints = [
+  { name = "NUU Vessel" },
+]
+```
+
+### flint.json (Identity & State)
+
+Machine-managed, committed to git. Tracks identity and timestamps:
+
+```json
+{
+  "version": "0.2.0",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "flint",
+  "created": "2026-01-15T10:00:00.000Z",
+  "synced": "2026-03-01T15:30:00.000Z",
+  "migrations": {
+    "migration-id": "2026-02-01T..."
+  }
+}
+```
+
+### .flint/ Directory (Local State)
+
+Gitignored runtime state:
+
+```
+.flint/
+  references.json      # Machine-specific workspace paths
+  connections.json     # Machine-specific connection paths
+```
 
 ## The Local Registry
 
@@ -169,17 +257,19 @@ The registry at `~/.flint/registry.json` tracks all your flints for CLI discover
     {
       "name": "my-project",
       "path": "/Users/me/projects/(Flint) my-project",
-      "type": "flint"
+      "type": "flint",
+      "tags": ["active"],
+      "description": "Main workspace"
     }
   ]
 }
 ```
 
 **Key points:**
-- Registry stores only **name + path + type**
+- Registry stores **name + path + type + tags + description**
 - Path is the primary identifier
-- Used by `flint list` and import resolution
-- Automatically updated by `init`, `register`, `unregister`
+- Used by `flint list`, import resolution, and connection fulfillment
+- Automatically updated by `init`, `register`, `unregister`, and `sync`
 - Run `flint registry validate` to clean up broken entries
 
 ### Managing the Registry
@@ -196,6 +286,12 @@ flint register --scan ~/projects
 
 # Remove from registry (keeps files)
 flint unregister
+
+# Validate and clean broken entries
+flint registry validate
+
+# Add tags to a registered flint
+flint registry tag "My Project" "important"
 ```
 
 ## Command Reference
@@ -207,8 +303,8 @@ flint init <name> [options]
 ```
 
 **Options:**
-- `--path <dir>` — Parent directory (default: current directory)
-- `--preset <name>` — Use a preset configuration
+- `--path <dir>` - Parent directory (default: current directory)
+- `--preset <name>` - Use a preset configuration
 
 **Examples:**
 ```bash
@@ -227,33 +323,28 @@ flint sync
 
 **What it does:**
 - Creates missing directories
-- Installs/removes plugins to match config
+- Runs pending migrations
+- Installs/warns about shards to match config
 - Installs/removes mods to match config
-- Runs mod hooks (e.g., git sync)
-- Updates `flint.lock`
-
-### flint repair
-
-Fix common issues:
-
-```bash
-flint repair           # Fix issues
-flint repair --dry-run # Preview fixes
-```
+- Pulls required imports
+- Validates workspace references and connections
+- Updates registry if name/path changed
+- Updates `.gitignore`
+- Stamps sync timestamp in `flint.json`
 
 ## Best Practices
 
 ### Starting Fresh
 
 ```bash
-# Quick start with common plugins
+# Quick start with common shards
 flint init my-project --preset default
 ```
 
 ### Minimal Setup
 
 ```bash
-# Just the structure, add plugins later
+# Just the structure, add shards later
 flint init my-project
 # Then edit flint.toml and run:
 flint sync
@@ -266,6 +357,9 @@ git clone <repo> "(Flint) my-project"
 cd "(Flint) my-project"
 flint register
 flint sync
+# Fulfill workspace references and connections
+flint workspace fulfill
+flint connection fulfill --all
 ```
 
 ### Moving a Flint
@@ -277,6 +371,10 @@ mv "(Flint) old-location" "/new/path/(Flint) my-project"
 # Update registry
 flint unregister /old/path
 flint register /new/path/(Flint) my-project
+
+# Or just sync from the new location - it auto-detects the move
+cd "/new/path/(Flint) my-project"
+flint sync
 ```
 
 ## Troubleshooting
@@ -289,7 +387,7 @@ The directory must have a `flint.toml` file. Either:
 
 ### Missing directories after clone
 
-Run `flint sync` to create standard directories and install plugins.
+Run `flint sync` to create standard directories and install shards.
 
 ### Flint not showing in `flint list`
 
@@ -298,18 +396,18 @@ Register it:
 flint register /path/to/flint
 ```
 
-### Plugins not installing
+### Shards not installing
 
-Check your `flint.toml` has the plugins listed:
+Check your `flint.toml` has the shards listed:
 ```toml
-[plugins]
-required = ["core", "living-documents"]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
 ```
 
 Then run `flint sync`.
 
 ## Related
 
-- [Reference - CLI Commands](/reference/cli-commands) — Full command reference
-- [Reference - Configuration](/reference/configuration) — Configuration options
-- [Module - Plugins & Mods](/modules/plugins-mods) — Plugin system details
+- [Reference - CLI Commands](/reference/cli-commands) - Full command reference
+- [Reference - Configuration](/reference/configuration) - Configuration options
+- [Module - Shards & Mods](/modules/shards-mods) - Shard and mod system details

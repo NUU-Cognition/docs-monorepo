@@ -2,10 +2,13 @@
   "title": "Modules",
   "pages": [
     "mesh",
+    "shards-mods",
     "imports",
     "exports",
     "workspace",
-    "plugins-mods",
-    "media"
+    "connections",
+    "subflints",
+    "media",
+    "runtime"
   ]
 }

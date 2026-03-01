@@ -13,11 +13,11 @@ When something isn't working:
 flint --version
 
 # See current state
-flint plugin list
+flint shard list
 flint workspace list
 
-# Repair common issues
-flint repair --dry-run
+# Sync to reconcile state
+flint sync
 ```
 
 ## Common Issues
@@ -40,14 +40,16 @@ ls -la
 
 # Should see:
 # - flint.toml
+# - flint.json
 # - .flint/
 # - Mesh/
 
 # If flint.toml missing, you're in the wrong folder
 cd "(Flint) Your Project"
 
-# If .flint/ corrupted
-flint repair
+# If .flint/ corrupted, regenerate
+rm -rf .flint/
+flint sync
 ```
 
 ### Missing File IDs
@@ -64,28 +66,34 @@ flint sync
 flint index
 ```
 
-### Plugin Not Working
+### Shard Not Working
 
-**Symptom:** Plugin commands fail or agent doesn't recognize plugin.
+**Symptom:** Shard commands fail or agent doesn't recognize shard capabilities.
 
 **Solutions:**
 
 ```bash
 # Check if installed
-flint plugin list
+flint shard list
 
-# If not listed, add to flint.toml and sync
-# [plugins]
-# required = ["plugin-name"]
+# If not listed, install it
+flint shard install NUU-Cognition/shard-projects
+
+# Or add to flint.toml and sync
+# [shards]
+# projects = { source = "NUU-Cognition/shard-projects" }
 flint sync
 
-# If listed but not working, update all plugins
-flint plugin update
+# If listed but not working, check health
+flint shard check
+
+# Update all shards
+flint shard update
 ```
 
-For agents: Make sure to read the plugin's init file first:
+For agents: Make sure to read the shard's init file first:
 ```
-@Plugins/PluginName/init-shorthand.md
+@Shards/Projects/init-proj.md
 ```
 
 ### Configuration Out of Sync
@@ -98,7 +106,7 @@ For agents: Make sure to read the plugin's init file first:
 flint sync
 ```
 
-This reads `flint.toml` and updates installed plugins, mods, and state.
+This reads `flint.toml` and updates installed shards, mods, and state.
 
 ### Broken Links
 
@@ -154,6 +162,23 @@ flint workspace fulfill <name> /correct/path
 flint workspace remove <name>
 ```
 
+### Connection Issues
+
+**Symptom:** Connections show as unfulfilled or broken.
+
+**Solution:**
+
+```bash
+# Check connection status
+flint connection list
+
+# Fulfill from registry
+flint connection fulfill --all
+
+# Or fulfill with explicit path
+flint connection fulfill "Name" --target /path/to/flint
+```
+
 ### Export Compilation Fails
 
 **Symptom:** Export build produces errors.
@@ -164,7 +189,7 @@ flint workspace remove <name>
    ```
    Error: Note not found: [Missing Note](/missing-note)
    ```
-   Fix: Create the note or remove the reference from the export manifest.
+   Fix: Create the note or remove the reference from the export document.
 
 2. **Circular transclusions:**
    ```
@@ -185,7 +210,7 @@ flint workspace remove <name>
 flint export list
 
 # Build a specific export
-flint export build guide
+flint export build Guide
 ```
 
 ### Index Corruption
@@ -246,7 +271,7 @@ find Mesh -name "*.md" | wc -l
 # 2. Using more specific organization
 
 # Clear and rebuild index
-rm -rf .flint/
+rm -rf .flint/index/
 flint sync
 ```
 
@@ -256,40 +281,21 @@ flint sync
 
 **Solutions:**
 
-Reinstall via the install script:
+Reinstall via npm:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NUU-Cognition/flint/main/install.sh | bash
+npm install -g @nuucognition/flint
 ```
 
 If still not found, check your PATH:
 
 ```bash
-# Check if the binary exists
-ls -la ~/.nuucognition/flint/
+# Check npm global bin directory
+npm bin -g
 
-# Add to PATH if needed
-export PATH="$HOME/.local/bin:$PATH"
+# Verify it's in your PATH
+which flint
 ```
-
-## Repair Command
-
-`flint repair` fixes many common issues automatically:
-
-```bash
-# Preview what would be fixed
-flint repair --dry-run
-
-# Apply fixes
-flint repair
-```
-
-**What it fixes:**
-- Missing standard folders (Mesh/, Exports/, etc.)
-- Invalid lock file
-- Missing flint.toml
-- Missing .gitignore
-- Missing registry entries
 
 ## Resetting a Flint
 
@@ -299,19 +305,16 @@ If all else fails, you can reset runtime state:
 # Remove all generated state (keeps your notes)
 rm -rf .flint/
 
-# Remove plugins (keeps notes)
-rm -rf Plugins/
-
-# Regenerate everything
+# Regenerate everything from flint.toml
 flint sync
 ```
 
 **Warning:** This removes:
 - Index (will be rebuilt)
-- Plugin status (plugins will need re-initialization)
-- Lock file (will be regenerated)
+- Reference/connection fulfillments (will need re-fulfillment)
+- Local state files
 
-Your notes in `Mesh/` are preserved.
+Your notes in `Mesh/`, shards in `Shards/`, and mods in `Mods/` are preserved. Your `flint.toml` and `flint.json` are preserved.
 
 ## Getting Help
 

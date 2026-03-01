@@ -30,15 +30,9 @@ Edit `flint.toml`:
 name = "ai-safety-research"
 type = "flint"
 
-[plugins]
-required = [
-  "living-documents",
-  "notepad",
-  "archive"
-]
-
-[mods]
-required = ["git"]
+[shards]
+notepad = { source = "NUU-Cognition/shard-notepad" }
+reports = { source = "NUU-Cognition/shard-reports" }
 ```
 
 ```bash
@@ -83,14 +77,6 @@ tags:
 2. Control problem is the central challenge
 3. Value alignment is technically difficult
 
-## Important Quotes
-
-> "The first superintelligence may shape the future of Earth-originating life."
-> — Chapter 1
-
-> "A superintelligence could be the last invention humanity ever needs to make."
-> — Chapter 2
-
 ## My Notes
 
 Strong argument for taking AI safety seriously early.
@@ -120,12 +106,6 @@ tags:
 The claim that intelligence and goals are independent: a system
 can be arbitrarily intelligent while pursuing any goal.
 
-## Definition
-
-"Intelligence and final goals are orthogonal: more or less any
-level of intelligence could in principle be combined with more
-or less any final goal." — Bostrom
-
 ## Implications
 
 1. Smart doesn't mean benevolent
@@ -153,7 +133,6 @@ Create `Mesh/Syntheses/Control Problem Overview.md`:
 id: (auto-generated)
 tags:
   - "#synthesis"
-  - "#ld/living"
 ---
 
 # Control Problem Overview
@@ -170,9 +149,7 @@ ensure AI systems remain beneficial as they become more capable?
 
 ### 1. Corrigibility
 
-Making AI systems that accept correction. Challenges include:
-- Incentive to resist shutdown
-- Preserving own goals
+Making AI systems that accept correction.
 
 See [Concepts/Corrigibility](/concepts-corrigibility) for details.
 
@@ -184,7 +161,7 @@ See [Concepts/Value Learning](/concepts-value-learning) for details.
 
 ### 3. Constitutional AI
 
-Training with explicit principles. Anthropic's approach.
+Training with explicit principles.
 
 See [Sources/Bai 2022 - Constitutional AI](/sources-bai-2022-constitutional-ai).
 
@@ -193,11 +170,6 @@ See [Sources/Bai 2022 - Constitutional AI](/sources-bai-2022-constitutional-ai).
 1. Can value learning scale to superintelligence?
 2. Is corrigibility stable under self-improvement?
 3. What happens with multiple competing AI systems?
-
-## Sources
-
-![Sources/Bostrom 2014 - Superintelligence#Key Claims](/sources-bostrom-2014-superintelligence-key-claims)
-![Sources/Russell 2019 - Human Compatible#Central Argument](/sources-russell-2019-human-compatible-central-argument)
 ```
 
 ## Step 7: Add Reference Materials
@@ -207,8 +179,8 @@ Store PDFs in `Media/`:
 ```
 Media/
 ├── papers/
-│   ├── bostrom-2014-superintelligence-excerpt.pdf
-│   └── russell-2019-human-compatible-ch1.pdf
+│   ├── bostrom-2014-excerpt.pdf
+│   └── russell-2019-ch1.pdf
 └── diagrams/
     └── control-problem-taxonomy.png
 ```
@@ -216,7 +188,7 @@ Media/
 Reference them in notes:
 
 ```markdown
-See the original argument: ![Media/papers/bostrom-2014-superintelligence-excerpt.pdf](/media-papers-bostrom-2014-superintelligence-excerpt-pdf)
+See the original paper: ![Media/papers/bostrom-2014-excerpt.pdf](/media-papers-bostrom-2014-excerpt-pdf)
 
 Visual overview:
 ![Media/diagrams/control-problem-taxonomy.png](/media-diagrams-control-problem-taxonomy-png)
@@ -249,16 +221,6 @@ tags:
 
 ### Syntheses
 - [Syntheses/Control Problem Overview](/syntheses-control-problem-overview)
-
-## By Topic
-
-### Foundational
-- [Concepts/Orthogonality Thesis](/concepts-orthogonality-thesis)
-- [Concepts/Instrumental Convergence](/concepts-instrumental-convergence)
-
-### Solutions
-- [Concepts/Corrigibility](/concepts-corrigibility)
-- [Concepts/Value Learning](/concepts-value-learning)
 ```
 
 ## Step 9: Draft Your Paper
@@ -271,7 +233,6 @@ id: (auto-generated)
 tags:
   - "#draft"
   - "#paper"
-  - "#ld/living"
 ---
 
 # Draft: Control Problem Survey
@@ -284,7 +245,6 @@ tags:
 
 The development of artificial general intelligence poses
 unprecedented challenges for ensuring beneficial outcomes.
-This paper surveys approaches to the AI control problem.
 
 ## 2. The Control Problem
 
@@ -307,21 +267,15 @@ The [Orthogonality Thesis](/orthogonality-thesis) establishes that...
 ## 4. Open Problems
 
 [Content]
-
-## References
-
-- Bostrom, N. (2014). Superintelligence.
-- Russell, S. (2019). Human Compatible.
 ```
 
 ## Step 10: Export for Publication
 
-Create `Exports/Survey.md` (the export manifest):
+Create `Mesh/(Export) Survey.md`:
 
 ```markdown
 ---
-id: (auto-generated)
-description: Survey paper for publication
+export-depth: 2
 ---
 
 # Survey Paper Export
@@ -342,7 +296,7 @@ The compiled paper appears in `Exports/Survey/` with all transclusions resolved.
 ### When Reading
 
 1. Create source note immediately
-2. Capture key claims and quotes
+2. Capture key claims
 3. Link to relevant concepts
 4. Add to Index
 

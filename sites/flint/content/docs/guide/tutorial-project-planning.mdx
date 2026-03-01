@@ -19,9 +19,9 @@ flint init alpha-project --preset default
 cd "(Flint) alpha-project"
 ```
 
-The preset installs common plugins automatically.
+The `default` preset installs all standard shards and mods.
 
-## Step 2: Configure Plugins
+## Step 2: Configure Shards
 
 Edit `flint.toml` if you want to customize:
 
@@ -30,17 +30,14 @@ Edit `flint.toml` if you want to customize:
 name = "alpha-project"
 type = "flint"
 
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "increments",
-  "projects",
-  "notepad"
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+notepad = { source = "NUU-Cognition/shard-notepad" }
+plan = { source = "NUU-Cognition/shard-plan" }
 
 [mods]
-required = ["git"]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 ```
 
 Sync to apply changes:
@@ -73,14 +70,13 @@ document decisions, and maintain project history.
 
 - [(Dashboard) Backlog](/dashboard-backlog) - All planned work
 - [(Dashboard) Increments](/dashboard-increments) - Version releases
-- [(System) Index](/system-index) - Document index
 
-## Plugins
+## Shards
 
-- **Core** - Base conventions
-- **Living Documents** - Track document lifecycle
-- **Increments** - Manage versioned releases
 - **Projects** - Backlog and task management
+- **Increments** - Manage versioned releases
+- **Notepad** - Quick capture
+- **Plan** - High-level planning
 ```
 
 ## Step 4: Create Your Backlog
@@ -92,7 +88,6 @@ Create `Mesh/(Dashboard) Backlog.md`:
 id: (auto-generated)
 tags:
   - "#dashboard"
-  - "#ld/living"
 ---
 
 # Backlog
@@ -122,7 +117,6 @@ Create `Mesh/(Task) User Authentication.md`:
 id: (auto-generated)
 tags:
   - "#task"
-  - "#ld/living"
 status: active
 priority: high
 ---
@@ -160,7 +154,6 @@ Create `Mesh/(Increment) 1.0.0 - Foundation.md`:
 id: (auto-generated)
 tags:
   - "#increment"
-  - "#ld/living"
 increment: "1.0.0"
 ---
 
@@ -184,7 +177,7 @@ increment: "1.0.0"
 
 | Date | Change |
 |------|--------|
-| 2025-12-18 | Increment created |
+| 2026-03-02 | Increment created |
 ```
 
 ## Step 7: Link Your Codebase
@@ -224,12 +217,11 @@ This adds IDs to all your new files and ensures everything is indexed.
 
 ## Step 9: Create an Export
 
-When ready to share, create `Exports/Spec.md` (the export manifest):
+When ready to share, create `Mesh/(Export) Spec.md`:
 
 ```markdown
 ---
-id: (auto-generated)
-description: Project specification bundle
+export-depth: 1
 ---
 
 # Spec Export
@@ -275,7 +267,7 @@ Output appears in `Exports/Spec/`.
 ## What You've Learned
 
 - **Flint structure** - How modules work together
-- **Task tracking** - Using tasks with the Projects plugin
+- **Task tracking** - Using tasks with the Projects shard
 - **Increments** - Versioned work packages
 - **Workspace linking** - Connecting to external code
 - **Exports** - Compiling documents for sharing
@@ -284,4 +276,4 @@ Output appears in `Exports/Spec/`.
 
 - [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - Different use case
 - [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Work with AI
-- [Module - Plugins & Mods](/modules/plugins-mods) - Deep dive into plugins
+- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into shards

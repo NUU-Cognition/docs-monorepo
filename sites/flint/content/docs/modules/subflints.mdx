@@ -1,0 +1,262 @@
+---
+title: "Subflints"
+---
+
+**Nested Flints that live inside a parent without global registration.**
+
+## Purpose
+
+Sometimes you need isolated workspaces within a larger Flint. A blog section, documentation site, side project, or research area that's conceptually part of the parent but needs its own structure. Subflints provide this isolation while keeping everything in one place.
+
+The key insight: **a subflint is just a Flint that isn't registered**. It has the full structure - Mesh, Workspace, Media, Shards, Mods - but doesn't appear in the global registry. The parent mediates all external interactions.
+
+## Architecture
+
+Subflints live in the parent's `Subflints/` directory:
+
+```
+(Flint) Parent/
+├── flint.toml
+├── flint.json
+├── Mesh/
+├── Workspace/
+├── Media/
+├── Exports/
+├── Imports/
+├── Shards/
+├── Mods/
+├── Subflints/
+│   ├── (Flint) Blog/
+│   │   ├── flint.toml        # type = "subflint"
+│   │   ├── flint.json
+│   │   ├── .flint/
+│   │   ├── Mesh/
+│   │   ├── Workspace/
+│   │   ├── Media/
+│   │   ├── Exports/
+│   │   ├── Imports/
+│   │   ├── Shards/
+│   │   └── Mods/
+│   └── (Flint) Docs/
+│       └── ...
+└── .flint/
+```
+
+Subflints are **auto-discovered** from the filesystem - the CLI scans `Subflints/` for folders matching `(Flint) *` that contain a `flint.toml`.
+
+## Subflint vs Registered Flint
+
+| Aspect | Subflint | Registered Flint |
+|--------|----------|------------------|
+| Location | Inside parent's `Subflints/` | Anywhere |
+| Registry | Not in global registry | Listed in `~/.flint/registry.json` |
+| Discovery | Only via parent filesystem | Globally discoverable |
+| Connections | Cannot be connected to directly | Can connect to any registered Flint |
+| Git | Part of parent's repo | Own repository |
+| Structure | Full Flint structure | Full Flint structure |
+
+## Commands
+
+### Create a Subflint
+
+```bash
+flint subflint create <name> [--preset <preset>] [-d <description>]
+```
+
+Creates a new subflint with standard Flint structure.
+
+```bash
+# Create empty subflint
+flint subflint create Blog
+
+# Create with all standard shards and mods
+flint subflint create Docs --preset default
+
+# Create with description
+flint subflint create Specs -d "Technical specifications"
+```
+
+Creates:
+```
+Subflints/(Flint) Blog/
+├── flint.toml          # type = "subflint"
+├── flint.json          # Identity (UUID, timestamps)
+├── .flint/
+├── Mesh/
+├── Workspace/
+├── Media/
+├── Exports/
+├── Imports/
+├── Shards/
+└── Mods/
+```
+
+### List Subflints
+
+```bash
+flint subflint list
+```
+
+Shows all subflints discovered in the current Flint.
+
+### Sync Subflints
+
+```bash
+flint subflint sync
+```
+
+Synchronizes the subflint index with the filesystem - discovers new subflints and removes stale entries.
+
+### Rename a Subflint
+
+To rename, edit the `name` in the subflint's `flint.toml`, then sync:
+
+```bash
+# 1. Edit Subflints/(Flint) Blog/flint.toml
+#    Change: name = "Blog" → name = "Articles"
+
+# 2. Sync to rename the folder
+flint sync
+# Renames folder to "(Flint) Articles" automatically
+```
+
+The source of truth is `flint.toml`. Edit there, then sync.
+
+### Remove a Subflint
+
+```bash
+flint subflint remove <name> [-y]
+```
+
+Permanently deletes the subflint and its contents. Use `-y` to skip confirmation.
+
+### Promote to Registered Flint
+
+```bash
+flint subflint promote <name> -t <destination>
+```
+
+Graduates a subflint to a full registered Flint. Use this when a subflint outgrows its parent and needs independence.
+
+```bash
+# Promote with destination
+flint subflint promote Blog --to ~/dev/nuu-flints
+```
+
+Promotion:
+1. Moves the subflint folder to `destination/(Flint) Name`
+2. Changes `type = "subflint"` to `type = "flint"` in flint.toml
+3. Registers in the global registry
+
+After promotion, run `flint sync` in the new location.
+
+### Run Commands in Subflint Context
+
+```bash
+flint subflint <name> <command...>
+```
+
+Wrapper mode - runs any Flint command inside a subflint's context:
+
+```bash
+# Run sync in the Blog subflint
+flint subflint Blog sync
+
+# List shards in Docs subflint
+flint subflint Docs shard list
+
+# Initialize workspace reference
+flint subflint Specs workspace add Monorepo
+```
+
+## Use Cases
+
+### Documentation Site
+
+Keep docs alongside your main project:
+
+```
+(Flint) Project/
+└── Subflints/
+    └── (Flint) Docs/
+        ├── Mesh/
+        │   ├── Guide - Introduction.md
+        │   ├── Guide - Quick Start.md
+        │   └── Reference - API.md
+        └── Exports/
+            └── docs-site/
+```
+
+### Multi-Product Organization
+
+Separate contexts for different products:
+
+```
+(Flint) Company/
+└── Subflints/
+    ├── (Flint) Product A/
+    ├── (Flint) Product B/
+    └── (Flint) Research/
+```
+
+### Archival
+
+Move completed work to an archive subflint:
+
+```
+(Flint) Work/
+└── Subflints/
+    └── (Flint) Archive/
+        └── Mesh/
+            ├── 2024/
+            └── 2023/
+```
+
+## Lifecycle
+
+Subflints are designed for evolution:
+
+1. **Embedded** - Start as a subflint when work is closely tied to parent
+2. **Growing** - Build out structure, add shards as needed
+3. **Promoting** - Graduate to registered Flint when truly independent
+
+The promotion process preserves all content.
+
+## Configuration
+
+Subflint `flint.toml`:
+
+```toml
+[flint]
+name = "Blog"
+type = "subflint"
+
+[shards]
+notepad = { source = "NUU-Cognition/shard-notepad" }
+plan = { source = "NUU-Cognition/shard-plan" }
+
+[mods]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
+```
+
+The `type = "subflint"` is the only difference from a regular Flint config. It's a label, not a gate - subflints have full Flint functionality.
+
+## Best Practices
+
+**Start embedded, promote when needed.** If you're unsure whether something should be a subflint or separate Flint, start as a subflint. You can always promote later.
+
+**Keep subflints focused.** Each subflint should have a clear purpose. If it starts doing too many things, consider splitting.
+
+**Promote before connecting.** If you need other Flints to connect to this content, promote it first. Subflints can't be connection targets.
+
+### Common Mistakes
+
+- **Registering directly** - Don't register a subflint manually. Use `flint subflint promote` to properly move and convert it.
+- **Moving without syncing** - If you move a subflint manually, run `flint subflint sync` to update the index.
+- **Forgetting to sync after promote** - Run `flint sync` in the promoted Flint to initialize fresh config.
+
+## Related
+
+- [Module - Workspace](/modules/workspace) - Workspace references work the same in subflints
+- [Reference - Configuration](/reference/configuration) - Subflint configuration in flint.toml
+- [Guide - Creating a Flint](/guide/creating-a-flint) - Creating registered Flints

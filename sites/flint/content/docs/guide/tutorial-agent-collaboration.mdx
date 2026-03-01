@@ -8,7 +8,7 @@ Learn how to work effectively with AI agents in your Flint.
 
 - Setting up for agent collaboration
 - Teaching agents your workspace
-- Using plugins for structured work
+- Using shards for structured work
 - Best practices for human-agent workflow
 
 ## Step 1: Install the Claude Code Mod
@@ -20,23 +20,20 @@ Edit `flint.toml`:
 name = "my-project"
 type = "flint"
 
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "increments",
-  "projects"
-]
+[shards]
+flint = { source = "NUU-Cognition/shard-flint" }
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
 
 [mods]
-required = ["git", "claude-code"]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 ```
 
 ```bash
 flint sync
 ```
 
-This installs plugins for structured work and the Claude Code mod for tool integration.
+This installs shards for structured work and the Claude Code mod for tool integration.
 
 ## Step 2: Prepare Your Init File
 
@@ -70,12 +67,11 @@ A workspace for [describe your project].
 | [(Dashboard) Increments](/dashboard-increments) | Release tracking |
 | [Architecture](/architecture) | System design |
 
-## Plugins
+## Shards
 
-| Plugin | Purpose |
-|--------|---------|
-| Core | Base conventions and utilities |
-| Living Documents | Track document lifecycle |
+| Shard | Purpose |
+|-------|---------|
+| Flint | Base conventions and utilities |
 | Increments | Version releases |
 | Projects | Task management |
 
@@ -89,7 +85,7 @@ When working in this Flint:
 
 ## Workspace
 
-Codebase linked at [Workspace/Monorepo](/workspace-monorepo)
+Codebase linked at [Workspace/References/rf-monorepo](/workspace-references-rf-monorepo)
 ```
 
 ## Step 3: Start an Agent Session
@@ -105,31 +101,31 @@ Then help me with [your task].
 
 The agent will read the init file and have context for everything that follows.
 
-## Step 4: Use Plugins for Structured Work
+## Step 4: Use Shards for Structured Work
 
 ### Creating a Task
 
 ```
-Read @Plugins/Projects/init-proj.md and create a new task for
+Read @Shards/Projects/init-proj.md and create a new task for
 implementing user notifications.
 ```
 
 The agent will:
-1. Read the Projects plugin init file
+1. Read the Projects shard init file
 2. Follow the task template
 3. Create a properly structured task document
 
 ### Creating an Increment
 
 ```
-Read @Plugins/Increments/init-inc.md and create increment 2.0.0
+Read @Shards/Increments/init-inc.md and create increment 2.0.0
 for the notification system.
 ```
 
 ### Using Notepad for Ideas
 
 ```
-Read @Plugins/Notepad/init-ntpd.md and capture these ideas
+Read @Shards/Notepad/init-ntpd.md and capture these ideas
 about the authentication flow.
 ```
 
@@ -141,7 +137,7 @@ Document your preferences in the init file:
 ## Conventions
 
 ### Naming
-- Tasks: `(Task) Verb Noun.md`
+- Tasks: `(Task) NNN Verb Noun.md`
 - Concepts: `Noun Phrase.md`
 - System files: `(System) Name.md`
 
@@ -153,7 +149,7 @@ Document your preferences in the init file:
 
 ### Workflow
 1. Tasks start in Backlog
-2. Active tasks get `status: active`
+2. Active tasks get `status: in-progress`
 3. Done tasks get `status: done`
 ```
 
@@ -168,7 +164,7 @@ Agents start fresh each session. To maintain continuity:
 Create a session note at start:
 
 ```markdown
-# Session 2025-12-18
+# Session 2026-03-02
 
 ## Context
 
@@ -207,9 +203,9 @@ Looking at [Task API Design](/task-api-design), what's the best approach
 for the authentication endpoints?
 ```
 
-**Plugin-aware:**
+**Shard-aware:**
 ```
-Use the Increments plugin to update our 1.0.0 increment
+Use the Increments shard to update our 1.0.0 increment
 with today's completed tasks.
 ```
 
@@ -223,32 +219,32 @@ existing naming conventions.
 
 **Vague scope:**
 ```
-Help me with the project.  ❌
+Help me with the project.
 ```
 
 **Context-free:**
 ```
-Write some API documentation.  ❌
+Write some API documentation.
 ```
 
 **Better:**
 ```
 Read [Architecture](/architecture) and [Task API Design](/task-api-design), then write
-API documentation for the auth endpoints.  ✓
+API documentation for the auth endpoints.
 ```
 
-## Agent Capabilities by Plugin
+## Agent Capabilities by Shard
 
-| Plugin | What Agents Can Do |
-|--------|-------------------|
-| **Core** | Navigate, search, create notes |
-| **Living Documents** | Track status, manage lifecycle |
+| Shard | What Agents Can Do |
+|-------|-------------------|
+| **Flint** | Navigate, search, create notes |
 | **Increments** | Create/update version releases |
 | **Projects** | Manage tasks and backlog |
 | **Notepad** | Quick capture of ideas |
 | **Plan** | High-level project planning |
+| **OrbCode** | Map codebases semantically |
 
-Load the relevant plugin init before asking for plugin-specific work.
+Load the relevant shard init before asking for shard-specific work.
 
 ## Workflow: Daily Agent Session
 
@@ -260,7 +256,7 @@ Load the relevant plugin init before asking for plugin-specific work.
 
 # During work
 4. Agent creates/updates notes
-5. Agent uses plugins as needed
+5. Agent uses shards as needed
 6. Human reviews, provides feedback
 
 # End of day
@@ -295,13 +291,13 @@ check our current increment status.
 ## What You've Learned
 
 - **Init file importance** - The foundation of agent context
-- **Plugin loading** - On-demand capability extension
+- **Shard loading** - On-demand capability extension
 - **Convention documentation** - Teaching agents your preferences
 - **Session patterns** - Maintaining continuity across sessions
 - **Effective prompting** - Grounded, specific, convention-aware
 
 ## Next Steps
 
-- [Module - Plugins & Mods](/modules/plugins-mods) - Deep dive into available plugins
+- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into available shards
 - [Reference - CLI Commands](/reference/cli-commands) - All available commands
 - [Guide - Core Concepts](/guide/core-concepts) - Review mental model

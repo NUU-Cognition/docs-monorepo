@@ -43,13 +43,74 @@ Workspace supports five reference types:
 | `database` | Database connection | Development database |
 | `service` | External service | Local dev server, external tool |
 
+## Repositories
+
+Beyond references to external resources, Workspace also supports **cloned repositories** - Git repos pulled into your Flint as reference or example code.
+
+Unlike references (which point to existing resources), repositories are:
+- **Cloned** from a Git URL into `Workspace/Repositories/`
+- **Stripped** of their `.git` folder (not submodules, just code)
+- **Updateable** by re-fetching from the source URL
+
+### Why Repositories?
+
+Use repositories when you want to:
+- Keep example code alongside your documentation
+- Reference implementation patterns from other projects
+- Include template code that doesn't need version control
+
+```
+flint.toml (committed)              Workspace/Repositories/ (gitignored)
+┌─────────────────────────┐        ┌──────────────────────────────┐
+│ [workspace]             │        │ example-api/                 │
+│ repositories = [        │        │   ├── src/                   │
+│   { name = "example-api"│   →    │   ├── package.json           │
+│     url = "https://..." │        │   └── README.md              │
+│   },                    │        │                              │
+│ ]                       │        │ (no .git folder)             │
+└─────────────────────────┘        └──────────────────────────────┘
+```
+
+### Source Repositories
+
+In addition to regular repositories, Workspace supports **source repositories** — lightweight reference copies that are shallow-cloned with `.git` stripped:
+
+```toml
+[workspace.sources]
+repositories = [
+  { name = "design-ref", url = "https://github.com/company/design-system" },
+]
+```
+
+Source repositories are cloned to `Workspace/Sources/Repositories/` and are ideal for reference code that doesn't need version history.
+
+```bash
+# Add a source repository
+flint workspace addreferencerepo design-ref https://github.com/company/design-system
+
+# List source repositories
+flint workspace listreferencerepo
+
+# Update a source repository
+flint workspace updatereferencerepo design-ref
+
+# Remove a source repository
+flint workspace removereferencerepo design-ref
+```
+
 ## Directory Structure
 
 ```
 Workspace/
-└── References/           # Gitignored - machine-specific paths
-    ├── rf-monorepo.md    # Path to monorepo on this machine
-    └── rf-assets.md      # Path to assets folder
+├── References/               # Gitignored - machine-specific paths
+│   ├── rf-monorepo.md        # Path to monorepo on this machine
+│   └── rf-assets.md          # Path to assets folder
+├── Repositories/             # Gitignored - cloned repository code
+│   ├── example-api/          # Cloned from GitHub (no .git)
+│   └── design-system/        # Another cloned repo
+└── Sources/
+    └── Repositories/         # Gitignored - shallow clones (.git stripped)
+        └── design-ref/       # Lightweight reference copy
 ```
 
 The `Workspace/References/` directory is gitignored. Each `rf-*.md` file contains:
@@ -178,6 +239,100 @@ flint workspace reference Monorepo /Users/me/dev/main
 # Just declare (same as 'add')
 flint workspace reference Monorepo
 ```
+
+## Repository Commands
+
+### Add a Repository
+
+```bash
+flint workspace addrepo <name> <url>
+```
+
+Clones a Git repository into `Workspace/Repositories/` and adds it to `flint.toml`.
+
+```bash
+# Clone an example API
+flint workspace addrepo example-api https://github.com/user/example-api
+
+# Clone a design system for reference
+flint workspace addrepo design-system https://github.com/company/design-system.git
+```
+
+This:
+1. Clones the repo with `--depth 1` (shallow clone for efficiency)
+2. Removes the `.git` folder
+3. Adds to `flint.toml`:
+
+```toml
+[workspace]
+repositories = [
+  { name = "example-api", url = "https://github.com/user/example-api" },
+]
+```
+
+### List Repositories
+
+```bash
+flint workspace listrepo
+```
+
+Shows all declared repositories with their clone status:
+- **Green checkmark** - Cloned and exists
+- **Yellow circle** - Declared but not cloned
+
+### Update a Repository
+
+```bash
+flint workspace updaterepo <name>
+```
+
+Re-fetches a repository by deleting the local copy and re-cloning from the source URL.
+
+```bash
+# Fetch latest version
+flint workspace updaterepo example-api
+```
+
+### Remove a Repository
+
+```bash
+flint workspace removerepo <name> [--force]
+```
+
+Removes both the cloned folder and the declaration from `flint.toml`.
+
+```bash
+# With confirmation prompt
+flint workspace removerepo example-api
+
+# Skip confirmation
+flint workspace removerepo example-api --force
+```
+
+## State Management
+
+Reference state is tracked in `.flint/references.json`:
+
+```json
+{
+  "version": 1,
+  "references": [
+    {
+      "name": "Monorepo",
+      "type": "codebase",
+      "path": "/Users/me/dev/main",
+      "fulfilled": "2026-01-28T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+This file is gitignored and tracks which references have been fulfilled on this machine. It's automatically updated when you fulfill or remove references.
+
+The state file enables:
+- Fast status checks without parsing markdown files
+- Programmatic access to reference paths
+- Consistent tracking with [Connections](/modules/connections) (which uses the same pattern)
 
 ## Reference File Format
 
@@ -338,5 +493,6 @@ Note: These links reference the fulfillment files, which contain documentation a
 ## Related
 
 - [Module - Mesh](/modules/mesh) - Notes that reference workspace resources
+- [Module - Connections](/modules/connections) - Similar declaration + fulfillment pattern for connecting to other Flints
 - [Reference - Configuration](/reference/configuration) - Workspace section in flint.toml
-- [Command - Sync](/command-sync) - How sync validates workspace references
+- [Reference - CLI Commands](/reference/cli-commands) - Workspace CLI commands

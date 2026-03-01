@@ -6,17 +6,18 @@ Complete guide to Flint configuration files and options.
 
 ## Configuration Files Overview
 
-| File | Location | Purpose | Edit |
-|------|----------|---------|------|
-| `flint.toml` | Flint root | Workspace configuration | Yes |
-| `flint.lock` | `.flint/` | Installed state tracking | No |
-| `mesh.config.yaml` | `.flint/` | Mesh indexing metadata | No |
-| `config.toml` | `~/.flint/` | Global user settings | Yes |
-| `registry.json` | `~/.flint/` | Global Flint registry | No |
+| File                      | Location    | Purpose                           | Edit |
+| ------------------------- | ----------- | --------------------------------- | ---- |
+| `flint.toml`              | Flint root  | Workspace configuration           | Yes  |
+| `flint.json`              | Flint root  | Identity and state                | No   |
+| `.flint/references.json`  | `.flint/`   | Machine-specific workspace paths  | No   |
+| `.flint/connections.json` | `.flint/`   | Machine-specific connection paths | No   |
+| `config.toml`             | `~/.flint/` | Global user settings              | Yes  |
+| `registry.json`           | `~/.flint/` | Global Flint registry             | No   |
 
 ## flint.toml
 
-The main configuration file for your Flint workspace. Located at the root of your Flint.
+The main configuration file for your Flint workspace. Located at the root of your Flint. This is the **source of truth** — human-editable, committed to git.
 
 ### Complete Structure
 
@@ -24,29 +25,41 @@ The main configuration file for your Flint workspace. Located at the root of you
 [flint]
 name = "my-project"
 type = "flint"
+tags = ["active", "dev"]
+description = "Main development workspace"
 
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "increments",
-  "projects",
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+notepad = { source = "NUU-Cognition/shard-notepad" }
+plan = { source = "NUU-Cognition/shard-plan" }
+my-custom = { source = "path:./Shards/(Dev) My Custom", dev = true }
 
 [mods]
-required = [
-  "claude-code",
-]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 
 [workspace]
 references = [
-  { name = "monorepo", type = "codebase" },
+  { name = "Monorepo", type = "codebase" },
   { name = "design-docs", type = "drive" },
+]
+repositories = [
+  { name = "example-api", url = "https://github.com/user/example-api" },
+]
+
+[workspace.sources]
+repositories = [
+  { name = "design-ref", url = "https://github.com/company/design-system" },
 ]
 
 [imports]
 required = [
   "NUU Flint/Guide",
+]
+
+[connections]
+flints = [
+  { name = "NUU Vessel" },
 ]
 ```
 
@@ -58,83 +71,127 @@ Core workspace identity.
 [flint]
 name = "my-project"
 type = "flint"
+tags = ["active", "dev"]
+description = "Main development workspace"
 ```
 
 | Field | Required | Values | Description |
 |-------|----------|--------|-------------|
-| `name` | Yes | string | Unique identifier, typically matches folder name |
-| `type` | Yes | `flint` | Workspace type |
+| `name` | Yes | string | Display name, typically matches folder name |
+| `type` | Yes | `flint` or `subflint` | Workspace type |
+| `tags` | No | array of strings | Tags for registry categorization |
+| `description` | No | string | Brief description |
 
 The `name` field is used:
 - As the display name in `flint list`
 - In import references from other Flints
+- In connection declarations
 
-### [plugins] Section
+### [shards] Section
 
-Declare plugins to install in this workspace.
+Declare shards to install in this workspace. Each shard is a key-value pair where the key is a local identifier and the value specifies the source.
 
 ```toml
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "increments",
-  "projects",
-  "notepad",
-  "plan",
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+notepad = { source = "NUU-Cognition/shard-notepad" }
+plan = { source = "NUU-Cognition/shard-plan" }
+orbcode = { source = "NUU-Cognition/shard-orbcode" }
+my-custom = { source = "path:./Shards/(Dev) My Custom", dev = true }
 ```
 
-Plugins are specified by kebab-case name. Run `flint plugin list --available` to see all plugins.
+**Source formats:**
+- `"owner/repo"` — GitHub repository (e.g., `"NUU-Cognition/shard-projects"`)
+- `"github:owner/repo"` — Explicit GitHub prefix
+- `"path:./local/path"` — Local filesystem path
 
-**Core plugins:**
-- `core` - Base conventions and agent setup
-- `living-documents` - Document lifecycle tracking
-- `increments` - Version stream management
-- `projects` - Task and backlog management
-- `notepad` - Quick capture and brainstorming
-- `plan` - High-level planning
+**Optional fields:**
+- `dev = true` — Marks as a dev shard (skipped by sync and update)
+
+**Available shards:**
+- `shard-flint` — Base conventions and agent setup
+- `shard-projects` — Task and backlog management
+- `shard-increments` — Version stream management
+- `shard-notepad` — Quick capture and brainstorming
+- `shard-plan` — High-level planning
+- `shard-orbcode` — Semantic code mapping
+- `shard-reports` — Research and analysis
+- `shard-learning-reports` — Educational content
+- `shard-flintknapping` — Iterative refinement workflows
+- `shard-comments` — Inline document comments
 
 ### [mods] Section
 
-Declare mods (integrations) to install.
+Declare mods (environment modifications) to install.
 
 ```toml
 [mods]
-required = [
-  "claude-code",
-]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
+my-mod = { source = "path:./Mods/(Dev) My Mod", dev = true }
 ```
 
+**Source formats:** Same as shards (`"owner/repo"`, `"github:owner/repo"`, `"path:./path"`).
+
+**Optional fields:**
+- `dev = true` — Marks as a dev mod
+
 **Available mods:**
-- `claude-code` - Claude Code integration with `CLAUDE.md` generation
+- `flint-mod-claude-code` — Claude Code integration with `CLAUDE.md` generation
 
 ### [workspace] Section
 
-Declare external resource references. These are portable declarations of what external resources the workspace connects to.
+Declare external resource references and repositories.
 
 ```toml
 [workspace]
 references = [
-  { name = "monorepo", type = "codebase" },
+  { name = "Monorepo", type = "codebase" },
   { name = "design-docs", type = "drive" },
   { name = "api", type = "api" },
 ]
+repositories = [
+  { name = "example-api", url = "https://github.com/user/example-api" },
+]
 ```
+
+**Reference fields:**
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Reference identifier (creates `Workspace/References/rf-<name>.md`) |
+| `name` | Yes | Reference identifier (creates `Workspace/References/rf-<kebab-name>.md`) |
 | `type` | Yes | Resource type |
 
-**Reference types:**
-- `codebase` - Source code repository
-- `drive` - File system directory
-- `api` - External API
-- `database` - Database connection
-- `service` - External service
+**Reference types:** `codebase`, `drive`, `api`, `database`, `service`
 
-Machine-specific paths are stored in `.flint/workspace.toml` (gitignored), not in `flint.toml`.
+**Repository fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Repository identifier (creates `Workspace/Repositories/<name>/`) |
+| `url` | Yes | Git URL to clone from |
+
+Machine-specific paths are stored in `.flint/references.json` (gitignored), not in `flint.toml`.
+
+### [workspace.sources] Section
+
+Declare source repositories — lightweight reference copies that are shallow-cloned with `.git` stripped.
+
+```toml
+[workspace.sources]
+repositories = [
+  { name = "design-ref", url = "https://github.com/company/design-system" },
+]
+```
+
+Source repositories are cloned to `Workspace/Sources/Repositories/` and managed with `flint workspace addreferencerepo`, `listreferencerepo`, `updatereferencerepo`, and `removereferencerepo`.
+
+**Repository fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Repository identifier (creates `Workspace/Sources/Repositories/<name>/`) |
+| `url` | Yes | Git URL to clone from |
 
 ### [imports] Section
 
@@ -152,77 +209,106 @@ Format: `"<Flint Name>/<Export Name>"`
 
 The source Flint must be registered and have the specified export configured.
 
----
+### [connections] Section
 
-## flint.lock
+Declare connections to other Flints.
 
-Generated lock file tracking installed state. Located at `.flint/flint.lock`. **Do not edit manually.**
-
-### Structure
-
-```yaml
-version: 1
-flintVersion: 1.0.0
-created: 2026-01-04T10:30:05.953Z
-synced: 2026-01-04T10:30:05.953Z
-plugins:
-  - name: living-documents
-    version: 1.0.0
-    installedAt: 2026-01-04T09:00:00.000Z
-mods:
-  - name: claude-code
-    version: 1.0.0
-    installedAt: 2026-01-04T10:30:05.953Z
+```toml
+[connections]
+flints = [
+  { name = "NUU Vessel" },
+  { name = "NUU Mesh" },
+]
 ```
 
-| Field | Description |
-|-------|-------------|
-| `version` | Lock file format version |
-| `flintVersion` | Flint CLI version that created/synced |
-| `created` | When the lock file was created |
-| `synced` | Last sync timestamp |
-| `plugins` | Array of installed plugins |
-| `mods` | Array of installed mods |
+**Connection fields:**
 
-### Plugin/Mod Entry
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Name of the target Flint (must be registered) |
 
-```yaml
-- name: living-documents
-  version: 1.0.0
-  installedAt: 2026-01-04T09:00:00.000Z
-```
-
-| Field | Description |
-|-------|-------------|
-| `name` | Kebab-case identifier |
-| `version` | Installed version |
-| `installedAt` | Installation timestamp |
-
-The lock file is regenerated by `flint sync`.
+Machine-specific paths are stored in `.flint/connections.json` (gitignored) and `Connections/<Name>/con-*.md` files.
 
 ---
 
-## mesh.config.yaml
+## flint.json
 
-Mesh indexing configuration. Located at `.flint/mesh.config.yaml`. **Do not edit manually.**
+Identity and state file. Located at the Flint root. **Committed to git. Do not edit manually.**
 
 ### Structure
 
-```yaml
-version: 1
-id: a8f63611-9af9-4bd5-9c73-84d22fdfb201
-type: flint
-created: 2026-01-04T10:30:05.856Z
+```json
+{
+  "version": "0.2.0",
+  "id": "a8f63611-9af9-4bd5-9c73-84d22fdfb201",
+  "type": "flint",
+  "created": "2026-01-04T10:30:05.856Z",
+  "synced": "2026-03-01T15:30:00.000Z",
+  "migrations": {
+    "migration-id": "2026-02-01T..."
+  }
+}
 ```
 
 | Field | Description |
 |-------|-------------|
 | `version` | Config format version |
-| `id` | UUID for this mesh |
-| `type` | Mesh type (`flint`) |
+| `id` | UUID for this Flint (stable identity) |
+| `type` | Flint type (`flint` or `subflint`) |
 | `created` | Creation timestamp |
+| `synced` | Last sync timestamp |
+| `migrations` | Map of applied migration IDs to timestamps |
 
-This file is created during `flint init` and should not be modified.
+This file is created during `flint init` and updated by `flint sync`. The `id` provides a stable identifier that persists across renames and moves.
+
+---
+
+## .flint/ Directory
+
+Gitignored runtime state. Contains machine-specific data that doesn't travel with the Flint.
+
+```
+.flint/
+  references.json      # Machine-specific workspace paths
+  connections.json     # Machine-specific connection paths
+  index/
+    files.json         # Mesh index (file IDs, tags, paths)
+```
+
+### references.json
+
+Tracks fulfilled workspace references:
+
+```json
+{
+  "version": 1,
+  "references": [
+    {
+      "name": "Monorepo",
+      "type": "codebase",
+      "path": "/Users/me/dev/main",
+      "fulfilled": "2026-01-28T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+### connections.json
+
+Tracks fulfilled connections:
+
+```json
+{
+  "version": 1,
+  "connections": [
+    {
+      "name": "NUU Vessel",
+      "path": "/Users/me/dev/nuu/(Flint) NUU Vessel",
+      "fulfilled": "2026-01-28T10:30:00.000Z"
+    }
+  ]
+}
+```
 
 ---
 
@@ -241,6 +327,7 @@ mode = "production"
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `mode` | `production` | Feature mode |
+| `open.apps` | `[]` | Apps to open Flints with (e.g., `["obsidian", "cursor"]`) |
 
 ### Feature Mode
 
@@ -305,8 +392,8 @@ Registry of all Flints on this machine. Located at `~/.flint/registry.json`. Man
       "name": "NUU Flint",
       "path": "/Users/nathan/dev/nuu/nuu-flints/(Flint) NUU Flint",
       "type": "flint",
-      "source": "local",
-      "exports": ["Guide"]
+      "tags": ["active"],
+      "description": "Main Flint development workspace"
     }
   ]
 }
@@ -318,9 +405,9 @@ Registry of all Flints on this machine. Located at `~/.flint/registry.json`. Man
 |-------|----------|-------------|
 | `name` | Yes | Flint name (from `flint.toml`) |
 | `path` | Yes | Absolute path to Flint |
-| `type` | No | Workspace type |
-| `source` | No | Currently always `local` |
-| `exports` | No | Array of export names |
+| `type` | No | Workspace type (`flint` or `subflint`) |
+| `tags` | No | Array of tags for categorization |
+| `description` | No | Brief description |
 
 ### Managing the Registry
 
@@ -334,8 +421,18 @@ flint register
 # Register specific path
 flint register /path/to/flint
 
+# Scan for Flints to register
+flint register --scan ~/projects
+
 # Unregister
 flint unregister
+
+# Validate and clean
+flint registry validate
+
+# Add/remove tags
+flint registry tag "My Project" "important"
+flint registry untag "My Project" "old-tag"
 ```
 
 ---
@@ -357,19 +454,14 @@ type = "flint"
 name = "my-app"
 type = "flint"
 
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "increments",
-  "projects",
-  "plan",
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+plan = { source = "NUU-Cognition/shard-plan" }
+orbcode = { source = "NUU-Cognition/shard-orbcode" }
 
 [mods]
-required = [
-  "claude-code",
-]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 
 [workspace]
 references = [
@@ -384,12 +476,20 @@ references = [
 name = "research"
 type = "flint"
 
-[plugins]
-required = [
-  "core",
-  "living-documents",
-  "notepad",
-]
+[shards]
+notepad = { source = "NUU-Cognition/shard-notepad" }
+reports = { source = "NUU-Cognition/shard-reports" }
+```
+
+### Subflint
+
+```toml
+[flint]
+name = "Blog"
+type = "subflint"
+
+[shards]
+notepad = { source = "NUU-Cognition/shard-notepad" }
 ```
 
 ---
@@ -399,9 +499,10 @@ required = [
 | File | Location | Git |
 |------|----------|-----|
 | `flint.toml` | `<flint>/` | Committed |
-| `.flint/flint.lock` | `<flint>/.flint/` | Gitignored |
-| `.flint/mesh.config.yaml` | `<flint>/.flint/` | Gitignored |
-| `.flint/workspace.toml` | `<flint>/.flint/` | Gitignored |
+| `flint.json` | `<flint>/` | Committed |
+| `.flint/references.json` | `<flint>/.flint/` | Gitignored |
+| `.flint/connections.json` | `<flint>/.flint/` | Gitignored |
+| `.flint/index/files.json` | `<flint>/.flint/` | Gitignored |
 | `~/.flint/config.toml` | Home directory | N/A |
 | `~/.flint/registry.json` | Home directory | N/A |
 

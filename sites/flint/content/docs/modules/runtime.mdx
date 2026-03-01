@@ -1,0 +1,360 @@
+---
+title: "Runtime"
+---
+
+The Runtime transforms Flints from static document collections into live, reactive applications. It monitors file changes, executes hooks, and enables inter-Flint communication.
+
+## Purpose
+
+While Flints are powerful as static workspaces, many workflows benefit from automation:
+
+- **Reactive automation** - Run scripts when files change, tags update, or status transitions
+- **Agent observation** - Track AI agent sessions as they work in your Flint
+- **Inter-Flint messaging** - Send structured messages between connected Flints
+- **Event logging** - Keep a record of what happens in your workspace
+
+The Runtime provides this infrastructure through two components:
+
+1. **Flint Server** - A local HTTP server that manages multiple runtimes
+2. **Flint Runtime** - A per-Flint process that watches files and executes hooks
+
+## Architecture
+
+```
+                     ┌─────────────────────┐
+                     │    Flint Server     │
+                     │  (127.0.0.1:7433)   │
+                     └─────────┬───────────┘
+                               │
+            ┌──────────────────┼──────────────────┐
+            │                  │                  │
+    ┌───────▼───────┐  ┌───────▼───────┐  ┌──────▼────────┐
+    │  Runtime A    │  │  Runtime B    │  │  Runtime C    │
+    │  (Flint 1)    │  │  (Flint 2)    │  │  (Flint 3)    │
+    └───────────────┘  └───────────────┘  └───────────────┘
+```
+
+The server runs as a single process. Each Flint gets its own runtime with independent file watchers and hook configurations.
+
+## Quick Start
+
+### 1. Start the Server
+
+```bash
+flint server start
+```
+
+The server starts on `http://127.0.0.1:7433` and manages all runtimes.
+
+### 2. Start a Runtime
+
+```bash
+# Start runtime for current Flint
+flint runtime start
+
+# Or specify a path
+flint runtime start /path/to/flint
+```
+
+### 3. Configure Hooks
+
+Create `flint-hooks.toml` in your Flint root:
+
+```toml
+[hooks.FileChanged](/hooks-filechanged)
+matcher = "Mesh/Tasks/*.md"
+command = "./hooks/on-task-change.ts"
+timeout = 30
+```
+
+### 4. Monitor
+
+```bash
+# Check server status
+flint server status
+
+# List active runtimes
+flint runtime list
+```
+
+## Runtimes
+
+Each runtime monitors a single Flint workspace and:
+
+- Watches for file changes in `Mesh/`, sessions, and connections
+- Parses frontmatter to detect status and tag changes
+- Executes matching hooks when events occur
+- Maintains an in-memory event log
+
+### Runtime Identity
+
+Runtimes are identified by a stable hash of their Flint path. This ID is used by the server to address specific runtimes:
+
+```bash
+# Stop runtime by ID
+flint runtime stop abc1234567
+
+# Or stop by path (derives the ID automatically)
+flint runtime stop /path/to/flint
+```
+
+### Watched Paths
+
+The runtime watches these locations within a Flint:
+
+| Path | What It Detects |
+|------|-----------------|
+| `Mesh/**/*.md` | Document changes, tag/status transitions |
+| `.flint/sessions/*.json` | Agent session start/complete |
+| `Connections/**/con-*.md` | Connection file changes |
+| `flint-hooks.toml` | Hook configuration changes (hot reload) |
+
+### File Stability
+
+The watcher waits for files to stabilize before processing, avoiding partial reads during saves:
+
+- Stability threshold: 200ms
+- Poll interval: 50ms
+
+## Events
+
+Events are the foundation of runtime automation. When something happens in your Flint, an event is generated.
+
+### Event Types
+
+| Event | Trigger | Payload Fields |
+|-------|---------|----------------|
+| `FileChanged` | Any markdown file changes | `path`, `tags`, `status` |
+| `StatusChanged` | Frontmatter `status` field changes | `path`, `from`, `to` |
+| `TagAdded` | New tag appears in frontmatter | `path`, `tag` |
+| `TagRemoved` | Tag removed from frontmatter | `path`, `tag` |
+| `AgentStart` | Agent session begins | `sessionId`, `status`, `model`, `goal` |
+| `AgentComplete` | Agent session ends | `sessionId`, `status`, `model`, `goal` |
+| `ConnectionReceived` | Connection event received | `from`, `subject`, `path` |
+| `RuntimeStart` | Runtime starts | `flintPath` |
+| `RuntimeStop` | Runtime stops | `flintPath` |
+
+### Event Structure
+
+Every event includes:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "FileChanged",
+  "timestamp": "2026-01-22T10:30:00.000Z",
+  "payload": {
+    "path": "Mesh/Tasks/(Task) 055 Implementation.md",
+    "tags": ["#task", "#proj/task", "#ld/living"],
+    "status": "in-progress"
+  }
+}
+```
+
+### Event Log
+
+Events are stored in an in-memory ring buffer (200 entries by default). Query events via the server API:
+
+```bash
+curl http://127.0.0.1:7433/runtimes/<id>/events
+```
+
+## Hooks
+
+Hooks let you run scripts in response to events. Configure them in `flint-hooks.toml`.
+
+### Basic Hook
+
+```toml
+[hooks.FileChanged](/hooks-filechanged)
+command = "./hooks/on-file-change.sh"
+```
+
+This runs for every `FileChanged` event.
+
+### Filtered Hook
+
+```toml
+[hooks.FileChanged](/hooks-filechanged)
+matcher = "Mesh/Tasks/*.md"
+command = "./hooks/on-task-change.ts"
+timeout = 30
+```
+
+The `matcher` is a glob pattern. The hook only runs when the event's `path` matches.
+
+### Object Matchers
+
+For events other than `FileChanged`, use object matchers:
+
+```toml
+[hooks.StatusChanged](/hooks-statuschanged)
+matcher = { from = "todo", to = "in-progress" }
+command = "./hooks/on-task-start.ts"
+
+[hooks.TagAdded](/hooks-tagadded)
+matcher = { tag = "#urgent" }
+command = "./hooks/notify-urgent.ts"
+```
+
+Available matcher fields:
+
+| Field | Events | Description |
+|-------|--------|-------------|
+| `tag` | TagAdded, TagRemoved | Match specific tag |
+| `field` | StatusChanged | Match field name |
+| `from` | StatusChanged | Match previous value |
+| `to` | StatusChanged | Match new value |
+
+### Hook Execution
+
+Hooks receive event data via stdin as JSON:
+
+```json
+{
+  "event": {
+    "id": "...",
+    "type": "FileChanged",
+    "timestamp": "...",
+    "payload": { "path": "...", "tags": [...], "status": "..." }
+  },
+  "flint": {
+    "path": "/path/to/flint"
+  }
+}
+```
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `2` | Block/soft-fail (logged as warning) |
+| Other | Error (logged as error) |
+
+### Supported Script Types
+
+The runtime auto-detects script types by extension:
+
+| Extension | Runner |
+|-----------|--------|
+| `.ts` | `tsx <file>` |
+| `.py` | `python3 <file>` |
+| `.sh` | `bash <file>` |
+| Other | Run directly |
+
+Scripts run with:
+- Working directory: Flint root
+- PATH includes: `<flint>/node_modules/.bin`, workspace `node_modules/.bin`
+
+See [Reference - Hooks Configuration](/reference/hooks-configuration) for complete configuration reference.
+
+## Server API
+
+The server exposes a REST API for runtime management and inter-Flint communication.
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Server health check |
+| `GET` | `/runtimes` | List all active runtimes |
+| `POST` | `/runtimes` | Start a new runtime |
+| `GET` | `/runtimes/:id` | Get runtime status |
+| `GET` | `/runtimes/:id/events` | Get runtime event log |
+| `POST` | `/runtimes/:id/messages` | Send message to runtime |
+| `DELETE` | `/runtimes/:id` | Stop a runtime |
+| `POST` | `/messages` | Route message between runtimes |
+| `POST` | `/shutdown` | Stop all runtimes and server |
+
+### Runtime Status
+
+```json
+{
+  "id": "abc1234567",
+  "path": "/Users/me/my-flint",
+  "name": "My Flint",
+  "status": "running",
+  "eventCount": 42,
+  "startedAt": "2026-01-22T10:00:00.000Z"
+}
+```
+
+### Inter-Flint Messages
+
+Send messages between runtimes:
+
+```bash
+curl -X POST http://127.0.0.1:7433/messages \
+  -H "Content-Type: application/json" \
+  -d '{"from": "abc123", "to": "def456", "message": "Hello"}'
+```
+
+Messages trigger `ConnectionReceived` events on the target runtime.
+
+## Agent Sessions
+
+The runtime observes AI agent activity by watching `.flint/sessions/*.json`. It doesn't spawn or control agents - it just tracks their lifecycle.
+
+### Session Detection
+
+When a session file appears with `status: "active"`, the runtime emits `AgentStart`. When the status changes to `complete` or `failed`, it emits `AgentComplete`.
+
+### Use Cases
+
+- Log agent activity for audit trails
+- Trigger post-processing when agents complete tasks
+- Monitor agent health across multiple Flints
+
+## Feature Flags
+
+Runtime features are gated behind dev-tier feature flags:
+
+```bash
+# Enable runtime features
+flint mode dev
+
+# Check feature status
+flint mode --list
+```
+
+Features:
+- `server` - Flint runtime server
+- `runtime` - Flint runtime management
+
+## Limitations
+
+Current implementation constraints:
+
+- **No persistence** - Event log is in-memory only
+- **No authentication** - Server endpoints are unauthenticated
+- **No daemonization** - Server runs in foreground
+- **TOML only** - No support for hooks in other config formats
+- **Local only** - Server binds to localhost
+
+## Best Practices
+
+### Hooks
+
+**Keep hooks fast.** Long-running hooks should spawn background processes rather than blocking.
+
+**Use timeouts.** Always set reasonable timeouts to prevent runaway hooks.
+
+**Log output.** Hook stdout/stderr is logged by the runtime. Use this for debugging.
+
+**Idempotent operations.** Hooks may run multiple times for the same logical change. Design accordingly.
+
+### Runtimes
+
+**One runtime per Flint.** Don't start multiple runtimes for the same Flint.
+
+**Server lifecycle.** Start the server before runtimes. Stop runtimes before the server.
+
+**Check status.** Use `flint server status` and `flint runtime list` to verify state.
+
+## Related
+
+- [Reference - CLI Commands](/reference/cli-commands) - Server and runtime CLI commands
+- [Reference - Hooks Configuration](/reference/hooks-configuration) - Complete hooks configuration reference
+- [Module - Mesh](/modules/mesh) - Understanding the Mesh file structure
+- [Module - Subflints](/modules/subflints) - Working with nested Flints

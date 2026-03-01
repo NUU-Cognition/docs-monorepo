@@ -1,0 +1,350 @@
+---
+title: "Connections"
+---
+
+**Reference other Flints for cross-workspace awareness.**
+
+## Purpose
+
+Connections link your Flint to other Flints you work with. When documenting a project that spans multiple repositories, or when your planning Flint needs to reference your implementation Flint, connections establish that relationship.
+
+The key insight: **declarations travel, paths don't**. Connection declarations live in `flint.toml` (committed, portable), while the actual machine-specific paths live in `Connections/<Name>/con-*.md` files (gitignored, local). This is the same pattern used by [Workspace references](/modules/workspace).
+
+## Architecture
+
+Connections use a two-part system to maintain portability:
+
+1. **Declarations** in `flint.toml` - what other Flints this Flint references
+2. **Fulfillments** in `Connections/<Name>/con-*.md` - where those Flints live on this machine
+
+```
+flint.toml (committed)              Connections/ (gitignored)
+┌─────────────────────────┐        ┌──────────────────────────────┐
+│ [connections]           │        │ NUU Vessel/                  │
+│ flints = [              │        │   con-nuu-vessel.md          │
+│   { name = "NUU Vessel" │   →    │     **Path:** /Users/me/...  │
+│   },                    │        │                              │
+│ ]                       │        │ NUU Mesh/                    │
+└─────────────────────────┘        │   con-nuu-mesh.md            │
+                                   └──────────────────────────────┘
+```
+
+When you clone a Flint, you see what other Flints it connects to (from `flint.toml`) and can fulfill them with local paths.
+
+## State Management
+
+Connection state is tracked in `.flint/connections.json`:
+
+```json
+{
+  "version": 1,
+  "connections": [
+    {
+      "name": "NUU Vessel",
+      "path": "/Users/me/dev/nuu/(Flint) NUU Vessel",
+      "fulfilled": "2026-01-28T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+This file is gitignored and tracks which connections have been fulfilled on this machine.
+
+## Registry Requirement
+
+**Connections require the target Flint to be registered.** Before you can add a connection, the target must exist in your local registry (`~/.flint/registry.json`).
+
+This ensures:
+- The target is a valid Flint
+- You have access to it locally
+- Auto-fulfillment can work from the registry
+
+```bash
+# Check registered Flints
+flint list
+
+# Register a Flint if needed
+flint register ~/dev/other-flint
+```
+
+## One-Way Connections
+
+Connections are **one-way**. When Flint A connects to Flint B:
+- Flint A knows about Flint B
+- Flint B has no knowledge of the connection
+
+This is intentional. The connected Flint doesn't need to track who references it. If you need bidirectional awareness, create connections in both directions.
+
+## Directory Structure
+
+```
+Connections/              # Gitignored - machine-specific
+├── NUU Vessel/           # Folder = declared name
+│   └── con-nuu-vessel.md # Connection file (kebab-case)
+└── NUU Mesh/
+    └── con-nuu-mesh.md
+```
+
+Each `con-*.md` file contains:
+- The local path to the connected Flint
+- Timestamp of fulfillment
+- Optional notes
+
+## Commands
+
+### Add a Connection
+
+```bash
+flint connection add <name>
+```
+
+Declares a connection to another Flint. The target must be registered.
+
+```bash
+# Add connection (auto-fulfills from registry)
+flint connection add "NUU Vessel"
+
+# Add declaration only, fulfill later
+flint connection add "NUU Mesh" --no-fulfill
+```
+
+This adds to `flint.toml`:
+
+```toml
+[connections]
+flints = [
+  { name = "NUU Vessel" },
+]
+```
+
+### List Connections
+
+```bash
+flint connection list
+```
+
+Shows all connections with their fulfillment status:
+
+```
+Connections:
+
+  ✓ NUU Vessel (fulfilled)
+      ~/dev/nuu/(Flint) NUU Vessel
+  ○ NUU Mesh (unfulfilled)
+  ! Old Project (missing)
+      ~/dev/old-project
+
+1 unfulfilled. Run: flint connection fulfill --all
+```
+
+Status indicators:
+- **Green checkmark** - Fulfilled and path exists
+- **Yellow circle** - Declared but not fulfilled
+- **Red exclamation** - Fulfilled but path no longer exists
+
+### Fulfill a Connection
+
+```bash
+flint connection fulfill <name> [--target <path>]
+```
+
+Provides a local path for a declared connection. If no path is given, looks up from the registry.
+
+```bash
+# Auto-fulfill from registry
+flint connection fulfill "NUU Vessel"
+
+# Fulfill with explicit path
+flint connection fulfill "NUU Vessel" --target ~/dev/nuu-vessel
+
+# Fulfill all unfulfilled connections from registry
+flint connection fulfill --all
+```
+
+### Check Connection Status
+
+```bash
+flint connection status
+```
+
+Shows connection health:
+
+```
+Connection Status:
+
+  ✓ NUU Vessel
+  ! NUU Mesh (path missing)
+      ~/dev/old-location
+
+1/2 connection(s) valid, 2/2 fulfilled
+```
+
+### Remove a Connection
+
+```bash
+flint connection remove <name>
+```
+
+Removes both the declaration from `flint.toml` and the fulfillment files.
+
+```bash
+flint connection remove "Old Project"
+```
+
+## Connection File Format
+
+Each `con-*.md` file follows this format:
+
+```markdown
+---
+name: NUU Vessel
+path: /Users/me/dev/nuu/(Flint) NUU Vessel
+fulfilled: 2026-01-28T10:30:00.000Z
+---
+
+# NUU Vessel
+
+Connection to external Flint.
+
+**Path:** /Users/me/dev/nuu/(Flint) NUU Vessel
+
+## Notes
+
+(Add notes about this connection here)
+```
+
+The frontmatter is parsed for tooling. The body is for documentation.
+
+## Portability
+
+The connection system maintains portability:
+
+1. **Clone a Flint** - `flint.toml` shows what connections exist
+2. **Run sync** - `flint sync` reports unfulfilled connections
+3. **Fulfill connections** - `flint connection fulfill --all` auto-fills from registry
+4. **Continue working** - Local paths stay gitignored
+
+### Example: Cloning a Flint
+
+```bash
+# Clone a Flint that has connections
+git clone https://github.com/example/my-flint.git
+cd my-flint
+
+# See what's needed
+flint connection list
+#   ○ NUU Vessel (unfulfilled)
+#   ○ NUU Mesh (unfulfilled)
+
+# Register the required Flints if needed
+flint register ~/dev/nuu-vessel
+flint register ~/dev/nuu-mesh
+
+# Fulfill all connections
+flint connection fulfill --all
+
+# Now ready to work
+flint sync
+```
+
+## Sync Behavior
+
+When you run `flint sync`, connections are processed:
+
+1. **Migration** - Old connection formats (symlinks, mirrors) are migrated
+2. **Status check** - Each declared connection is checked for fulfillment
+3. **Path validation** - Fulfilled connections are checked to ensure paths exist
+4. **Reporting** - Issues are displayed with guidance
+
+Example sync output:
+
+```
+Connections:
+  ✓ Migrated 2 connection(s) to new format
+
+Workspace:
+  ○ NUU Vessel (unfulfilled)
+
+  Run 'flint connection fulfill --all' to provide local paths.
+```
+
+## Migration from Old Format
+
+If you have connections from an older Flint version (with symlinks, mirrors, or inbox/outbox), they are automatically migrated when you run `flint sync`:
+
+1. Connection names are extracted and added to `flint.toml`
+2. Paths are preserved in the new fulfillment format
+3. Old folders (inbox, outbox, mirror) are removed
+4. New `con-*.md` files are created
+
+The migration is non-destructive - your connection paths are preserved.
+
+## Deprecated Features
+
+The following connection features have been removed:
+
+| Feature | Status | Alternative |
+|---------|--------|-------------|
+| Mirror/symlinks | Removed | Use [Imports/Exports](/module-imports) for shared content |
+| Inbox/Outbox | Removed | Use external tools (email, chat) for messaging |
+| `flint inbox` command | Deprecated | Shows migration guidance |
+| Messaging API | Removed | N/A |
+
+The new connection system focuses on **reference** rather than **synchronization**. For sharing content between Flints, use the [Exports](/modules/exports) and [Imports](/modules/imports) system.
+
+## Use Cases
+
+### Multi-Repository Project
+
+Connect your planning Flint to implementation Flints:
+
+```bash
+# In your planning Flint
+flint connection add "API Implementation"
+flint connection add "Web Frontend"
+flint connection add "Mobile App"
+```
+
+### Research with Multiple Sources
+
+Connect to Flints containing different research areas:
+
+```bash
+flint connection add "Literature Review"
+flint connection add "Data Analysis"
+flint connection add "Field Notes"
+```
+
+### Cross-Team Collaboration
+
+Connect to team Flints (each team member registers and fulfills locally):
+
+```bash
+flint connection add "Design Team"
+flint connection add "Engineering Team"
+```
+
+## Best Practices
+
+**Register before connecting.** Ensure target Flints are in your registry before adding connections.
+
+**Use descriptive names.** Connection names should clearly identify the target. "NUU Vessel" is better than "vessel".
+
+**Fulfill after cloning.** When you clone a Flint with connections, run `flint connection fulfill --all` to set up local paths.
+
+**Check status regularly.** Run `flint connection status` to ensure your paths are still valid.
+
+### Common Mistakes
+
+- **Connecting to unregistered Flints** - Register the target first with `flint register`
+- **Hardcoding paths in Mesh** - Reference the connection files, not raw paths
+- **Expecting bidirectional** - Connections are one-way; create both if needed
+- **Using for content sharing** - Use Imports/Exports for shared content, not connections
+
+## Related
+
+- [Module - Workspace](/modules/workspace) - Similar declaration + fulfillment pattern for external resources
+- [Module - Imports](/modules/imports) - Importing content from other Flints
+- [Module - Exports](/modules/exports) - Exporting content for other Flints
+- [Reference - CLI Commands](/reference/cli-commands) - Connection CLI commands
+- [Reference - Configuration](/reference/configuration) - Connection section in flint.toml

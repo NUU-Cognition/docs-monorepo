@@ -99,7 +99,6 @@ Tags can appear in frontmatter or inline in content:
 ```yaml
 tags:
   - "#project/alpha"
-  - "#ld/living"
 ```
 
 Or inline: `This note is about #project/alpha.`
@@ -202,11 +201,11 @@ Transclusion embeds the content of another note inline. This is used by the expo
 See [Related Concept#Specific Section](/related-concept-specific-section).
 ```
 
-## Plugin Interaction
+## Shard Interaction
 
-Plugins read from and write to the Mesh:
+Shards read from and write to the Mesh:
 
-### Projects Plugin
+### Projects Shard
 
 Creates and manages task notes:
 
@@ -221,7 +220,7 @@ status: todo
 priority: high
 ```
 
-### Increments Plugin
+### Increments Shard
 
 Creates versioned work stream notes:
 
@@ -229,15 +228,15 @@ Creates versioned work stream notes:
 Mesh/Increments/(Increment) 1.2.0 - Feature X.md
 ```
 
-### Notepad Plugin
+### Notepad Shard
 
 Creates temporary working notes:
 
 ```
-Mesh/(Notepad) 2025-01-15 Session.md
+Mesh/(Notepad) 001 Session Ideas.md
 ```
 
-### Plan Plugin
+### Plan Shard
 
 Creates and tracks plans:
 
@@ -245,7 +244,7 @@ Creates and tracks plans:
 Mesh/Plans/(Plan) Q1 Roadmap.md
 ```
 
-Plugins use the `Mesh/` folder as their workspace, following the typed document conventions.
+Shards use the `Mesh/` folder as their workspace, following the typed document conventions.
 
 ## Best Practices
 
@@ -280,5 +279,5 @@ Plugins use the `Mesh/` folder as their workspace, following the typed document 
 
 - [Module - Exports](/modules/exports) - Compile Mesh notes for sharing
 - [Module - Imports](/modules/imports) - Bring external content into Mesh
-- [Module - Plugins & Mods](/modules/plugins-mods) - Extend Mesh with plugins
+- [Module - Shards & Mods](/modules/shards-mods) - Extend Mesh with shards
 - [Reference - CLI Commands](/reference/cli-commands) - Full CLI reference

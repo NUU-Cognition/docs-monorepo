@@ -1,5 +1,5 @@
 ---
-title: "Agent reads this to understand the Projects plugin"
+title: "Agent reads this to understand the Projects shard"
 ---
 
 Understanding these concepts will make everything else click.
@@ -24,15 +24,17 @@ A Flint is a folder with a specific structure:
 ```
 (Flint) My Project/
   flint.toml           # Configuration (you edit this)
-  .flint/              # Internal state (managed by Flint)
-    flint.lock         # Computed state
-    mesh.config.yaml   # Workspace identity
+  flint.json           # Identity and state (managed by Flint)
+  .flint/              # Internal state (gitignored)
   Mesh/                # Your notes and thinking
-  Plugins/             # Installed plugins
+  Shards/              # Installed shards (agent capabilities)
+  Mods/                # Installed mods (environment integrations)
   Workspace/           # References to external resources
   Media/               # Binary assets
   Imports/             # Content from other Flints
-  Exports/             # Content you share out
+  Exports/             # Built export output
+  Connections/         # References to other Flints (gitignored)
+  Subflints/           # Nested Flint workspaces
 ```
 
 The folder naming convention `(Flint) Name` makes Flints visually distinct and sortable. The name inside `flint.toml` is the canonical name; the folder name follows it.
@@ -47,14 +49,17 @@ Notes use typed prefixes to indicate their purpose:
 
 | Prefix | Purpose | Example |
 |--------|---------|---------|
-| `(Task)` | Actionable work items | `(Task) Implement auth flow.md` |
-| `(Plan)` | High-level plans | `(Plan) Q1 Roadmap.md` |
+| `(Task)` | Actionable work items | `(Task) 076 Implement auth flow.md` |
+| `(Plan)` | High-level plans | `(Plan) 003 Q1 Roadmap.md` |
 | `(Increment)` | Versioned work packages | `(Increment) 1.2.0 - UI Polish.md` |
 | `(Dashboard)` | Aggregation views | `(Dashboard) Backlog.md` |
 | `(System)` | Configuration/metadata | `(System) Flint Init.md` |
-| `(Doc)` | Documentation | `(Doc) Architecture Overview.md` |
+| `(Notepad)` | Brainstorming sessions | `(Notepad) 015 Architecture Ideas.md` |
+| `(Report)` | Research/analysis output | `(Report) Performance Audit.md` |
 
-These prefixes aren't just conventions - they enable plugins to find and operate on specific note types. A Projects plugin knows to look for `(Task)` files; an Increments plugin tracks `(Increment)` files.
+These prefixes aren't just conventions - they enable shards to find and operate on specific note types. A Projects shard knows to look for `(Task)` files; an Increments shard tracks `(Increment)` files.
+
+Typed artifacts use sequential numbering: `(Type) NNN Name.md`. Use `flint helper type newnumber <Type>` to get the next available number.
 
 ### The Graph
 
@@ -67,88 +72,99 @@ The graph enables:
 
 Think of Mesh as your external brain for this domain. Ideas go in as notes. Connections form through links. Insights emerge from the structure.
 
-## Plugins: Prompt-Based Extensions
+## Shards: Prompt-Based Extensions
 
-Plugins extend what you and AI agents can do in a Flint. Unlike traditional code plugins, Flint plugins are **prompt packages** - collections of markdown files that provide context, skills, and templates.
+Shards extend what you and AI agents can do in a Flint. Unlike traditional code plugins, Flint shards are **prompt packages** - collections of markdown files that provide context, skills, templates, workflows, and knowledge.
 
-A plugin contains:
+A shard contains:
 
 ```
-Plugins/Projects/
-  plugin.yaml          # Plugin metadata and version
-  init-proj.md         # Context to load when using this plugin
+Shards/Projects/
+  shard.yaml              # Shard manifest (version, dependencies, install entries)
+  init-proj.md            # Context to load when using this shard
   skills/
-    sk-proj-create.md  # Repeatable task: create a task
-    sk-proj-archive.md # Repeatable task: archive completed tasks
+    sk-proj-capture_as_task.md   # Repeatable task: capture ideas as tasks
+    sk-proj-archive_tasks.md     # Repeatable task: archive completed tasks
   templates/
-    tmp-proj-task.md   # Document structure for tasks
+    tmp-proj-task.md      # Document structure for tasks
   workflows/
-    wkfl-proj-do.md    # Multi-step process for completing a task
+    wkfl-proj-create_task.md     # Multi-step process for creating tasks
+    wkfl-proj-do_task.md         # Multi-step process for completing tasks
+  knowledge/
+    knw-proj-conventions.md      # Deep reference on project conventions
+  scripts/
+    newtasknum.js         # Executable utility scripts
+  install/
+    (Dashboard) Backlog.md       # Files installed into Mesh/
 ```
 
 ### Why Prompt-Based?
 
 This approach is:
-- **Safe** - No arbitrary code execution. Plugins are just markdown that agents interpret.
-- **Inspectable** - You can read exactly what a plugin does.
+- **Safe** - No arbitrary code execution in shard markdown. Agents interpret prompts.
+- **Inspectable** - You can read exactly what a shard does.
 - **Portable** - Works with any capable AI agent.
+- **Extensible** - Create your own shards with `flint shard create`.
 
-### Loading Plugins
+### Loading Shards
 
-Plugins are installed to `Plugins/` but not automatically loaded. An agent reads a plugin's init file when it needs that plugin's capabilities:
+Shards are installed to `Shards/` but not automatically loaded into agent context. An agent reads a shard's init file when it needs that shard's capabilities:
 
 ```
-# Agent reads this to understand the Projects plugin
-Plugins/Projects/init-proj.md
+# Agent reads this to understand the Projects shard
+@Shards/Projects/init-proj.md
 ```
 
 This on-demand loading keeps context focused. Don't load everything at session start - that wastes context window.
 
-### Plugin Components
+### Shard Components
 
-- **Init file** (`init-*.md`) - Context that explains what the plugin does and how to use it
-- **Skills** (`skills/sk-*.md`) - Repeatable tasks with clear inputs and outputs
-- **Templates** (`templates/tmp-*.md`) - Document structures for creating new notes
-- **Workflows** (`workflows/wkfl-*.md`) - Multi-step processes with decision points
+| Component | Pattern | Purpose |
+|-----------|---------|---------|
+| Init file | `init-[sh].md` | Context that explains the shard and how to use it |
+| Skills | `sk-[sh]-[name].md` | Repeatable tasks with clear inputs and outputs |
+| Templates | `tmp-[sh]-[name].md` | Document structures for creating new artifacts |
+| Workflows | `wkfl-[sh]-[name].md` | Multi-step processes with human decision points |
+| Knowledge | `knw-[sh]-[name].md` | Deep reference material on specific topics |
+| Scripts | `scripts/[name].*` | Executable utilities (JS, TS, Python, Bash) |
 
-### Declaring Plugins
+### Declaring Shards
 
-Plugins are declared in `flint.toml`:
+Shards are declared in `flint.toml` with their source:
 
 ```toml
-[plugins]
-required = [
-  "core",
-  "projects",
-  "increments",
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
+plan = { source = "NUU-Cognition/shard-plan" }
+my-shard = { source = "path:./Shards/(Dev) My Shard", dev = true }
 ```
 
-Running `flint sync` installs declared plugins and removes undeclared ones.
+Running `flint sync` installs declared shards and warns about orphaned ones.
 
 ## Mods: Environment Modifications
 
-Mods modify how the Flint environment works. Unlike plugins (which add agent capabilities), mods configure the system itself.
+Mods modify how the Flint environment works. Unlike shards (which add agent capabilities), mods configure the system itself by installing files, running commands, and providing scripts.
 
 Examples:
-- **git** - Initializes git repository, manages `.gitignore` patterns
-- **claude-code** - Creates `CLAUDE.md` for Claude Code integration
+- **claude-code** - Creates `CLAUDE.md` and `.claude/settings.json` for Claude Code integration
+- **agents** - Creates `AGENTS.md` for multi-agent tool integration
 
 Mods can:
-- Create files and directories during installation
-- Run hooks during sync (`onSync`), init (`onInit`), etc.
-- Maintain state in `.flint/mods/`
+- Install files into the flint root (with template rendering)
+- Run shell commands at lifecycle points (`onInstall`, `onSync`)
+- Provide executable scripts
+- Use template variables like `{{flint.name}}`, `{{uuid}}`, `{{date}}`
 
 ### Declaring Mods
 
-Mods are declared in `flint.toml`:
+Mods are declared in `flint.toml` with their source:
 
 ```toml
 [mods]
-required = [
-  "git",
-  "claude-code",
-]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
+agents = { source = "NUU-Cognition/flint-mod-agents" }
+my-mod = { source = "path:./Mods/(Dev) My Mod", dev = true }
 ```
 
 ## Workspace: External References
@@ -177,17 +193,35 @@ References are declared in `flint.toml`:
 ```toml
 [workspace]
 references = [
-  { name = "Monorepo", type = "codebase" },
-  { name = "API", type = "api" },
+  { name = "monorepo", type = "codebase" },
+  { name = "api-docs", type = "drive" },
 ]
 ```
 
-The declaration is portable (committed to git). The actual path is stored in `.flint/workspace.toml` (gitignored, machine-specific).
+The declaration is portable (committed to git). The actual path is stored in the reference file and `.flint/references.json` (both gitignored, machine-specific).
 
 This separation means:
 - You can clone a Flint and it knows what references it needs
 - You run `flint workspace fulfill` to set paths on your machine
 - Paths don't leak into version control
+
+### Repositories
+
+Workspace also supports **cloned repositories** - Git repos pulled into your Flint for reference:
+
+```toml
+[workspace]
+repositories = [
+  { name = "example-api", url = "https://github.com/user/example-api" },
+]
+
+[workspace.sources]
+repositories = [
+  { name = "design-ref", url = "https://github.com/company/design-system" },
+]
+```
+
+Full repositories keep `.git` history. Source repositories are shallow-cloned with `.git` removed for lightweight reference.
 
 ## Media: Binary Assets
 
@@ -198,21 +232,18 @@ Keep Media organized however makes sense for your domain. Some patterns:
 - `Media/diagrams/` for architecture drawings
 - `Media/attachments/` for general files
 
-Media files are typically gitignored or stored in Git LFS depending on your needs.
-
 ## Imports and Exports: Sharing Between Flints
 
 Flints can share content with each other through the import/export system.
 
 ### Exports
 
-An export is a curated subset of your Mesh that you want to share. You define exports with manifest files in `Exports/`:
+An export is a curated subset of your Mesh that you want to share. You define exports by creating `(Export)` prefixed documents in your `Mesh/`:
 
 ```markdown
-# Exports/Guide.md
+# Mesh/(Export) Guide.md
 ---
-description: User guide for Flint
-depth: 1
+export-depth: 1
 ---
 
 This export includes the core documentation:
@@ -222,12 +253,7 @@ This export includes the core documentation:
 - [Guide - CLI Reference](/guide-cli-reference)
 ```
 
-Running `flint export build` processes these manifests:
-1. Resolves linked documents
-2. Follows transclusions to the specified depth
-3. Strips frontmatter
-4. Rewrites wikilinks with prefixes for disambiguation
-5. Outputs to `Exports/Guide/`
+Running `flint export build` processes these documents, resolves linked documents, follows transclusions, and outputs to `Exports/Guide/`.
 
 ### Imports
 
@@ -240,31 +266,41 @@ required = [
 ]
 ```
 
-Running `flint sync` pulls the export from the source Flint (which must be registered on your machine) into `Imports/NUU Flint/Guide/`.
+Running `flint sync` automatically builds exports from the source Flint and copies them into `Imports/NUU Flint/Guide/`.
 
-Import files are prefixed `E (Source Flint) Document Name.md` to prevent naming collisions.
+## Connections: Cross-Flint References
+
+Connections link your Flint to other Flints you work with. They use the same **declaration + fulfillment** pattern as workspace references:
+
+```toml
+[connections]
+flints = [
+  { name = "NUU Vessel" },
+  { name = "NUU Mesh" },
+]
+```
+
+Declarations travel in `flint.toml` (committed). Fulfillments with machine-specific paths live in `Connections/` (gitignored). Target Flints must be registered in the global registry.
+
+Connections are one-way. Flint A connecting to Flint B doesn't mean B knows about A.
 
 ## Configuration Files
 
 ### flint.toml
 
-The main configuration file. Human-editable, committed to version control.
+The main configuration file. Human-editable, committed to version control. This is the **source of truth for declarations** - what shards, mods, imports, references, and connections your Flint needs.
 
 ```toml
 [flint]
 name = "My Project"
 type = "flint"
 
-[plugins]
-required = [
-  "core",
-  "projects",
-]
+[shards]
+projects = { source = "NUU-Cognition/shard-projects" }
+increments = { source = "NUU-Cognition/shard-increments" }
 
 [mods]
-required = [
-  "git",
-]
+claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 
 [imports]
 required = [
@@ -273,34 +309,41 @@ required = [
 
 [workspace]
 references = [
-  { name = "Monorepo", type = "codebase" },
+  { name = "monorepo", type = "codebase" },
+]
+
+[connections]
+flints = [
+  { name = "NUU Vessel" },
 ]
 ```
 
-### .flint/flint.lock
+### flint.json
 
-Generated state file. Managed by Flint, not edited directly.
+Machine-managed identity and state file. Committed to version control.
 
-Contains:
-- Lock file version
-- Flint CLI version that created it
-- Creation and last sync timestamps
-- Installed mod versions
+```json
+{
+  "version": "0.2.0",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "flint",
+  "created": "2026-01-15T10:00:00.000Z",
+  "synced": "2026-03-01T15:30:00.000Z",
+  "migrations": {}
+}
+```
+
+Contains the Flint's unique identity (UUID), creation timestamp, last sync timestamp, and applied migrations.
 
 ### .flint/ Directory
 
-The `.flint/` directory stores internal state:
+The `.flint/` directory stores internal state (gitignored):
 
 ```
 .flint/
-  flint.lock           # Lock file
-  mesh.config.yaml     # Workspace identity (ID, type, created date)
-  workspace.toml       # Machine-specific paths (gitignored)
-  plugins/             # Plugin installation state
-  mods/                # Mod state
+  references.json      # Fulfilled workspace reference paths
+  connections.json     # Fulfilled connection paths
 ```
-
-This directory is partially gitignored - `flint.lock` and `mesh.config.yaml` are committed; `workspace.toml` and plugin/mod state are not.
 
 ## The Global Registry
 
@@ -310,17 +353,7 @@ Flint maintains a global registry at `~/.flint/` that tracks all Flints on your 
 ~/.flint/
   config.toml          # Global user preferences
   registry.json        # List of registered Flints
-```
-
-### config.toml
-
-Global preferences:
-
-```toml
-[open]
-apps = [
-  "obsidian",
-]
+  presets/             # Custom preset configurations
 ```
 
 ### registry.json
@@ -335,7 +368,8 @@ Tracks registered Flints by path:
       "name": "My Project",
       "path": "/Users/me/flints/(Flint) My Project",
       "type": "flint",
-      "source": "local"
+      "tags": ["active"],
+      "description": "Main project workspace"
     }
   ]
 }
@@ -344,18 +378,23 @@ Tracks registered Flints by path:
 The registry enables:
 - `flint list` to show all your Flints
 - Import resolution (finding source Flints for imports)
+- Connection fulfillment (auto-resolving paths from registry)
+- Discovery scan (`flint register --scan`)
 
 ## Sync: Keeping Everything in Order
 
 The `flint sync` command is the reconciliation point. It ensures your Flint's actual state matches its declared configuration:
 
 1. **Bootstrap** - Creates `.flint/` and standard directories if missing
-2. **Plugins** - Installs declared plugins, removes undeclared ones
-3. **Mods** - Installs declared mods, removes undeclared ones
-4. **Imports** - Pulls required imports from source Flints
-5. **Workspace** - Checks that declared references have paths configured
-6. **Registry** - Updates the global registry if the Flint moved or renamed
-7. **Mod Hooks** - Runs `onSync` hooks for installed mods
+2. **Migrations** - Runs pending data migrations
+3. **Obsidian** - Clones `.obsidian/` configuration if missing
+4. **Shards** - Installs declared shards, warns about orphaned ones
+5. **Mods** - Installs declared mods, runs `onSync` hooks
+6. **Imports** - Pulls required imports from source Flints
+7. **Workspace** - Validates reference fulfillment status
+8. **Registry** - Updates the global registry if name/path changed
+9. **Connections** - Migrates old formats, validates fulfillment
+10. **Gitignore** - Updates `.gitignore` for current configuration
 
 Sync is idempotent - running it multiple times produces the same result. It's safe to run after any change to `flint.toml`.
 
@@ -371,13 +410,14 @@ Sync is idempotent - running it multiple times produces the same result. It's sa
 The Flint mental model:
 
 1. **One Flint per domain** - Keep workspaces focused. When it sprawls, split it.
-2. **Mesh is the center** - Everything else either feeds into your thinking (Imports, Workspace), flows out of it (Exports), or supports it (Media, Plugins).
+2. **Mesh is the center** - Everything else either feeds into your thinking (Imports, Workspace), flows out of it (Exports), or supports it (Media, Shards).
 3. **Declare, then sync** - Edit `flint.toml` to describe what you want, run `flint sync` to make it so.
-4. **Plugins are prompts** - Safe, inspectable, portable extensions that agents interpret.
-5. **Agents are first-class** - The system is designed for AI collaboration from the ground up.
+4. **Shards are prompts** - Safe, inspectable, portable extensions that agents interpret.
+5. **Mods are infrastructure** - Active environment modifications that install files and run commands.
+6. **Agents are first-class** - The system is designed for AI collaboration from the ground up.
 
 ## Next Steps
 
 - [Guide - Quick Start](/guide/quick-start) - Create your first Flint
 - [Reference - CLI Commands](/reference/cli-commands) - Complete command reference
-- [Guide - Plugins](/guide-plugins) - Deep dive into the plugin system
+- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into the extension system
