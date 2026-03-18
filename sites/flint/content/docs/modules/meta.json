@@ -2,13 +2,13 @@
   "title": "Modules",
   "pages": [
     "mesh",
-    "shards-mods",
-    "imports",
+    "shards",
+    "sources",
     "exports",
     "workspace",
-    "connections",
-    "subflints",
-    "media",
-    "runtime"
+    "references",
+    "agent-sessions",
+    "lattice",
+    "media"
   ]
 }

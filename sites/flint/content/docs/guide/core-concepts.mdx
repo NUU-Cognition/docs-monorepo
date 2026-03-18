@@ -1,423 +1,218 @@
 ---
-title: "Agent reads this to understand the Projects shard"
+title: "Core Concepts"
 ---
 
-Understanding these concepts will make everything else click.
+This guide explains the ideas that make Flint feel coherent instead of arbitrary. If Quick Start showed you what to do, this page explains why the workspace is shaped the way it is.
 
-## The Mental Model
+## 1. A Flint Is One Bounded Area of Work
 
-Flint is a **bounded workspace** - a single folder that contains everything related to one domain of thought. This boundary is intentional and powerful.
+The first concept to internalize is that a Flint is intentionally bounded.
 
-Think of a Flint as a self-contained unit of knowledge work:
+It is not “all my notes forever.” It is not “every repo I touch.” It is one workspace for one coherent domain of work.
 
-- **Bounded** - One folder with clear edges. When you move or share it, everything travels together.
-- **Structured** - Standard directories organize different types of content.
-- **Agent-friendly** - AI assistants can read a single init file and understand the whole context.
-- **Declarative** - You describe what you want in configuration files; Flint handles the details.
+That might be:
 
-This is different from a file system (infinite, unstructured), a database (infinite, structured), or a wiki (can sprawl indefinitely). The boundary matters because it enables comprehensibility, portability, and focused collaboration.
+- a product or system
+- a research area
+- a client engagement
+- a documentation program
+- a long-running project with a clear subject boundary
 
-## The Flint Folder
+This boundary is useful because it keeps the workspace understandable. Both humans and agents can grasp a Flint much faster than they can grasp an unbounded vault.
 
-A Flint is a folder with a specific structure:
+## 2. Mesh Is the Durable Core
 
-```
-(Flint) My Project/
-  flint.toml           # Configuration (you edit this)
-  flint.json           # Identity and state (managed by Flint)
-  .flint/              # Internal state (gitignored)
-  Mesh/                # Your notes and thinking
-  Shards/              # Installed shards (agent capabilities)
-  Mods/                # Installed mods (environment integrations)
-  Workspace/           # References to external resources
-  Media/               # Binary assets
-  Imports/             # Content from other Flints
-  Exports/             # Built export output
-  Connections/         # References to other Flints (gitignored)
-  Subflints/           # Nested Flint workspaces
-```
+`Mesh/` is where the workspace’s durable understanding lives.
 
-The folder naming convention `(Flint) Name` makes Flints visually distinct and sortable. The name inside `flint.toml` is the canonical name; the folder name follows it.
+If you are unsure where something belongs, ask a simple question:
 
-## Mesh: Your Thinking Space
+> Is this my actual thinking, planning, interpretation, or authored explanation?
 
-The `Mesh/` directory is the heart of a Flint. This is where your notes live - organized not as a hierarchy but as a connected graph.
+If the answer is yes, it probably belongs in `Mesh/`.
 
-### Typed Prefixes
+That includes:
 
-Notes use typed prefixes to indicate their purpose:
+- plans
+- task notes
+- design notes
+- reference notes
+- synthesis documents
+- reports
+- system-level workspace notes
 
-| Prefix | Purpose | Example |
-|--------|---------|---------|
-| `(Task)` | Actionable work items | `(Task) 076 Implement auth flow.md` |
-| `(Plan)` | High-level plans | `(Plan) 003 Q1 Roadmap.md` |
-| `(Increment)` | Versioned work packages | `(Increment) 1.2.0 - UI Polish.md` |
-| `(Dashboard)` | Aggregation views | `(Dashboard) Backlog.md` |
-| `(System)` | Configuration/metadata | `(System) Flint Init.md` |
-| `(Notepad)` | Brainstorming sessions | `(Notepad) 015 Architecture Ideas.md` |
-| `(Report)` | Research/analysis output | `(Report) Performance Audit.md` |
+Mesh is not just a storage area. It is the layer Flint treats as most important.
 
-These prefixes aren't just conventions - they enable shards to find and operate on specific note types. A Projects shard knows to look for `(Task)` files; an Increments shard tracks `(Increment)` files.
+Features that depend heavily on Mesh include:
 
-Typed artifacts use sequential numbering: `(Type) NNN Name.md`. Use `flint helper type newnumber <Type>` to get the next available number.
+- export builds
+- runtime file watching
+- shard workflows
+- init-note driven agent sessions
 
-### The Graph
+## 3. `flint.toml` Describes Intent
 
-Notes connect through wikilinks: `[Other Note](/other-note)` creates a link, `![Embedded Content](/embedded-content)` transcludes content inline. This creates a graph where ideas link to related ideas.
+Flint separates the workspace into two broad layers:
 
-The graph enables:
-- **Navigation** - Follow links between concepts
-- **Discovery** - Find backlinks (what links to this?)
-- **Compilation** - Resolve transclusions into complete documents for export
+- what the workspace declares it should know about
+- what is fulfilled or generated locally on this machine
 
-Think of Mesh as your external brain for this domain. Ideas go in as notes. Connections form through links. Insights emerge from the structure.
+`flint.toml` is the declaration layer. It says:
 
-## Shards: Prompt-Based Extensions
+- which shards should be installed
+- which codebases or Flints are referenced
+- which sources should be pulled in
+- which exports should exist
+- which workspace repos should be managed
+- which lattices are connected
 
-Shards extend what you and AI agents can do in a Flint. Unlike traditional code plugins, Flint shards are **prompt packages** - collections of markdown files that provide context, skills, templates, workflows, and knowledge.
+That is why Flint feels different from a normal note vault. The workspace is not only content; it is also a declaration of relationships.
 
-A shard contains:
+With shards, that declaration also does something more specific: it defines which cognitive programs are available for an agent to execute inside this Flint.
 
-```
-Shards/Projects/
-  shard.yaml              # Shard manifest (version, dependencies, install entries)
-  init-proj.md            # Context to load when using this shard
-  skills/
-    sk-proj-capture_as_task.md   # Repeatable task: capture ideas as tasks
-    sk-proj-archive_tasks.md     # Repeatable task: archive completed tasks
-  templates/
-    tmp-proj-task.md      # Document structure for tasks
-  workflows/
-    wkfl-proj-create_task.md     # Multi-step process for creating tasks
-    wkfl-proj-do_task.md         # Multi-step process for completing tasks
-  knowledge/
-    knw-proj-conventions.md      # Deep reference on project conventions
-  scripts/
-    newtasknum.js         # Executable utility scripts
-  install/
-    (Dashboard) Backlog.md       # Files installed into Mesh/
-```
+## 4. `.flint/` Holds Local State
 
-### Why Prompt-Based?
+Some things should not be committed as portable workspace truth, because they are local to one machine or one runtime.
 
-This approach is:
-- **Safe** - No arbitrary code execution in shard markdown. Agents interpret prompts.
-- **Inspectable** - You can read exactly what a shard does.
-- **Portable** - Works with any capable AI agent.
-- **Extensible** - Create your own shards with `flint shard create`.
+That is what `.flint/` is for.
 
-### Loading Shards
+Important examples include:
 
-Shards are installed to `Shards/` but not automatically loaded into agent context. An agent reads a shard's init file when it needs that shard's capabilities:
+- `.flint/references.json` for fulfilled codebase and Flint references
+- `.flint/lattices.json` for fulfilled lattice connections
+- `.flint/sessions/*.json` for agent session state
+- `.flint/sync.json` for sync bookkeeping
 
-```
-# Agent reads this to understand the Projects shard
-@Shards/Projects/init-proj.md
-```
+This is one of Flint’s most important design choices. It lets the workspace say “I depend on X” without hardcoding “and X is at this exact path on one particular machine.”
 
-This on-demand loading keeps context focused. Don't load everything at session start - that wastes context window.
+## 5. Declarations and Fulfillment Are Different
 
-### Shard Components
+This distinction shows up everywhere in the system.
 
-| Component | Pattern | Purpose |
-|-----------|---------|---------|
-| Init file | `init-[sh].md` | Context that explains the shard and how to use it |
-| Skills | `sk-[sh]-[name].md` | Repeatable tasks with clear inputs and outputs |
-| Templates | `tmp-[sh]-[name].md` | Document structures for creating new artifacts |
-| Workflows | `wkfl-[sh]-[name].md` | Multi-step processes with human decision points |
-| Knowledge | `knw-[sh]-[name].md` | Deep reference material on specific topics |
-| Scripts | `scripts/[name].*` | Executable utilities (JS, TS, Python, Bash) |
+### Declaring a reference
 
-### Declaring Shards
+In `flint.toml`, you say that the Flint depends on a codebase named `Flint`.
 
-Shards are declared in `flint.toml` with their source:
+### Fulfilling a reference
 
-```toml
-[shards]
-projects = { source = "NUU-Cognition/shard-projects" }
-increments = { source = "NUU-Cognition/shard-increments" }
-plan = { source = "NUU-Cognition/shard-plan" }
-my-shard = { source = "path:./Shards/(Dev) My Shard", dev = true }
-```
+In `.flint/references.json`, the local machine records where that codebase actually lives on disk.
 
-Running `flint sync` installs declared shards and warns about orphaned ones.
+That same pattern appears again with lattices and some sync-managed relationships. Once you notice it, Flint becomes much easier to reason about.
 
-## Mods: Environment Modifications
+## 6. Sources, References, and Workspace Repositories Are Not the Same
 
-Mods modify how the Flint environment works. Unlike shards (which add agent capabilities), mods configure the system itself by installing files, running commands, and providing scripts.
+This is the place where many readers get tangled up, so it is worth being explicit.
+
+### References point outward
+
+A reference gives the Flint a stable name for something external.
 
 Examples:
-- **claude-code** - Creates `CLAUDE.md` and `.claude/settings.json` for Claude Code integration
-- **agents** - Creates `AGENTS.md` for multi-agent tool integration
 
-Mods can:
-- Install files into the flint root (with template rendering)
-- Run shell commands at lifecycle points (`onInstall`, `onSync`)
-- Provide executable scripts
-- Use template variables like `{{flint.name}}`, `{{uuid}}`, `{{date}}`
+- a codebase you want to inspect
+- another Flint you want to point at
 
-### Declaring Mods
+References are about identity and resolution.
 
-Mods are declared in `flint.toml` with their source:
+### Sources copy material inward
 
-```toml
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-agents = { source = "NUU-Cognition/flint-mod-agents" }
-my-mod = { source = "path:./Mods/(Dev) My Mod", dev = true }
-```
+A source brings external material into the workspace in a read-only form.
 
-## Workspace: External References
+Examples:
 
-The `Workspace/` directory links your Flint to external resources - codebases, APIs, databases, or other services that your notes reference.
+- a stripped reference copy of a repo in `Sources/Repos/`
+- a sourced mesh export from another Flint in `Sources/Flints/`
 
-### Reference Files
+Sources are about ingesting context.
 
-Each reference is a markdown file in `Workspace/References/`:
+### Workspace repositories live inside the workspace
 
-```
-Workspace/References/
-  rf-monorepo.md       # Reference to a codebase
-  rf-api.md            # Reference to an API
-```
+A workspace repo is not just a pointer and not just a reference copy. It is an active clone that belongs inside the Flint’s own working surface.
 
-A reference file contains:
-- Human-readable description of what this resource is
-- Machine-specific path (gitignored, not committed)
-- Any relevant context for agents
+Workspace repos are about local active work.
 
-### Declaring References
+If you keep these three roles separate in your head, many of Flint’s commands stop feeling redundant.
 
-References are declared in `flint.toml`:
+## 7. Exports Turn Notes Into Built Artifacts
 
-```toml
-[workspace]
-references = [
-  { name = "monorepo", type = "codebase" },
-  { name = "api-docs", type = "drive" },
-]
-```
+An export is Flint’s way of saying, “this note graph should become a shareable output.”
 
-The declaration is portable (committed to git). The actual path is stored in the reference file and `.flint/references.json` (both gitignored, machine-specific).
+The export flow looks like this:
 
-This separation means:
-- You can clone a Flint and it knows what references it needs
-- You run `flint workspace fulfill` to set paths on your machine
-- Paths don't leak into version control
+1. mark a Mesh note as export-eligible with `#export`
+2. declare it through `flint export scan` or `flint export add`
+3. build it into `Exports/`
 
-### Repositories
+The export builder does real work:
 
-Workspace also supports **cloned repositories** - Git repos pulled into your Flint for reference:
+- it follows the note graph from the declared root
+- it rewrites links
+- it expands embeds
+- it copies referenced media
+- it writes a manifest
 
-```toml
-[workspace]
-repositories = [
-  { name = "example-api", url = "https://github.com/user/example-api" },
-]
+So exports are not just copied markdown files. They are built artifacts.
 
-[workspace.sources]
-repositories = [
-  { name = "design-ref", url = "https://github.com/company/design-system" },
-]
-```
+## 8. Shards Are Cognitive Programs
 
-Full repositories keep `.git` history. Source repositories are shallow-cloned with `.git` removed for lightweight reference.
+Shards are one of the central ideas in Flint. They are not just “extensions” in the generic sense. They are cognitive programs: structured packages that tell an agent how to think and act inside the workspace.
 
-## Media: Binary Assets
+A shard usually contains:
 
-The `Media/` directory stores binary files - images, PDFs, diagrams, and other assets that your notes reference.
+- init instructions
+- skills
+- workflows
+- templates
+- knowledge files
+- helper scripts
 
-Keep Media organized however makes sense for your domain. Some patterns:
-- `Media/screenshots/` for UI captures
-- `Media/diagrams/` for architecture drawings
-- `Media/attachments/` for general files
+When an agent loads a shard, it is effectively loading a program for cognition and action. Flint supplies the environment that makes that program useful:
 
-## Imports and Exports: Sharing Between Flints
+- Mesh gives it durable notes to read and write
+- references and sources give it access to real external context
+- the init note tells it how this workspace is organized
+- the CLI gives it commands for reconciliation and inspection
 
-Flints can share content with each other through the import/export system.
+That is why Flint and shards belong together. Flint is the execution environment; shards are the executable cognitive patterns.
 
-### Exports
+## 9. Agents Are Part of the Workspace, Not Outside It
 
-An export is a curated subset of your Mesh that you want to share. You define exports by creating `(Export)` prefixed documents in your `Mesh/`:
+Flint treats headless agent work as part of the workspace model.
 
-```markdown
-# Mesh/(Export) Guide.md
----
-export-depth: 1
----
+Agent sessions have:
 
-This export includes the core documentation:
+- a local session file
+- statuses
+- runs
+- questions
+- interface state
+- results
 
-- [Guide - Quick Start](/guide/quick-start)
-- [Guide - Core Concepts](/guide/core-concepts)
-- [Guide - CLI Reference](/guide-cli-reference)
-```
+That means AI work is not just “something that happened in a terminal once.” It can become inspectable workspace state.
 
-Running `flint export build` processes these documents, resolves linked documents, follows transclusions, and outputs to `Exports/Guide/`.
+## 10. Runtime and Server Are Optional Layers
 
-### Imports
+The runtime and server are important, but they are not the center of Flint.
 
-To import another Flint's export, declare it in `flint.toml`:
+- the runtime watches files and executes hooks
+- the server provides a local HTTP control plane
 
-```toml
-[imports]
-required = [
-  "NUU Flint/Guide",
-]
-```
+If you do not need automation, you can still use Flint effectively without leaning on them. They are optional power layers, not the base product.
 
-Running `flint sync` automatically builds exports from the source Flint and copies them into `Imports/NUU Flint/Guide/`.
+## 11. Flint Is Source-First
 
-## Connections: Cross-Flint References
+The healthiest Flint workflow is one where notes stay close to real source material.
 
-Connections link your Flint to other Flints you work with. They use the same **declaration + fulfillment** pattern as workspace references:
+That means:
 
-```toml
-[connections]
-flints = [
-  { name = "NUU Vessel" },
-  { name = "NUU Mesh" },
-]
-```
+- docs point to real codebases
+- plans mention actual systems
+- sourced materials stay distinguishable from your own interpretation
+- exports are built from authored Mesh notes rather than replacing them
 
-Declarations travel in `flint.toml` (committed). Fulfillments with machine-specific paths live in `Connections/` (gitignored). Target Flints must be registered in the global registry.
+This source-first discipline is what keeps a Flint from turning into a fantasy model of reality.
 
-Connections are one-way. Flint A connecting to Flint B doesn't mean B knows about A.
+## The One-Sentence Mental Model
 
-## Configuration Files
+If you want to remember just one thing, remember this:
 
-### flint.toml
-
-The main configuration file. Human-editable, committed to version control. This is the **source of truth for declarations** - what shards, mods, imports, references, and connections your Flint needs.
-
-```toml
-[flint]
-name = "My Project"
-type = "flint"
-
-[shards]
-projects = { source = "NUU-Cognition/shard-projects" }
-increments = { source = "NUU-Cognition/shard-increments" }
-
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-
-[imports]
-required = [
-  "NUU Flint/Guide",
-]
-
-[workspace]
-references = [
-  { name = "monorepo", type = "codebase" },
-]
-
-[connections]
-flints = [
-  { name = "NUU Vessel" },
-]
-```
-
-### flint.json
-
-Machine-managed identity and state file. Committed to version control.
-
-```json
-{
-  "version": "0.2.0",
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "type": "flint",
-  "created": "2026-01-15T10:00:00.000Z",
-  "synced": "2026-03-01T15:30:00.000Z",
-  "migrations": {}
-}
-```
-
-Contains the Flint's unique identity (UUID), creation timestamp, last sync timestamp, and applied migrations.
-
-### .flint/ Directory
-
-The `.flint/` directory stores internal state (gitignored):
-
-```
-.flint/
-  references.json      # Fulfilled workspace reference paths
-  connections.json     # Fulfilled connection paths
-```
-
-## The Global Registry
-
-Flint maintains a global registry at `~/.flint/` that tracks all Flints on your machine:
-
-```
-~/.flint/
-  config.toml          # Global user preferences
-  registry.json        # List of registered Flints
-  presets/             # Custom preset configurations
-```
-
-### registry.json
-
-Tracks registered Flints by path:
-
-```json
-{
-  "version": 1,
-  "flints": [
-    {
-      "name": "My Project",
-      "path": "/Users/me/flints/(Flint) My Project",
-      "type": "flint",
-      "tags": ["active"],
-      "description": "Main project workspace"
-    }
-  ]
-}
-```
-
-The registry enables:
-- `flint list` to show all your Flints
-- Import resolution (finding source Flints for imports)
-- Connection fulfillment (auto-resolving paths from registry)
-- Discovery scan (`flint register --scan`)
-
-## Sync: Keeping Everything in Order
-
-The `flint sync` command is the reconciliation point. It ensures your Flint's actual state matches its declared configuration:
-
-1. **Bootstrap** - Creates `.flint/` and standard directories if missing
-2. **Migrations** - Runs pending data migrations
-3. **Obsidian** - Clones `.obsidian/` configuration if missing
-4. **Shards** - Installs declared shards, warns about orphaned ones
-5. **Mods** - Installs declared mods, runs `onSync` hooks
-6. **Imports** - Pulls required imports from source Flints
-7. **Workspace** - Validates reference fulfillment status
-8. **Registry** - Updates the global registry if name/path changed
-9. **Connections** - Migrates old formats, validates fulfillment
-10. **Gitignore** - Updates `.gitignore` for current configuration
-
-Sync is idempotent - running it multiple times produces the same result. It's safe to run after any change to `flint.toml`.
-
-### When to Sync
-
-- After cloning a Flint repository
-- After editing `flint.toml`
-- After pulling changes that modified `flint.toml`
-- When something seems out of sync
-
-## Putting It Together
-
-The Flint mental model:
-
-1. **One Flint per domain** - Keep workspaces focused. When it sprawls, split it.
-2. **Mesh is the center** - Everything else either feeds into your thinking (Imports, Workspace), flows out of it (Exports), or supports it (Media, Shards).
-3. **Declare, then sync** - Edit `flint.toml` to describe what you want, run `flint sync` to make it so.
-4. **Shards are prompts** - Safe, inspectable, portable extensions that agents interpret.
-5. **Mods are infrastructure** - Active environment modifications that install files and run commands.
-6. **Agents are first-class** - The system is designed for AI collaboration from the ground up.
-
-## Next Steps
-
-- [Guide - Quick Start](/guide/quick-start) - Create your first Flint
-- [Reference - CLI Commands](/reference/cli-commands) - Complete command reference
-- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into the extension system
+> Flint is a bounded workspace where `Mesh/` holds the durable thinking, `flint.toml` declares the relationships, and shards give agents cognitive programs to execute inside that environment.

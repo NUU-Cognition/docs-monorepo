@@ -1,329 +1,141 @@
 ---
-title: "Tutorial: Research Notes with Flint"
+title: "Tutorial: Research Notes"
 ---
 
-Learn how to organize research, connect sources, and produce publications.
+This walkthrough shows how to use Flint as a research workspace: gather source material, write your own interpretation in `Mesh/`, and publish a clean export when you are ready.
 
-## What We'll Build
+The key idea is simple:
 
-A research Flint with:
-- Organized source materials
-- Connected concept notes
-- Literature synthesis
-- Exportable papers
+> Sources are not your notes. Mesh is your notes.
 
-## Step 1: Create the Flint
+That one distinction makes the rest of the workflow much easier.
+
+## Step 1: Create the Research Workspace
+
+Start with a fresh Flint:
 
 ```bash
-flint init ai-safety-research
-cd "(Flint) ai-safety-research"
+flint init "Model Research"
+cd "(Flint) Model Research"
 ```
 
-Edit `flint.toml` to set the title if desired.
+At this point, you have the structure. What you do next determines whether the workspace stays clean or turns into a pile of copied material.
 
-## Step 2: Configure for Research
+## Step 2: Bring in External Material the Right Way
 
-Edit `flint.toml`:
+There are two common ways to bring source material into a research Flint.
 
-```toml
-[flint]
-name = "ai-safety-research"
-type = "flint"
+### Option A: Add a source repository
 
-[shards]
-notepad = { source = "NUU-Cognition/shard-notepad" }
-reports = { source = "NUU-Cognition/shard-reports" }
+If the source material already exists as a repository and you want a read-only copy inside the workspace:
+
+```bash
+flint source repo add "Transformer Notes" https://github.com/example/transformer-notes.git
 ```
+
+This creates a shallow reference copy in `Sources/Repos/` and strips `.git`.
+
+That makes it ideal for:
+
+- documentation repos
+- reference datasets or structured text
+- example implementations you want nearby but do not intend to work in directly
+
+### Option B: Source a mesh export from another Flint
+
+If another Flint already contains curated research material you want to reuse:
+
+```bash
+flint source meshexport list
+flint source meshexport add "Research Hub/Papers"
+```
+
+This pulls the other Flint’s built export into `Sources/Flints/`.
+
+That is a much better workflow than copy-pasting notes between vaults.
+
+## Step 3: Keep Your Actual Thinking in Mesh
+
+Once source material exists, the temptation is to start annotating it in place. Resist that.
+
+Your durable interpretation should live in `Mesh/`.
+
+Typical research-note patterns include:
+
+- source summary notes
+- concept comparison notes
+- question lists
+- synthesis notes
+- a guide or report that will eventually be exported
+
+`Sources/` is input. `Mesh/` is where the research becomes yours.
+
+## Step 4: Use Media for Attachments and Figures
+
+If the research involves PDFs, screenshots, diagrams, or figures, put those in `Media/`.
+
+Then reference them from Mesh notes rather than scattering binary files across the rest of the workspace.
+
+This matters later because export builds can copy referenced media into the final output.
+
+## Step 5: Write Toward a Publishable Root Note
+
+A research Flint becomes much more useful when there is a clear note that serves as the eventual public-facing synthesis.
+
+This could be:
+
+- a guide
+- a report
+- a literature review
+- an internal brief
+
+Once that note exists, you can gradually link supporting notes beneath it instead of waiting until the very end to assemble everything.
+
+## Step 6: Declare the Export
+
+When the root note is ready to become publishable output, tag it with `#export`, then run:
+
+```bash
+flint export scan
+flint export build
+```
+
+The current export system will:
+
+- walk the note graph from that root
+- rewrite links for the export surface
+- expand embeds
+- copy referenced media
+- write `_manifest.json`
+
+This lets you keep the working graph rich while the published output stays clean.
+
+## Step 7: Refresh Sources Deliberately
+
+Research work changes over time. Repos move, documents update, and curated source Flints evolve.
+
+Refresh source repos explicitly when needed:
+
+```bash
+flint source repo update "Transformer Notes"
+```
+
+For sourced mesh exports, keep the declarations in `flint.toml` accurate and run:
 
 ```bash
 flint sync
 ```
 
-## Step 3: Set Up Source Organization
+The key word here is deliberately. You do not want the workspace to blur together fresh source material and your own long-term interpretation without noticing.
 
-Create folders in `Mesh/`:
+## A Good Research Pattern
 
-```
-Mesh/
-├── (System) Flint Init.md
-├── (System) Index.md
-├── Sources/           # Primary sources
-├── Concepts/          # Key ideas
-├── Syntheses/         # Your analysis
-└── Drafts/            # Work in progress
-```
+One healthy pattern looks like this:
 
-## Step 4: Document Your Sources
+1. gather material into `Sources/`
+2. write rough interpretation notes in `Mesh/`
+3. merge or refine those into synthesis notes
+4. keep supporting assets in `Media/`
+5. build a clean export from one curated root note
 
-Create `Mesh/Sources/Bostrom 2014 - Superintelligence.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#source"
-  - "#book"
----
-
-# Superintelligence (Bostrom, 2014)
-
-**Author:** Nick Bostrom
-**Year:** 2014
-**Type:** Book
-
-## Key Claims
-
-1. Superintelligent AI could emerge this century
-2. Control problem is the central challenge
-3. Value alignment is technically difficult
-
-## My Notes
-
-Strong argument for taking AI safety seriously early.
-The orthogonality thesis is particularly compelling.
-
-## Related
-
-- [Concepts/Orthogonality Thesis](/concepts-orthogonality-thesis)
-- [Concepts/Control Problem](/concepts-control-problem)
-- [Sources/Russell 2019 - Human Compatible](/sources-russell-2019-human-compatible)
-```
-
-## Step 5: Build Concept Notes
-
-Create `Mesh/Concepts/Orthogonality Thesis.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#concept"
-  - "#core"
----
-
-# Orthogonality Thesis
-
-The claim that intelligence and goals are independent: a system
-can be arbitrarily intelligent while pursuing any goal.
-
-## Implications
-
-1. Smart doesn't mean benevolent
-2. Can't assume advanced AI shares human values
-3. Alignment must be engineered, not assumed
-
-## Sources
-
-- [Sources/Bostrom 2014 - Superintelligence](/sources-bostrom-2014-superintelligence)
-- [Sources/Armstrong 2015 - Motivated Value Selection](/sources-armstrong-2015-motivated-value-selection)
-
-## Related Concepts
-
-- [Control Problem](/control-problem)
-- [Value Alignment](/value-alignment)
-- [Instrumental Convergence](/instrumental-convergence)
-```
-
-## Step 6: Create Synthesis Notes
-
-Create `Mesh/Syntheses/Control Problem Overview.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#synthesis"
----
-
-# Control Problem Overview
-
-My synthesis of the AI control problem literature.
-
-## The Core Challenge
-
-Given the [Orthogonality Thesis](/orthogonality-thesis), we cannot assume advanced AI
-will share human values. The control problem asks: how do we
-ensure AI systems remain beneficial as they become more capable?
-
-## Key Approaches
-
-### 1. Corrigibility
-
-Making AI systems that accept correction.
-
-See [Concepts/Corrigibility](/concepts-corrigibility) for details.
-
-### 2. Value Learning
-
-Having AI infer human values through observation.
-
-See [Concepts/Value Learning](/concepts-value-learning) for details.
-
-### 3. Constitutional AI
-
-Training with explicit principles.
-
-See [Sources/Bai 2022 - Constitutional AI](/sources-bai-2022-constitutional-ai).
-
-## Open Questions
-
-1. Can value learning scale to superintelligence?
-2. Is corrigibility stable under self-improvement?
-3. What happens with multiple competing AI systems?
-```
-
-## Step 7: Add Reference Materials
-
-Store PDFs in `Media/`:
-
-```
-Media/
-├── papers/
-│   ├── bostrom-2014-excerpt.pdf
-│   └── russell-2019-ch1.pdf
-└── diagrams/
-    └── control-problem-taxonomy.png
-```
-
-Reference them in notes:
-
-```markdown
-See the original paper: ![Media/papers/bostrom-2014-excerpt.pdf](/media-papers-bostrom-2014-excerpt-pdf)
-
-Visual overview:
-![Media/diagrams/control-problem-taxonomy.png](/media-diagrams-control-problem-taxonomy-png)
-```
-
-## Step 8: Use the Index
-
-Create `Mesh/(System) Index.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#system"
-  - "#dashboard"
----
-
-# Index
-
-## By Type
-
-### Sources
-- [Sources/Bostrom 2014 - Superintelligence](/sources-bostrom-2014-superintelligence)
-- [Sources/Russell 2019 - Human Compatible](/sources-russell-2019-human-compatible)
-
-### Core Concepts
-- [Concepts/Orthogonality Thesis](/concepts-orthogonality-thesis)
-- [Concepts/Control Problem](/concepts-control-problem)
-- [Concepts/Value Alignment](/concepts-value-alignment)
-
-### Syntheses
-- [Syntheses/Control Problem Overview](/syntheses-control-problem-overview)
-```
-
-## Step 9: Draft Your Paper
-
-Create `Mesh/Drafts/Control Problem Survey.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#draft"
-  - "#paper"
----
-
-# Draft: Control Problem Survey
-
-## Abstract
-
-[To be written]
-
-## 1. Introduction
-
-The development of artificial general intelligence poses
-unprecedented challenges for ensuring beneficial outcomes.
-
-## 2. The Control Problem
-
-![Syntheses/Control Problem Overview#The Core Challenge](/syntheses-control-problem-overview-the-core-challenge)
-
-### 2.1 Theoretical Foundations
-
-The [Orthogonality Thesis](/orthogonality-thesis) establishes that...
-
-## 3. Approaches
-
-### 3.1 Corrigibility
-
-![Concepts/Corrigibility#Definition](/concepts-corrigibility-definition)
-
-### 3.2 Value Learning
-
-[Content]
-
-## 4. Open Problems
-
-[Content]
-```
-
-## Step 10: Export for Publication
-
-Create `Mesh/(Export) Survey.md`:
-
-```markdown
----
-export-depth: 2
----
-
-# Survey Paper Export
-
-[Drafts/Control Problem Survey](/drafts-control-problem-survey)
-```
-
-Build:
-
-```bash
-flint export build Survey
-```
-
-The compiled paper appears in `Exports/Survey/` with all transclusions resolved.
-
-## Research Workflow
-
-### When Reading
-
-1. Create source note immediately
-2. Capture key claims
-3. Link to relevant concepts
-4. Add to Index
-
-### When Thinking
-
-1. Create or update concept notes
-2. Write synthesis notes
-3. Link everything
-4. Use Notepad for rough ideas
-
-### When Writing
-
-1. Outline with links to concepts
-2. Use transclusions for quotes
-3. Compile to check flow
-4. Iterate in drafts
-
-## What You've Learned
-
-- **Source organization** - Consistent note templates
-- **Concept linking** - Building a knowledge graph
-- **Synthesis writing** - Combining sources
-- **Transclusion** - Embedding content
-- **Export compilation** - Producing final documents
-
-## Next Steps
-
-- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Get AI help
-- [Module - Mesh](/modules/mesh) - Deep dive into notes
-- [Module - Exports](/modules/exports) - Export options
+This gives you a workspace that can grow without losing the difference between gathered context and authored understanding.

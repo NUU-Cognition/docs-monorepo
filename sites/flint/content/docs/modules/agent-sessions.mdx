@@ -1,0 +1,99 @@
+---
+title: "Agent Sessions"
+---
+
+Agent sessions are one of Flint's most important current features because they make agent work durable and inspectable.
+
+Flint is not only a place to store notes about agent work. It is an environment where agents can execute shard-based cognitive programs, and agent sessions are the state model that tracks those executions over time.
+
+## Where Sessions Live
+
+Current session files are stored in:
+
+```text
+.flint/sessions/*.json
+```
+
+These files are local state, not published workspace content. The runtime also watches this directory so agent lifecycle changes can emit events.
+
+## What a Session Tracks
+
+The implemented session model includes:
+
+- overall session status
+- runtime name
+- prompt
+- optional title and description
+- one or more runs
+- questions raised by the agent
+- interface key/value state
+- result text
+
+Current top-level statuses are:
+
+- `queued`
+- `in-progress`
+- `blocked`
+- `finished`
+- `failed`
+
+## Main Commands
+
+Start a headless Claude-run session:
+
+```bash
+flint agent claude "Review the codebase and update notes."
+```
+
+Inspect active or historical sessions:
+
+```bash
+flint agent list
+flint agent watch <id>
+flint agent session <id>
+```
+
+Available session actions include:
+
+- `title`
+- `register`
+- `status`
+- `kill`
+- `respond`
+- `return`
+- `artifact`
+
+## Human-Agent Exchange
+
+The `agent interface` commands support structured communication between the agent and a human:
+
+```bash
+flint agent interface --session <id> set key value
+flint agent interface --session <id> get key
+flint agent interface --session <id> ask "Question?"
+flint agent interface --session <id> request "Question?"
+```
+
+`ask` waits for a reply before continuing. `request` records a deferred question and exits immediately.
+
+This matters because long-running cognitive work often needs checkpoints, clarifications, or human decisions without throwing away session state.
+
+## Runs and Resume
+
+One session can contain multiple runs. Flint supports:
+
+- a brand-new session
+- continuation of a prior session
+- resume of an existing session with another run
+
+That is why the model tracks both session-level state and run-level state. The session is the durable container. Each run is a concrete execution attempt inside that container.
+
+## Sessions and the Rest of Flint
+
+Agent sessions connect Flint's environment model together:
+
+- shards define the cognitive programs
+- the agent session records the execution state
+- Mesh stores the durable notes and artifacts produced by that work
+
+Taken together, this is what makes Flint more than a prompt wrapper. It provides memory, continuity, and a workspace-native record of what the agent actually did.

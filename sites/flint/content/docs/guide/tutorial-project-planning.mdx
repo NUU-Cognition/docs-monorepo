@@ -1,279 +1,172 @@
 ---
-title: "Tutorial: Project Planning with Flint"
+title: "Tutorial: Project Planning"
 ---
 
-Learn Flint by building a real project management workspace.
+This walkthrough shows how Flint works when the job is not “take random notes,” but “plan and track a real software project without drifting away from the code.”
 
-## What We'll Build
+The example below uses a fictional project called **Payments Rewrite**, but the pattern is the same for most engineering work.
 
-A Flint for managing a software project with:
-- Task tracking
-- Incremental releases
-- Codebase documentation
-- Compiled spec documents
+## The Goal
 
-## Step 1: Create the Flint
+By the end of this walkthrough, you should have a Flint that can:
+
+- point to the real codebase
+- hold durable planning notes in `Mesh/`
+- track project work with shards
+- publish a clean planning export if needed
+
+More importantly, you will have a workspace where an agent can execute planning-oriented cognitive programs instead of improvising the whole workflow from scratch.
+
+## Step 1: Create the Planning Workspace
+
+Start with a new Flint:
 
 ```bash
-flint init alpha-project --preset default
-cd "(Flint) alpha-project"
+flint init "Payments Rewrite" --preset default
+cd "(Flint) Payments Rewrite"
 ```
 
-The `default` preset installs all standard shards and mods.
+Using `--preset default` is helpful here because planning work usually benefits from having the common project-oriented shards available early. Those shards are the cognitive programs that give an agent reusable planning behavior.
 
-## Step 2: Configure Shards
+## Step 2: Point the Flint at the Real Code
 
-Edit `flint.toml` if you want to customize:
+Before writing a lot of planning notes, connect the workspace to the codebase it is actually about:
+
+```bash
+flint reference codebase "Payments API"
+flint fulfill codebase "Payments API" /Users/me/dev/payments-api
+```
+
+This is one of the most important steps in the whole process.
+
+Why?
+
+Because a planning Flint is strongest when it can say, “this note is about that actual system,” rather than becoming a floating layer of abstractions with no source anchor.
+
+## Step 3: Add Planning Shards Deliberately
+
+In `flint.toml`, declare only the shards that support the kind of planning you actually want to do:
 
 ```toml
-[flint]
-name = "alpha-project"
-type = "flint"
-
 [shards]
 projects = { source = "NUU-Cognition/shard-projects" }
 increments = { source = "NUU-Cognition/shard-increments" }
-notepad = { source = "NUU-Cognition/shard-notepad" }
 plan = { source = "NUU-Cognition/shard-plan" }
-
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
 ```
 
-Sync to apply changes:
+Then run:
 
 ```bash
 flint sync
 ```
 
-## Step 3: Set Up the Init File
+This is a good example of Flint’s general philosophy: declare what the workspace should know about, then let the CLI reconcile it. In this case, you are declaring the planning programs the workspace should make available to an agent.
 
-Edit `Mesh/(System) Flint Init.md`:
+## Step 4: Create the First Real Planning Notes
 
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#system"
----
+You do not need a huge structure at the start. A strong minimum is:
 
-# Project Alpha
+- one good init note
+- one high-level plan note
+- one current increment
+- one or more task notes
 
-A workspace for planning and tracking Project Alpha development.
+An example structure might look like:
 
-## Purpose
-
-Track development from concept to release. Coordinate tasks,
-document decisions, and maintain project history.
-
-## Key Documents
-
-- [(Dashboard) Backlog](/dashboard-backlog) - All planned work
-- [(Dashboard) Increments](/dashboard-increments) - Version releases
-
-## Shards
-
-- **Projects** - Backlog and task management
-- **Increments** - Manage versioned releases
-- **Notepad** - Quick capture
-- **Plan** - High-level planning
+```text
+Mesh/
+├── (System) Flint Init.md
+├── (Plan) Payments Rewrite.md
+├── (Increment) 1.0 - API Foundation.md
+└── Types/Tasks/
 ```
 
-## Step 4: Create Your Backlog
+The exact shape depends on your shard conventions, but the principle is stable: keep the planning surface small and readable at first.
 
-Create `Mesh/(Dashboard) Backlog.md`:
+## Step 5: Write Planning Notes That Point Back to Source
 
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#dashboard"
----
+A planning note should never become a substitute for source inspection. It should be a durable thinking layer that points back to source when needed.
 
-# Backlog
+Good planning notes often include:
 
-## Active Tasks
+- links to the codebase reference note such as `[rf-cb-payments-api](/rf-cb-payments-api)`
+- file paths or package names when they matter
+- explicit assumptions and open questions
+- links between planning notes, tasks, and increments
 
-- [ ] [(Task) User Authentication](/task-user-authentication)
-- [ ] [(Task) API Design](/task-api-design)
-- [ ] [(Task) Database Schema](/task-database-schema)
+This keeps the planning layer honest.
 
-## Completed
+## Step 6: Decide Whether You Need a Workspace Repo
 
-(Tasks move here when done)
+Sometimes the Flint should only reference the main codebase. Other times it should also contain a repo that belongs inside the workspace itself, such as a sandbox, spike repo, or companion service.
 
-## Ideas
-
-- Consider caching layer
-- Evaluate GraphQL vs REST
-```
-
-## Step 5: Create a Task
-
-Create `Mesh/(Task) User Authentication.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#task"
-status: active
-priority: high
----
-
-# User Authentication
-
-## Goal
-
-Implement user authentication with email/password and OAuth.
-
-## Requirements
-
-- [ ] Email/password registration
-- [ ] Email verification
-- [ ] Password reset flow
-- [ ] Google OAuth
-- [ ] Session management
-
-## Notes
-
-Looking at Clerk vs Auth0 for managed auth.
-
-## Related
-
-- [API Design](/api-design)
-- [Database Schema](/database-schema)
-```
-
-## Step 6: Create an Increment
-
-Create `Mesh/(Increment) 1.0.0 - Foundation.md`:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#increment"
-increment: "1.0.0"
----
-
-# (Increment) 1.0.0 - Foundation
-
-*Core infrastructure and authentication.*
-
-## Scope
-
-- User authentication system
-- Database setup
-- API foundation
-
-## Tasks
-
-- [x] [(Task) Database Schema](/task-database-schema)
-- [ ] [(Task) User Authentication](/task-user-authentication)
-- [ ] [(Task) API Design](/task-api-design)
-
-## Log
-
-| Date | Change |
-|------|--------|
-| 2026-03-02 | Increment created |
-```
-
-## Step 7: Link Your Codebase
+If you need that, create a workspace repo:
 
 ```bash
-flint workspace add codebase --type codebase
-flint workspace fulfill codebase /path/to/your/code
+flint workspace create "Sandbox" git@github.com:me/payments-sandbox.git
 ```
 
-The reference file at `Workspace/References/rf-codebase.md` documents the link:
+This is different from a codebase reference:
 
-```markdown
-# Codebase Reference
+- a reference points to something external
+- a workspace repo becomes part of the Flint’s own active surface
 
-**Type:** codebase
+Use the one that matches reality.
 
-## Key Paths
+## Step 7: Keep the Workspace in Sync with Reality
 
-- `src/auth/` - Authentication module
-- `src/api/` - API routes
-- `prisma/schema.prisma` - Database schema
+As planning evolves, `flint.toml` usually changes too. You may add:
 
-## Running Locally
+- new shards
+- more references
+- a new source mesh export
+- another workspace repo
 
-```bash
-npm run dev
-```
-```
-
-## Step 8: Sync Everything
+Whenever that happens:
 
 ```bash
 flint sync
 ```
 
-This adds IDs to all your new files and ensures everything is indexed.
+This becomes part of the normal planning rhythm, not an occasional repair command.
 
-## Step 9: Create an Export
+## Step 8: Export the Shareable Plan
 
-When ready to share, create `Mesh/(Export) Spec.md`:
+At some point you may want a planning artifact you can share cleanly with other people.
 
-```markdown
----
-export-depth: 1
----
-
-# Spec Export
-
-Compile these documents into the project specification:
-
-[(System) Flint Init](/system-flint-init)
-[(Task) User Authentication](/task-user-authentication)
-[(Task) API Design](/task-api-design)
-[(Task) Database Schema](/task-database-schema)
-```
-
-Build the export:
+Pick a root note, tag it with `#export`, then run:
 
 ```bash
-flint export build Spec
+flint export scan
+flint export build
 ```
 
-Output appears in `Exports/Spec/`.
+Now the workspace has both:
 
-## Workflow Going Forward
+- the internal planning graph in `Mesh/`
+- the built shareable output in `Exports/`
 
-### Daily
+That split is powerful because it lets the internal workspace remain detailed while the export stays curated.
 
-1. `flint sync` - Start fresh
-2. Check `(Dashboard) Backlog` - See priorities
-3. Work on tasks - Update status as you go
-4. `flint sync` - End of session
+## Step 9: Use Git as the Planning Cadence
 
-### Weekly
+Planning work often changes both notes and workspace config. Flint’s git helper is useful here:
 
-1. Review increment progress
-2. Move completed tasks
-3. Update backlog priorities
-4. Commit changes
+```bash
+flint git init
+flint git sync -m "update planning baseline"
+```
 
-### On Completion
+`flint git sync` is useful because it runs `flint sync` before the git flow. That helps keep committed state aligned with declared state.
 
-1. Mark tasks complete
-2. Update increment to done
-3. Create new increment for next version
+## A Healthy Everyday Loop
 
-## What You've Learned
+Once the workspace is established, a good daily loop looks like this:
 
-- **Flint structure** - How modules work together
-- **Task tracking** - Using tasks with the Projects shard
-- **Increments** - Versioned work packages
-- **Workspace linking** - Connecting to external code
-- **Exports** - Compiling documents for sharing
+1. inspect the referenced codebase
+2. update plan, task, or increment notes in `Mesh/`
+3. change `flint.toml` only when the workspace’s declared relationships change
+4. run `flint sync`
+5. commit the durable changes
 
-## Next Steps
-
-- [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - Different use case
-- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Work with AI
-- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into shards
+That is the core of source-first project planning in Flint.

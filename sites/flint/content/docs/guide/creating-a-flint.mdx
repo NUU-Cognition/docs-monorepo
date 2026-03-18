@@ -2,412 +2,183 @@
 title: "Creating a Flint"
 ---
 
-How to create and initialize Flint workspaces.
+Creating a Flint is more than running `flint init`. The quality of the workspace depends on the choices you make in the first fifteen minutes: what kind of Flint this is, which dependencies it declares, and whether the init note is actually useful.
 
-## Overview
+One of the most important choices is which shards the workspace declares. In practice, that means deciding which cognitive programs an agent will be able to execute here.
 
-Flint follows a **local-first model**. Your local flint is fully functional on its own, with all state derived from configuration files. There's no cloud service required.
+This guide explains the creation flow in a way that maps cleanly to how Flint works.
 
-## The Init-Sync Model
-
-Creating a flint is a two-phase process:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  INIT PHASE                                                     │
-│  Creates essential flint structure                              │
-│                                                                 │
-│  1. Create folder: (Flint) <name>/                              │
-│  2. Create standard directories (Mesh/, Media/, Shards/, etc.)  │
-│  3. Create .flint/ directory                                    │
-│  4. Create flint.toml with name, type, shards, mods             │
-│  5. Create flint.json with identity (UUID, version, timestamp)  │
-│  6. Apply preset templates (if any)                             │
-│  7. Register in local registry (~/.flint/registry.json)         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  SYNC PHASE                                                     │
-│  Installs configured features from flint.toml                   │
-│                                                                 │
-│  1. Run pending migrations                                      │
-│  2. Clone .obsidian/ configuration                              │
-│  3. Install shards from [shards] section                        │
-│  4. Install mods from [mods] section                            │
-│  5. Pull imports from [imports] section                          │
-│  6. Validate workspace references                               │
-│  7. Update .gitignore                                           │
-│  8. Run mod onSync hooks                                        │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-This separation means:
-- **Init creates structure** - everything that makes a flint a flint
-- **Sync installs features** - shards, mods, imports, and their effects
-- **Sync is idempotent** - run it anytime to reconcile configured state
-- **Config is truth** - the entire flint can be regenerated from `flint.toml`
-
-## Basic Usage
-
-### Minimal Flint
+## The Simplest Possible Start
 
 ```bash
-flint init my-project
+flint init "My Project"
 ```
 
-Creates:
-```
-(Flint) my-project/
-├── .flint/
-├── Mesh/
-│   └── (System) Flint Init.md
-├── Media/
-├── Shards/
-├── Mods/
-├── Imports/
-├── Exports/
-├── Workspace/
-├── flint.toml
-└── flint.json
+That command is enough to create a valid workspace. It does all of the following:
+
+- creates the `(Flint) My Project/` directory
+- creates the standard directories
+- creates `.flint/`
+- writes `flint.toml`
+- writes `flint.json`
+- registers the workspace in the local registry
+- runs `flint sync`
+
+So `init` is not just scaffolding. It is the full initial bootstrap path.
+
+## What Gets Created
+
+The standard directories are:
+
+```text
+Mesh
+Media
+Shards
+Sources
+Exports
+Workspace
+Workspace/Bench
 ```
 
-Without a preset, the `flint.toml` contains only:
-```toml
-[flint]
-name = "my-project"
-type = "flint"
-```
+## Choosing the Right Creation Path
 
-The `flint.json` contains identity:
-```json
-{
-  "version": "0.2.0",
-  "id": "a1b2c3d4-...",
-  "type": "flint",
-  "created": "2026-03-02T...",
-  "synced": "2026-03-02T..."
-}
-```
+There are three common creation modes.
 
-### With a Preset
+### 1. Blank or normal creation
 
 ```bash
-flint init my-project --preset default
+flint init "My Project"
 ```
 
-The `default` preset adds all standard shards and mods:
-```toml
-[flint]
-name = "my-project"
-type = "flint"
+Use this when you want a clean workspace and you are comfortable declaring what it needs afterward.
 
-[shards]
-increments = { source = "NUU-Cognition/shard-increments" }
-plan = { source = "NUU-Cognition/shard-plan" }
-notepad = { source = "NUU-Cognition/shard-notepad" }
-reports = { source = "NUU-Cognition/shard-reports" }
-comments = { source = "NUU-Cognition/shard-comments" }
-learn = { source = "NUU-Cognition/shard-learn" }
-flint = { source = "NUU-Cognition/shard-flint" }
-knap = { source = "NUU-Cognition/shard-knap" }
-orbcode = { source = "NUU-Cognition/shard-orbcode" }
-projects = { source = "NUU-Cognition/shard-projects" }
-
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-agents = { source = "NUU-Cognition/flint-mod-agents" }
-```
-
-## Presets
-
-Presets are pre-configured flint templates that bundle shards, mods, and starter files.
-
-### Available Presets
-
-| Preset | Description | Shards | Mods |
-|--------|-------------|--------|------|
-| `blank` | Empty flint, nothing installed (default) | none | none |
-| `default` | Full setup with all standard shards and mods | increments, plan, notepad, reports, comments, learn, flint, knap, orbcode, projects | claude-code, agents |
-
-### Using Presets
+### 2. Preset-based creation
 
 ```bash
-# Empty flint (default behavior)
-flint init notes
-
-# Full setup with all shards and mods
-flint init research --preset default
+flint init "My Project" --preset default
 ```
 
-### Preset Locations
+Use this when you want a more opinionated starting point, usually with shard declarations and starter content.
 
-Presets are discovered from:
-1. **Built-in:** `<flint-install>/presets/`
-2. **User:** `~/.flint/presets/` (can override built-in)
+`blank` is the implicit default if you do not specify a preset.
 
-### Creating Custom Presets
+### 3. Clone from an existing Flint repository
 
-Create a folder in `~/.flint/presets/` with a `preset.toml`:
-
-```
-~/.flint/presets/my-preset/
-├── preset.toml
-└── templates/
-    └── Overview.md
+```bash
+flint init --from-git git@github.com:owner/repo.git
 ```
 
-```toml
-# preset.toml
-[preset]
-name = "my-preset"
-description = "My custom preset for research projects"
+Use this when the Flint already exists elsewhere and you want to bootstrap it locally while preserving Flint’s folder naming and registry rules.
 
-[shards]
-required = ["notepad", "reports"]
+## Choosing the Parent Directory
 
-[mods]
-required = ["claude-code"]
+If the current shell directory is not where you want the workspace created, use:
 
-[templates](/templates)
-source = "templates/Overview.md"
-target = "Mesh/Overview.md"
+```bash
+flint init "Client Work" --path ~/workspaces
 ```
 
-Template files support variables:
-- `{{name}}` - flint name
-- `{{date}}` - creation date (YYYY-MM-DD)
-- `{{uuid}}` - unique identifier
+This keeps your current shell location separate from where the Flint will actually live.
 
-## Configuration Files
+## What `flint sync` Adds After Creation
 
-### flint.toml (Source of Truth)
+`init` gives you the workspace skeleton, but `sync` is what reconciles the feature layer around it.
 
-Human-editable configuration, committed to git. Declares everything:
+`sync` can:
+
+- install or reconcile declared shards
+- bootstrap or refresh `.obsidian/`
+- generate metadata for sources and references
+- synchronize source mesh exports
+- update `.gitignore`
+- refresh the registry entry
+
+This is why you should think of the workspace in two phases:
+
+- `init` creates the base structure
+- `sync` reconciles the configured relationships
+
+That includes making shard-based workflows available. A newly created Flint is not just a folder for notes; it is the environment an agent will later use to execute the cognitive programs you choose to install.
+
+## A Minimal `flint.toml` That Is Actually Useful
+
+The smallest valid `flint.toml` can be very short, but a good initial version usually looks like this:
 
 ```toml
 [flint]
 name = "My Project"
-type = "flint"
-tags = ["active", "dev"]
-description = "Main development workspace"
+description = "Workspace for planning and documenting the project"
 
 [shards]
 projects = { source = "NUU-Cognition/shard-projects" }
-increments = { source = "NUU-Cognition/shard-increments" }
-my-custom = { source = "path:./Shards/(Dev) My Custom", dev = true }
-
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-
-[imports]
-required = [
-  "NUU Flint/Guide",
-]
-
-[workspace]
-references = [
-  { name = "monorepo", type = "codebase" },
-]
-repositories = [
-  { name = "example-api", url = "https://github.com/user/example-api" },
-]
-
-[connections]
-flints = [
-  { name = "NUU Vessel" },
-]
 ```
 
-### flint.json (Identity & State)
+That gives the workspace both an identity and at least one declared capability package.
 
-Machine-managed, committed to git. Tracks identity and timestamps:
+In practical terms, that shard declaration says: this Flint should know how to run a certain kind of structured reasoning workflow.
 
-```json
-{
-  "version": "0.2.0",
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "type": "flint",
-  "created": "2026-01-15T10:00:00.000Z",
-  "synced": "2026-03-01T15:30:00.000Z",
-  "migrations": {
-    "migration-id": "2026-02-01T..."
-  }
-}
-```
+From there, you grow the file deliberately by adding:
 
-### .flint/ Directory (Local State)
+- codebase references
+- other Flint references
+- sources
+- exports
+- workspace repositories
 
-Gitignored runtime state:
+## The Best First Fifteen Minutes
 
-```
-.flint/
-  references.json      # Machine-specific workspace paths
-  connections.json     # Machine-specific connection paths
-```
+Once the workspace exists, a strong setup sequence looks like this:
 
-## The Local Registry
+1. improve `Mesh/(System) Flint Init.md`
+2. add a short description to `[flint]`
+3. declare only the shards you actually intend to use
+4. add at least one real external dependency if the workspace is about something concrete
+5. run `flint sync`
 
-The registry at `~/.flint/registry.json` tracks all your flints for CLI discovery:
+That sequence turns a skeleton into a usable workspace very quickly.
 
-```json
-{
-  "version": 1,
-  "flints": [
-    {
-      "name": "my-project",
-      "path": "/Users/me/projects/(Flint) my-project",
-      "type": "flint",
-      "tags": ["active"],
-      "description": "Main workspace"
-    }
-  ]
-}
-```
+It also prevents a common failure mode: installing a pile of shards with no clear role. A Flint is more effective when its cognitive programs are chosen intentionally.
 
-**Key points:**
-- Registry stores **name + path + type + tags + description**
-- Path is the primary identifier
-- Used by `flint list`, import resolution, and connection fulfillment
-- Automatically updated by `init`, `register`, `unregister`, and `sync`
-- Run `flint registry validate` to clean up broken entries
+## When to Add a Codebase Reference Immediately
 
-### Managing the Registry
+If the Flint is about software, add the main codebase reference right away:
 
 ```bash
-# List registered flints
-flint list
-
-# Register an existing flint (cloned, moved, etc.)
-flint register /path/to/flint
-
-# Scan and register multiple flints
-flint register --scan ~/projects
-
-# Remove from registry (keeps files)
-flint unregister
-
-# Validate and clean broken entries
-flint registry validate
-
-# Add tags to a registered flint
-flint registry tag "My Project" "important"
+flint reference codebase "Main App"
+flint fulfill codebase "Main App" /path/to/app
 ```
 
-## Command Reference
+Doing this early changes the quality of the workspace. Notes can now point to the real source instead of becoming a detached documentation island.
 
-### flint init
+## When to Add a Workspace Repo Instead
+
+If the code should actually live inside the Flint’s own working surface, use a workspace repo:
 
 ```bash
-flint init <name> [options]
+flint workspace create "App" git@github.com:me/app.git
 ```
 
-**Options:**
-- `--path <dir>` - Parent directory (default: current directory)
-- `--preset <name>` - Use a preset configuration
+Do not use workspace repos and references interchangeably. Use the one that matches the actual relationship you want.
 
-**Examples:**
-```bash
-flint init my-project
-flint init research --preset default
-flint init docs --path ~/projects
-```
+## A Good Post-Creation Command Set
 
-### flint sync
-
-After init, or anytime you modify `flint.toml`:
+These are the commands most people want within the first hour:
 
 ```bash
+flint shard list
+flint reference list
 flint sync
+flint open
+flint git init
 ```
 
-**What it does:**
-- Creates missing directories
-- Runs pending migrations
-- Installs/warns about shards to match config
-- Installs/removes mods to match config
-- Pulls required imports
-- Validates workspace references and connections
-- Updates registry if name/path changed
-- Updates `.gitignore`
-- Stamps sync timestamp in `flint.json`
+## The Real Goal of Creation
 
-## Best Practices
+The goal is not merely to have a Flint on disk. The goal is to create a workspace that is:
 
-### Starting Fresh
+- easy to understand
+- anchored to real sources
+- comfortable for future writing
+- legible to an agent at session start
 
-```bash
-# Quick start with common shards
-flint init my-project --preset default
-```
-
-### Minimal Setup
-
-```bash
-# Just the structure, add shards later
-flint init my-project
-# Then edit flint.toml and run:
-flint sync
-```
-
-### Cloning an Existing Flint
-
-```bash
-git clone <repo> "(Flint) my-project"
-cd "(Flint) my-project"
-flint register
-flint sync
-# Fulfill workspace references and connections
-flint workspace fulfill
-flint connection fulfill --all
-```
-
-### Moving a Flint
-
-```bash
-# Move the folder
-mv "(Flint) old-location" "/new/path/(Flint) my-project"
-
-# Update registry
-flint unregister /old/path
-flint register /new/path/(Flint) my-project
-
-# Or just sync from the new location - it auto-detects the move
-cd "/new/path/(Flint) my-project"
-flint sync
-```
-
-## Troubleshooting
-
-### "Not a flint directory"
-
-The directory must have a `flint.toml` file. Either:
-- Run `flint init` to create a new flint
-- Run `flint register` if it's an existing flint
-
-### Missing directories after clone
-
-Run `flint sync` to create standard directories and install shards.
-
-### Flint not showing in `flint list`
-
-Register it:
-```bash
-flint register /path/to/flint
-```
-
-### Shards not installing
-
-Check your `flint.toml` has the shards listed:
-```toml
-[shards]
-projects = { source = "NUU-Cognition/shard-projects" }
-```
-
-Then run `flint sync`.
-
-## Related
-
-- [Reference - CLI Commands](/reference/cli-commands) - Full command reference
-- [Reference - Configuration](/reference/configuration) - Configuration options
-- [Module - Shards & Mods](/modules/shards-mods) - Shard and mod system details
+If you optimize for that, the rest of the system starts working much more naturally.

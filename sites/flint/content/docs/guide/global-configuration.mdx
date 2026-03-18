@@ -2,179 +2,136 @@
 title: "Global Configuration"
 ---
 
-How to manage global Flint settings that apply across all your workspaces.
+Flint has two different configuration layers:
 
-## Overview
+- workspace configuration in `flint.toml`
+- machine-wide configuration in the global config file
 
-Flint stores global user configuration in `~/.flint/config.toml`. This is separate from per-workspace `flint.toml` files and controls CLI-wide behavior.
+This guide is about the second one.
 
+## The Role of Global Config
+
+Global config is for preferences and runtime behavior that belong to your machine, not to one particular Flint.
+
+That distinction matters. If a setting should travel with the workspace when someone else clones it, it probably belongs in `flint.toml`. If it only affects how Flint behaves on your own machine, it probably belongs in global config.
+
+## Where It Lives
+
+The global config file is:
+
+```text
+~/.nuucognition/flint/config.toml
 ```
-~/.flint/
-├── config.toml      ← Global user settings (this guide)
-├── registry.json    ← Local flint registry
-└── presets/         ← Custom presets
-```
 
-## Configuration Structure
+If the file does not exist yet, Flint falls back to in-memory defaults.
 
-The global config uses TOML format:
+## What Global Config Supports
+
+Flint supports a deliberately small set of global fields:
+
+- `mode`
+- `[open].apps`
+
+Example:
 
 ```toml
-# Feature mode (managed via `flint mode`)
 mode = "production"
+
+[open]
+apps = [
+  "obsidian",
+]
 ```
 
-### Available Settings
+That small scope is a feature, not a limitation. It keeps the distinction between global preferences and workspace declarations clean.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `mode` | `string` | Build default | Feature mode: `production`, `experimental`, or `dev` |
+## How to Inspect Global Config
 
-## Basic Usage
-
-### View All Configuration
+Show the whole config:
 
 ```bash
 flint config
 ```
 
-Output:
-```
-Global Flint Configuration
-Path: /Users/you/.flint/config.toml
-
-mode = "production"
-  (use `flint mode` to manage)
-```
-
-If no config is set:
-```
-Global Flint Configuration
-Path: /Users/you/.flint/config.toml
-
-No configuration set. Using defaults.
-```
-
-### Get a Specific Value
+Read a single value:
 
 ```bash
-flint config get mode
-# or shorthand:
-flint config mode
+flint config get open.apps
 ```
 
-### Set a Value
+Open the file in your editor:
 
 ```bash
-flint config set mode production
+flint config open
 ```
 
-Output:
-```
-Set mode = "production"
-```
+## How to Change Values
 
-## Feature Modes
-
-The `mode` setting controls which features are available. While you *can* set it via `flint config`, the dedicated `flint mode` command provides a better experience.
-
-### Mode Hierarchy
-
-```
-Production        Experimental         Dev
-────────────      ────────────────     ─────────────────
-Core commands     + Opt-in features    + All features
-Always stable     Being tested         Development only
-```
-
-### Using `flint mode`
+Set a simple value:
 
 ```bash
-# Show current mode and available features
-flint mode
-
-# Change mode
-flint mode experimental
-flint mode production
-
-# List all features by tier
-flint mode --list
+flint config set mode experimental
 ```
 
-### Why Use `flint mode` Instead of `config`?
-
-| `flint config set mode` | `flint mode` |
-|-------------------------|--------------|
-| Just sets the value | Shows feature availability |
-| No validation | Validates mode values |
-| Generic interface | Purpose-built UX |
-
-If you do use `flint config set mode`, you'll see a hint:
-```
-Hint: Use `flint mode <mode>` for mode management.
-It provides feature listings and validation.
-```
-
-## Validation
-
-The config command validates your input:
-
-### Unknown Keys
+Set a JSON-style array:
 
 ```bash
-flint config set foo.bar baz
-```
-```
-Warning: "foo.bar" is not a known config key.
-Known keys: mode
-
-Set foo.bar = "baz"
+flint config set open.apps '["obsidian"]'
 ```
 
-The value is still set, but you're warned it may not do anything.
+The command attempts to parse JSON where appropriate, which is why arrays and objects should be passed as JSON strings.
 
-## Command Reference
+## Understanding `mode`
 
-```bash
-flint config                    # View all config
-flint config get <key>          # Get value by key
-flint config <key>              # Shorthand for get
-flint config set <key> <value>  # Set a value
-```
+`mode` is part of Flint’s feature-gating system. Flint recognizes:
 
-## File Location
+- `production`
+- `experimental`
+- `dev`
 
-The config file lives at:
+This setting matters because some parts of the CLI are only available in certain runtime modes. The clearest example is the `runtime` command group, which is dev-gated in the CLI entrypoint.
 
-| Platform | Path |
-|----------|------|
-| macOS/Linux | `~/.flint/config.toml` |
-| Windows | `%USERPROFILE%\.flint\config.toml` |
+You do not need to change `mode` for everyday Flint usage. Most people can leave it alone unless they are intentionally working with gated or development-only features.
 
-You can also edit this file directly—it's plain TOML:
+## Understanding `open.apps`
+
+`open.apps` stores a list of preferred applications for opening a Flint.
+
+Flint stores this list globally, and the default config effectively behaves as:
 
 ```toml
-mode = "production"
+[open]
+apps = ["obsidian"]
 ```
 
-## Best Practices
+Even if you only ever use one app, it is helpful to understand that this is a machine preference, not a workspace-level declaration.
 
-### Use `flint mode` for Mode Changes
+## What Should Not Go Here
 
-```bash
-# Better than flint config set mode
-flint mode experimental
-```
+Do not put workspace-specific structure or dependencies into global config. These belong in `flint.toml` instead:
 
-### Check Config After Issues
+- shard declarations
+- references
+- sources
+- exports
+- workspace repositories
+- lattice declarations
+- server port
 
-If commands aren't working as expected:
-```bash
-flint config
-```
+If another person cloning the Flint needs the setting, it almost certainly belongs in the workspace config, not the global one.
 
-## Related
+## A Good Rule of Thumb
 
-- [Reference - CLI Commands](/reference/cli-commands) — Full command reference
-- [Reference - Configuration](/reference/configuration) — Per-workspace configuration
-- [Guide - Quick Start](/guide/quick-start) — Getting started with Flint
+Use global config for:
+
+- how Flint behaves on your machine
+- what apps you prefer
+- what feature mode you intentionally run in
+
+Use `flint.toml` for:
+
+- what the workspace is
+- what the workspace depends on
+- what the workspace publishes
+
+Keeping that line clean will save you a lot of confusion later.

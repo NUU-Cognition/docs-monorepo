@@ -2,324 +2,86 @@
 title: "Exports"
 ---
 
-**Compile and share content from your Flint.**
+Exports are Flint's publishing layer. They turn a root note in the Mesh into a built artifact that other people, other Flints, or external systems can consume.
 
-## Purpose
+This matters because Flint is not only for private workspace reasoning. It also needs a clean way to publish the outcomes of that reasoning.
 
-Mesh notes are interconnected - they link freely, embed content from each other, and form a web of knowledge. But when you need to share that knowledge, you often need linear, self-contained documents.
+## How Exports Are Declared
 
-The Exports module compiles your Mesh notes into portable artifacts. It resolves transclusions (expanding embedded content), rewrites wiki-links, strips frontmatter, and produces clean output files that can be shared with others or imported into other Flints.
+Exports are stored in `flint.toml` under `[exports].required`.
 
-## Export Structure
-
-Exports are defined by `(Export)` prefixed documents inside your `Mesh/` directory. The `Exports/` folder at the root of your Flint contains only build output:
-
-```
-Mesh/
-├── (Export) Guide.md             # Export definition (source of truth)
-├── (Export) API.md               # Another export definition
-├── Getting Started.md            # Referenced notes
-└── Reference.md
-
-Exports/
-├── Guide/                        # Built export folder
-│   ├── Export - (NUU Flint) Guide.md
-│   ├── Export - (NUU Flint) Getting Started.md
-│   ├── Export - (NUU Flint) Reference.md
-│   └── _manifest.json
-└── API/                          # Another built export
+```toml
+[exports]
+required = [
+  { name = "Guide", file = "Guide.md", mode = "mesh" },
+]
 ```
 
-Each export has two components:
-1. **Export document** - An `(Export)` prefixed file in `Mesh/` that defines what to export
-2. **Output folder** - Created when you build the export, named after the export
+Each declaration records:
 
-## Export Documents
+- the public export `name`
+- the source root `file`
+- the export `mode`, which is currently `mesh`
+- optional `depth`
 
-An export is defined by an `(Export)` prefixed markdown file in your `Mesh/` directory. The file name (without the prefix) becomes the export name. For example, `(Export) Guide.md` creates an export named "Guide".
+## The Usual Workflow
 
-Export documents are real Mesh notes - they live alongside your other notes, participate in the graph, and can be linked to and from other notes.
+Most teams do not write these declarations by hand first. The normal flow is:
 
-### Basic Export Document
+1. tag a Mesh note with `#export`
+2. run `flint export scan`
+3. confirm the discovered export declarations
+4. build them with `flint export build`
 
-```markdown
----
-export-depth: 1
----
+You can also add one directly:
 
-# User Guide
-
-This export contains the essential documentation.
-
-[Getting Started](/getting-started)
-[Core Concepts](/core-concepts)
-[Command Reference](/command-reference)
+```bash
+flint export add Guide.md Guide
 ```
 
-The document can include any markdown content - headings, prose, explanations. The key elements are the **wiki-links** that reference notes to include.
-
-### Export Frontmatter
-
-Export documents support these frontmatter fields:
-
-| Field | Description | Default |
-|-------|-------------|---------|
-| `export-depth` | How many link levels to follow. `1` = direct links only, `2` = links and their links, `-1` = unlimited | `1` |
-
-### Depth Control
-
-The `export-depth` field controls how deeply the exporter follows links:
-
-```markdown
----
-export-depth: 1
----
-
-[Note A](/note-a)
-[Note B](/note-b)
-```
-
-With `export-depth: 1`, only Note A and Note B are exported. If Note A links to Note C, that link is rewritten but Note C is not included.
-
-```markdown
----
-export-depth: -1
----
-
-[Note A](/note-a)
-```
-
-With `export-depth: -1`, the exporter follows all links recursively, including every referenced note.
-
-## The `flint export` Command
-
-### List Exports
+## Main Commands
 
 ```bash
 flint export list
-```
-
-Shows all export documents and their build status:
-
-```
-Exports
-
-  ● Guide (12 files)
-  ○ API (not built)
-
-Create an (Export) file in Mesh/ to define an export.
-```
-
-### Build an Export
-
-Build a specific export:
-
-```bash
-flint export build Guide
-```
-
-Build all exports:
-
-```bash
+flint export scan
+flint export add <file> <name>
+flint export remove <name>
 flint export build
-flint export build --all
+flint export build <name>
 ```
 
-Building an export:
-1. Reads the `(Export)` document from Mesh
-2. Collects all referenced notes (respecting `export-depth`)
-3. Expands embeds inline
-4. Rewrites wiki-links with export prefixes
-5. Strips frontmatter from all files
-6. Writes output to `Exports/<ExportName>/`
-7. Generates `_manifest.json`
+## What a Build Produces
 
-The build command also automatically removes stale export folders (those without a corresponding `(Export)` document) and any legacy manifest `.md` files in `Exports/`.
+Built exports are written to:
 
-### Check Export Status
-
-```bash
-flint export status
+```text
+Exports/(Mesh Export) Name/
 ```
 
-Shows build status for each export:
+That output includes:
 
-```
-Export Status
+- exported `Mesh/` content
+- copied `Media/` files when needed
+- `_manifest.json`
 
-  ✓ Guide - 12 files
-  ○ API - not built
-```
+## What the Builder Actually Does
 
-## File Transformations
+The current export builder walks outward from the declared root note and then:
 
-When notes are exported, several transformations are applied.
+- follows the note graph
+- rewrites wiki links for the built output
+- expands embeds
+- copies referenced media
+- removes stale built export folders before rebuilding
 
-### File Naming Convention
+This keeps the built export self-contained enough to be copied, consumed, or sourced by another Flint.
 
-Exported files are prefixed with `Export -` and the Flint name:
+## Why Exports Matter to the Wider Flint Model
 
-```
-Export - (Flint Name) Original Name.md
-```
+Exports are one of the bridges between private workspace reasoning and reusable published knowledge.
 
-The root export document itself becomes:
+They are also how one Flint can feed another through source mesh exports. A source Flint builds an export, and another Flint can then pull that built export into `Sources/`.
 
-```
-Export - (Flint Name) Export Name.md
-```
+## Registry Integration
 
-For example, a note called `Getting Started.md` from a Flint named `NUU Flint` becomes:
-
-```
-Export - (NUU Flint) Getting Started.md
-```
-
-If the source note has a typed prefix (like `(Task)` or `(Doc)`), it is preserved:
-
-```
-Export - (NUU Flint) (Doc) Architecture Overview.md
-```
-
-The `Export -` prefix indicates an exported file. This naming ensures exported files are distinguishable when imported into other Flints.
-
-### Wiki-Link Rewriting
-
-Links that resolve to exported files are rewritten to reference the prefixed file names:
-
-**Source:**
-```markdown
-See [Getting Started](/getting-started) for details.
-```
-
-**Exported:**
-```markdown
-See [Getting Started](/export-nuu-flint-getting-started) for details.
-```
-
-The original name is preserved as a display alias for readability. Links to notes that are not part of the export are left as-is.
-
-### Transclusion Expansion
-
-Embeds (`![...](/)`) are expanded into blockquotes with the content inlined:
-
-**Source:**
-```markdown
-Here's an important concept:
-
-![Key Insight](/key-insight)
-```
-
-**Exported:**
-```markdown
-Here's an important concept:
-
-> **Key Insight**
->
-> The actual content from the Key Insight note goes here,
-> formatted as a blockquote.
-```
-
-Circular embeds (where Note A embeds Note B which embeds Note A) are detected and replaced with a comment to prevent infinite loops.
-
-### Frontmatter Stripping
-
-All frontmatter is removed from exported files. This produces cleaner output for sharing and ensures internal metadata (like UUIDs and tags) does not leak into exports.
-
-## The _manifest.json File
-
-Each built export includes a `_manifest.json` file:
-
-```json
-{
-  "name": "Guide",
-  "flint": "NUU Flint",
-  "builtAt": "2025-01-16T10:30:00.000Z",
-  "files": [
-    "Export - (NUU Flint) Guide.md",
-    "Export - (NUU Flint) Getting Started.md",
-    "Export - (NUU Flint) Core Concepts.md"
-  ]
-}
-```
-
-This manifest records:
-- **name** - The export name (from the manifest file)
-- **flint** - The source Flint name
-- **builtAt** - ISO timestamp of the build
-- **files** - List of all files in the export
-
-The `_manifest.json` is used by the Imports module to understand what files belong to an export.
-
-## Use Cases
-
-### Sharing Documentation
-
-Create an `(Export) Docs.md` file in your Mesh with your user-facing documentation:
-
-```markdown
----
-export-depth: 2
----
-
-# Documentation Export
-
-[Quick Start](/quick-start)
-[User Guide](/user-guide)
-[FAQ](/faq)
-[Troubleshooting](/troubleshooting)
-```
-
-Build it and share the `Exports/Docs/` folder with your team.
-
-### Publishing to a Website
-
-Export your content, then process the markdown files with a static site generator. The clean, frontmatter-free output works well with tools like Astro, Next.js, or Hugo.
-
-### Sharing Context with Other Flints
-
-Create focused exports that other Flints can import:
-
-```markdown
----
-export-depth: 1
----
-
-# Architecture Export
-
-[System Architecture](/system-architecture)
-[API Reference](/api-reference)
-[Data Models](/data-models)
-```
-
-Other Flints can then import this bundle to have access to your architecture documentation.
-
-### Creating Snapshots
-
-Export a point-in-time snapshot of your project state:
-
-```markdown
-# v2.0 Release
-
-[Release Notes v2.0](/release-notes-v2-0)
-[Migration Guide v2.0](/migration-guide-v2-0)
-[API Changes v2.0](/api-changes-v2-0)
-```
-
-## Best Practices
-
-**Design exports for your audience.** A guide for humans differs from a bundle for other Flints. Consider who will consume the export.
-
-**Use depth intentionally.** `export-depth: 1` creates focused exports with only listed notes. `export-depth: -1` captures everything but can include more than expected.
-
-**Keep export documents updated.** When you add notes to a documentation series, remember to add them to the relevant `(Export)` document.
-
-**Test your exports.** Read the compiled output. Broken links, missing context, and ordering issues only reveal themselves in the final artifact.
-
-**Use descriptive names.** The `(Export)` file name becomes the export folder name. Choose names that communicate purpose: `(Export) API Reference.md`, `(Export) User Guide.md`, `(Export) Architecture.md`.
-
-## Related
-
-- [Module - Mesh](/modules/mesh) - Source content for exports
-- [Module - Imports](/modules/imports) - Import exports from other Flints
-- [Reference - CLI Commands](/reference/cli-commands) - Full CLI reference
+When exports are listed or built, Flint refreshes the workspace's registry entry so other Flints can discover which export names are available locally.

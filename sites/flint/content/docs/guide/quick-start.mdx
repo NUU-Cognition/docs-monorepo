@@ -2,301 +2,252 @@
 title: "Quick Start: Your First Flint"
 ---
 
-Get from zero to a working Flint workspace.
+This guide walks from install to a useful first workspace. The goal is not just to get Flint running, but to get you into the right habits from the start.
 
-## Prerequisites
+## Before You Begin
 
-- **Node.js 20+** - Check with `node --version`
-- **macOS or Linux** (Windows users: use WSL)
-- **Obsidian** (optional but recommended) - For the best editing experience
+You need:
+
+- Node.js with `npm`
+- a terminal where global installs are allowed
+- any text editor you like
+- Obsidian if you want the best vault-style editing experience, though it is optional
 
 ## Step 1: Install the CLI
 
-Install Flint via npm:
+Install the CLI package:
 
 ```bash
-npm install -g @nuucognition/flint
+npm install -g @nuucognition/flint-cli
 ```
 
-Verify installation:
+Check that the binary is available:
 
 ```bash
 flint --version
 ```
 
-### Update
+If you want to see whether a newer release exists later:
 
 ```bash
-npm update -g @nuucognition/flint
+flint update --check
 ```
 
-### Uninstall
+## Step 2: Create a Workspace
 
-```bash
-npm uninstall -g @nuucognition/flint
-```
-
-Your data (`~/.flint/`) is preserved.
-
-## Step 2: Create Your First Flint
-
-Navigate to where you want your workspace and create a new Flint:
+Create a new Flint in the current directory:
 
 ```bash
 flint init "My Project"
 ```
 
-This creates the folder `(Flint) My Project/` with the essential structure, registers it in the global registry, and syncs any configured features.
+This is the default, cleanest starting point. Behind the scenes, Flint:
 
-**With the default preset** (recommended for new users):
+- creates the workspace directory
+- writes `flint.toml`
+- writes `flint.json`
+- creates the standard subdirectories
+- registers the workspace in your local registry
+- runs `flint sync`
+
+Useful variants:
 
 ```bash
 flint init "My Project" --preset default
+flint init "My Project" --path ~/workspaces
+flint init --from-git git@github.com:owner/repo.git
 ```
 
-The `default` preset includes all standard shards (projects, increments, notepad, plan, reports, etc.) and mods (Claude Code, agents). Without `--preset`, you get a clean empty flint.
+When to use them:
 
-## Step 3: Explore the Structure
+- `--preset default` when you want a more fully seeded workspace from the start
+- `--path` when your current directory is not where you want the Flint created
+- `--from-git` when the workspace already exists as a Flint repository elsewhere
 
-Navigate into your new Flint:
+## Step 3: Move Into the Flint
 
 ```bash
 cd "(Flint) My Project"
 ```
 
-Here's what was created:
+The base structure looks like this:
 
-```
+```text
 (Flint) My Project/
-├── flint.toml           # Configuration file (you edit this)
-├── flint.json           # Identity and state (auto-managed)
-├── .flint/              # Runtime data (gitignored)
-├── Mesh/                # Your notes go here
-│   └── (System) Flint Init.md
-├── Imports/             # Content from other Flints
-├── Exports/             # Compiled outputs for sharing
-├── Workspace/           # Links to external resources
-├── Media/               # Images, PDFs, assets
-├── Shards/              # Agent capabilities (prompt packages)
-├── Mods/                # Environment modifications
-├── Connections/         # References to other Flints
-└── Subflints/           # Nested Flint workspaces
+├── flint.toml
+├── flint.json
+├── .flint/
+├── Mesh/
+├── Media/
+├── Shards/
+├── Sources/
+├── Exports/
+└── Workspace/
 ```
 
-If you used `--preset default`, you'll also have shards installed in `Shards/` and mods in `Mods/`.
+That layout is worth learning early because it will shape everything you do next.
 
-## Step 4: Read the Init File
+- `Mesh/` is where your actual thinking goes.
+- `Shards/` is where the workspace keeps cognitive programs for agents.
+- `Sources/` is for copied-in external context.
+- `Workspace/` is for active repos that belong inside the workspace.
+- `Exports/` is for built output.
+- `.flint/` is for local runtime and fulfillment state.
 
-Open `Mesh/(System) Flint Init.md` in any text editor. This file:
+## Step 4: Read the Init Note
 
-- Explains what this Flint is for
-- Describes the folder structure
-- Lists installed shards and their capabilities
-- Provides guidance for AI agents working in this space
+Open:
 
-Every time you (or an AI agent) starts working in a Flint, reading the init file first ensures you understand the workspace context.
+```text
+Mesh/(System) Flint Init.md
+```
 
-## Step 5: Open in Obsidian
+This file is not just a welcome message. It is the workspace contract for both humans and agents. A good init note answers:
 
-For the best editing experience, open your Flint folder directly in Obsidian as a vault:
+- what this Flint is for
+- what belongs in `Mesh/`
+- which shards matter here
+- what external systems the workspace depends on
+- how an agent should start working
 
-1. Open Obsidian
-2. Click "Open folder as vault"
-3. Select your `(Flint) My Project/` folder
+If you skip this note, the workspace will feel more confusing than it needs to.
 
-Flint's conventions (wiki-links, YAML frontmatter, folder structure) are fully compatible with Obsidian's features.
+This is also where you make the workspace executable for an agent. The init note tells the agent which shard-based cognitive programs are relevant and how to apply them here.
 
-## Step 6: Create Your First Note
+## Step 5: Add a First Note
 
-Create a file in `Mesh/`. You can use the command line, your editor, or Obsidian.
-
-Example note at `Mesh/Project Ideas.md`:
+Create something simple in `Mesh/`, such as:
 
 ```markdown
 ---
-id: auto-generated-by-sync
+id: 11111111-1111-1111-1111-111111111111
 tags:
-  - "#brainstorm"
+  - "#proj/note"
 ---
 
 # Project Ideas
 
 Initial thoughts for the project.
 
-## Mobile App
+## Goals
 
-A mobile companion would help with [On-the-Go Access](/on-the-go-access).
-
-## Integration
-
-Consider connecting to [External Services](/external-services).
+- Keep architecture notes close to the codebase
+- Track follow-up tasks in one place
+- Export a clean public guide later
 ```
 
-Key concepts:
-- **Frontmatter** - YAML at the top with metadata
-- **Wiki links** - `[Note Name](/note-name)` links to other notes
-- **Tags** - Use `#tag` format in frontmatter or inline
-- **IDs** - Auto-generated by index (unique identifiers)
+At this stage, focus on three habits:
 
-## Step 7: Sync Your Workspace
+- use frontmatter consistently
+- use tags deliberately
+- start linking related notes with `[wiki links](/wiki-links)`
 
-Run sync to update the workspace state:
+These habits matter because shards work best when an agent can read the workspace cleanly and write back into it predictably.
+
+## Step 6: Declare One Real Dependency
+
+The biggest mistake new users make is treating a Flint like a self-contained notebook. Flint becomes much more useful once it is connected to something real.
+
+### If the workspace is about a codebase
+
+Declare and fulfill a codebase reference:
+
+```bash
+flint reference codebase "Main App"
+flint fulfill codebase "Main App" /path/to/app
+flint reference list
+```
+
+Now the workspace has a named relationship to the code it is describing.
+
+### If the workspace needs read-only material from elsewhere
+
+Add a source mesh export:
+
+```bash
+flint source meshexport list
+flint source meshexport add "Research Hub/Guide"
+```
+
+### If the workspace should contain an active repo clone
+
+Create a workspace repo:
+
+```bash
+flint workspace create "App" git@github.com:me/app.git
+flint workspace list
+```
+
+The distinction matters:
+
+- use references when the thing stays outside the workspace
+- use sources when you want copied-in read-only context
+- use workspace repos when the repo should live inside the Flint
+
+That structure is what makes Flint a usable execution environment for shards. A cognitive program is much more reliable when the agent can clearly tell what is durable thinking, what is copied context, and what is active working code.
+
+## Step 7: Sync After Config Changes
+
+Any time you meaningfully change `flint.toml`, run:
 
 ```bash
 flint sync
 ```
 
-Sync performs several operations:
-- Creates missing directories
-- Installs/updates shards declared in `flint.toml`
-- Installs/updates mods declared in `flint.toml`
-- Pulls required imports from source Flints
-- Validates workspace references and connections
-- Updates the global registry
-- Updates `.gitignore` for current configuration
+`flint sync` is responsible for reconciling the workspace with the declarations you made. Depending on what is configured, it can:
 
-**Run sync regularly** - after changing configuration, pulling git changes, or when something seems off.
+- ensure standard directories and state files exist
+- install or reconcile shards
+- bootstrap `.obsidian/`
+- synchronize source mesh exports
+- refresh metadata notes for sources and references
+- update `.gitignore`
+- refresh registry information
 
-## Step 8: Basic Workflows
+If Flint has a heartbeat, it is `flint sync`.
 
-### Install Shards
+It is also the moment when declared cognitive programs become available in the workspace. If shards are the programs, sync is one of the main ways Flint makes sure the execution environment is ready for them.
 
-Use the CLI to install shards:
+## Step 8: Build Something Shareable
 
-```bash
-# Install from the default registry
-flint shard install NUU-Cognition/shard-projects
-
-# Or add to flint.toml and sync
-```
-
-Edit `flint.toml` to declare shards:
-
-```toml
-[flint]
-name = "My Project"
-type = "flint"
-
-[shards]
-projects = { source = "NUU-Cognition/shard-projects" }
-increments = { source = "NUU-Cognition/shard-increments" }
-notepad = { source = "NUU-Cognition/shard-notepad" }
-plan = { source = "NUU-Cognition/shard-plan" }
-
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-```
-
-Then sync to install them:
+If you want to publish a guide or report from the workspace, tag a root note with `#export` and run:
 
 ```bash
-flint sync
+flint export scan
+flint export build
+flint export list
 ```
 
-### List Installed Shards
+This is where Flint starts to feel different from a normal markdown vault. Notes are not only for internal thinking; they can also become built artifacts.
+
+## Step 9: Open the Workspace Comfortably
+
+If you use Obsidian, you can open the folder directly there. You can also use:
 
 ```bash
-flint shard list
+flint open
 ```
 
-### Link a Codebase
+The important point is that Flint does not require one specific editor. The files remain plain and portable.
 
-If your Flint relates to a codebase, create a workspace reference:
+## A Strong First-Day Workflow
 
-```bash
-flint workspace reference monorepo /path/to/your/code
-```
+If you want a practical first-day loop, do this:
 
-This declares the reference in `flint.toml` and creates `Workspace/References/rf-monorepo.md` with the local path.
+1. create the Flint
+2. improve the init note
+3. write two or three real Mesh notes
+4. add one codebase reference or one source
+5. run `flint sync`
+6. tag one note with `#export`
+7. run an export build
 
-### Index Your Notes
+By the end of that sequence, you will have touched the main parts of the system in the right order.
 
-To manually add IDs to markdown files:
+## Where to Continue
 
-```bash
-flint index
-```
+Once the workspace exists, choose the guide that matches the kind of work you actually want to do:
 
-This scans all markdown files and adds unique IDs to their frontmatter.
-
-## Essential Commands Reference
-
-| Command | What it does |
-|---------|--------------|
-| `flint init <name>` | Create a new Flint |
-| `flint sync` | Sync config, shards, mods, imports |
-| `flint list` | List registered Flints |
-| `flint index` | Add IDs to Mesh files |
-| `flint shard list` | Show installed shards |
-| `flint shard install <source>` | Install a shard |
-| `flint mod list` | Show installed mods |
-| `flint mod install <source>` | Install a mod |
-| `flint workspace list` | Show workspace references |
-| `flint connection list` | Show connections |
-| `flint --help` | See all commands |
-
-## File Naming Conventions
-
-Flint uses typed prefixes to indicate document purpose:
-
-| Pattern | Purpose |
-|---------|---------|
-| `(System) *.md` | Configuration and navigation |
-| `(Task) NNN *.md` | Actionable work items |
-| `(Dashboard) *.md` | Overview documents |
-| `(Plan) NNN *.md` | High-level plans |
-| `(Increment) X.Y.Z - *.md` | Version work packages |
-| `(Notepad) NNN *.md` | Brainstorming sessions |
-| `(Report) *.md` | Research/analysis output |
-| `*.md` | Regular notes |
-
-Example: `(Task) 076 Implement Auth.md`, `(System) Flint Init.md`
-
-## What's Next?
-
-You now have a working Flint workspace. Here's where to go from here:
-
-### Learn More
-
-- [Guide - Core Concepts](/guide/core-concepts) - Understand the mental model
-- [Guide - Introduction](/) - The philosophy behind Flint
-- [Reference - CLI Commands](/reference/cli-commands) - Complete command reference
-
-### Try the Tutorials
-
-- [Guide - Tutorial Project Planning](/guide/tutorial-project-planning) - Plan a project with tasks and increments
-- [Guide - Tutorial Research Notes](/guide/tutorial-research-notes) - Organize research with linked notes
-- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration) - Work effectively with AI agents
-
-### Explore Modules
-
-- [Module - Mesh](/modules/mesh) - Deep dive into your notes system
-- [Module - Shards & Mods](/modules/shards-mods) - Extend with automation
-- [Module - Workspace](/modules/workspace) - Connect to external resources
-
-### Configuration
-
-- [Reference - Configuration](/reference/configuration) - Global and workspace settings
-- [Guide - Global Configuration](/guide/global-configuration) - Set up your preferences
-- [Guide - Registry Management](/guide/registry-management) - Manage your Flint collection
-
-## Troubleshooting
-
-**"Command not found: flint"**
-- Make sure the install completed successfully
-- Check if `~/.local/bin` is in your PATH
-- Try: `export PATH="$HOME/.local/bin:$PATH"`
-
-**"Not inside a Flint"**
-- Make sure you're in a folder with `flint.toml`
-- Navigate into the `(Flint) Name/` folder, not its parent
-
-**Obsidian doesn't see the folder**
-- Use "Open folder as vault" in Obsidian
-- Point it to the `(Flint) Name/` directory
-
-**Sync shows errors**
-- Check `flint.toml` for syntax errors
-- Run `flint sync` again - it's idempotent
-
-For more troubleshooting, see [Reference - Troubleshooting](/reference/troubleshooting).
+- [Guide - Tutorial Project Planning](/guide/tutorial-project-planning)
+- [Guide - Tutorial Research Notes](/guide/tutorial-research-notes)
+- [Guide - Tutorial Agent Collaboration](/guide/tutorial-agent-collaboration)

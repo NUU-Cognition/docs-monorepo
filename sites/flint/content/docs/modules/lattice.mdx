@@ -1,0 +1,77 @@
+---
+title: "Lattice"
+---
+
+Flint includes a public `lattice` command group for connecting a workspace to registered lattice programs and materializing their context into the Mesh.
+
+This gives Flint a way to bridge from workspace reasoning into external executable data programs while still leaving a local knowledge trail behind.
+
+## Declaration and Fulfillment
+
+Lattice declarations live in `flint.toml`:
+
+```toml
+[lattices]
+references = [
+  { name = "customer_data" },
+]
+```
+
+Local fulfillment state lives in:
+
+```text
+.flint/lattices.json
+```
+
+Each fulfillment records:
+
+- lattice name
+- local path
+- language
+- fulfillment timestamp
+
+## Main Commands
+
+```bash
+flint lattice list
+flint lattice connect <name>
+flint lattice disconnect <name>
+flint lattice run <name> <function> [args...]
+flint lattice pin <name> <record-id> --title "Title"
+flint lattice unpin <name> <record-id>
+flint lattice sync <name>
+```
+
+## What Connecting a Lattice Does
+
+When a lattice is connected, Flint does more than store a path. It also generates Mesh context under:
+
+```text
+Mesh/Lattice/<Name>/
+```
+
+That materialized context includes:
+
+- a base lattice context note
+- a `Pins/` directory for pinned records
+
+This is the Flint pattern again: an external executable system is connected, and then Flint creates local notes so humans and agents can reason about that system inside the workspace.
+
+## Pins
+
+Pins are declared in the lattice's own `pins.toml` and then materialized as notes inside the Flint. `flint lattice sync` reconciles the lattice-side declaration with the local pin note files.
+
+Pins matter when a lattice contains records that should become durable workspace context rather than staying buried inside the external program.
+
+## Running Lattice Functions
+
+The current implementation supports both Python and JavaScript lattices:
+
+- Python runs through `uv run python main.py ...`
+- JavaScript runs through `node main.js ...`
+
+Environment values from `.env.local` in the lattice directory are loaded before execution.
+
+## Why Lattice Fits Flint
+
+Lattice is useful when a Flint needs more than static notes and repository access. It gives the workspace a path to executable data programs while still preserving Flint's core rule: anything important should be represented in a local, inspectable form that agents can work with over time.

@@ -2,302 +2,160 @@
 title: "Tutorial: Agent Collaboration"
 ---
 
-Learn how to work effectively with AI agents in your Flint.
+Flint works well with AI agents because it gives them a bounded workspace, a clear entrypoint, and a durable place to put results. Just as important, it gives them shards: cognitive programs they can execute inside that workspace. This tutorial shows a practical way to use the agent features without turning the workspace into a transcript graveyard.
 
-## What We'll Cover
+## The Goal
 
-- Setting up for agent collaboration
-- Teaching agents your workspace
-- Using shards for structured work
-- Best practices for human-agent workflow
+By the end of this guide, you should have a workflow where:
 
-## Step 1: Install the Claude Code Mod
+- the agent starts with enough context to be useful
+- the work stays grounded in real source material
+- session state is inspectable
+- durable outcomes end up back in `Mesh/`
 
-Edit `flint.toml`:
+The deeper goal is to let the agent run structured shard-based workflows inside Flint instead of improvising everything ad hoc.
 
-```toml
-[flint]
-name = "my-project"
-type = "flint"
+## Step 1: Prepare the Workspace Before Starting the Agent
 
-[shards]
-flint = { source = "NUU-Cognition/shard-flint" }
-projects = { source = "NUU-Cognition/shard-projects" }
-increments = { source = "NUU-Cognition/shard-increments" }
+The quality of agent collaboration is usually decided before the session starts.
 
-[mods]
-claude-code = { source = "NUU-Cognition/flint-mod-claude-code" }
-```
+Make sure the workspace has:
+
+- a useful `Mesh/(System) Flint Init.md`
+- the relevant shards declared and synced
+- fulfilled codebase references if the work touches actual software
+- a reasonably clear place for the result to land in `Mesh/`
+
+Agents do much better when the workspace already has structure. Flint gives them a map, and shards give them the cognitive programs to run against that map.
+
+## Step 2: Start a Headless Session
+
+For a background Claude session:
 
 ```bash
-flint sync
+flint agent claude "Audit the reference codebase and update the architecture notes."
 ```
 
-This installs shards for structured work and the Claude Code mod for tool integration.
+Useful options:
 
-## Step 2: Prepare Your Init File
-
-The init file is how agents understand your workspace. Make it comprehensive:
-
-```markdown
----
-id: (auto-generated)
-tags:
-  - "#system"
----
-
-# My Project
-
-A workspace for [describe your project].
-
-## Purpose
-
-[2-3 sentences about what this Flint is for]
-
-## Current Focus
-
-- Active increment: [Increment 1.0.0 - Foundation](/increment-1-0-0-foundation)
-- Key tasks: [Task User Auth](/task-user-auth), [Task API Design](/task-api-design)
-
-## Key Documents
-
-| Document | Purpose |
-|----------|---------|
-| [(Dashboard) Backlog](/dashboard-backlog) | All planned work |
-| [(Dashboard) Increments](/dashboard-increments) | Release tracking |
-| [Architecture](/architecture) | System design |
-
-## Shards
-
-| Shard | Purpose |
-|-------|---------|
-| Flint | Base conventions and utilities |
-| Increments | Version releases |
-| Projects | Task management |
-
-## Agent Instructions
-
-When working in this Flint:
-1. Check current increment for priorities
-2. Update task status as you work
-3. Follow existing naming conventions
-4. Ask before major architectural changes
-
-## Workspace
-
-Codebase linked at [Workspace/References/rf-monorepo](/workspace-references-rf-monorepo)
+```bash
+flint agent claude "..." --title "Architecture audit"
+flint agent claude "..." --continues <session-id>
+flint agent claude "..." --resume <session-id>
+flint agent claude "..." --max-turns 20
 ```
 
-## Step 3: Start an Agent Session
+The CLI creates a Flint session record, adds a run, and launches Claude in the background.
 
-When you start Claude Code (or another AI agent) in your Flint:
+## Step 3: Watch What the Agent Is Doing
 
-**First message pattern:**
+To see the session list:
 
-```
-Read Mesh/(System) Flint Init.md to understand this workspace.
-Then help me with [your task].
-```
-
-The agent will read the init file and have context for everything that follows.
-
-## Step 4: Use Shards for Structured Work
-
-### Creating a Task
-
-```
-Read @Shards/Projects/init-proj.md and create a new task for
-implementing user notifications.
+```bash
+flint agent list
+flint agent list --all
+flint agent list --interactive
 ```
 
-The agent will:
-1. Read the Projects shard init file
-2. Follow the task template
-3. Create a properly structured task document
+To stream one transcript:
 
-### Creating an Increment
-
-```
-Read @Shards/Increments/init-inc.md and create increment 2.0.0
-for the notification system.
+```bash
+flint agent watch <session-id>
 ```
 
-### Using Notepad for Ideas
+This is useful because Flint does not treat agent work as magical background behavior. It treats it as inspectable workspace state.
 
-```
-Read @Shards/Notepad/init-ntpd.md and capture these ideas
-about the authentication flow.
-```
+Session files live in:
 
-## Step 5: Establish Conventions
-
-Document your preferences in the init file:
-
-```markdown
-## Conventions
-
-### Naming
-- Tasks: `(Task) NNN Verb Noun.md`
-- Concepts: `Noun Phrase.md`
-- System files: `(System) Name.md`
-
-### Tags
-- `#task` - Actionable items
-- `#concept` - Ideas and definitions
-- `#ld/living` - Active documents
-- `#ld/dead` - Archived documents
-
-### Workflow
-1. Tasks start in Backlog
-2. Active tasks get `status: in-progress`
-3. Done tasks get `status: done`
+```text
+.flint/sessions/*.json
 ```
 
-Agents will follow these conventions when creating documents.
+## Step 4: Inspect and Control One Session
 
-## Step 6: Multi-Session Continuity
+To inspect a session in detail:
 
-Agents start fresh each session. To maintain continuity:
-
-### Session Notes
-
-Create a session note at start:
-
-```markdown
-# Session 2026-03-02
-
-## Context
-
-Continuing work from yesterday:
-- Completed: [Task User Auth](/task-user-auth)
-- In progress: [Task API Design](/task-api-design)
-- Blocked: Waiting on design review
-
-## Goals Today
-
-1. Finish API endpoint specs
-2. Start database migration
-3. Update architecture doc
-
-## Notes
-
-[Agent adds notes during session]
+```bash
+flint agent session <session-id>
 ```
 
-### Handoff Pattern
+The session command gives you access to:
 
-End sessions with a summary:
+- status
+- title
+- description
+- runs
+- questions
+- results
+- tracked artifacts
+- interface state
 
-```
-Summarize what we accomplished and what's pending.
-Update the relevant dashboards and create a handoff note.
-```
+That makes it the main control surface once a session is in motion.
 
-## Step 7: Effective Prompting
+## Step 5: Handle Questions Cleanly
 
-### Good Patterns
+The agent interface subcommands support structured human input.
 
-**Grounded in context:**
-```
-Looking at [Task API Design](/task-api-design), what's the best approach
-for the authentication endpoints?
-```
+Examples:
 
-**Shard-aware:**
-```
-Use the Increments shard to update our 1.0.0 increment
-with today's completed tasks.
-```
-
-**Convention-following:**
-```
-Create a concept note for "Rate Limiting" following our
-existing naming conventions.
+```bash
+flint agent interface --session <id> ask "Which branch should I analyze?"
+flint agent interface --session <id> request "Need decision on export scope"
+flint agent interface --session <id> set repo "payments-api"
+flint agent interface --session <id> get repo
 ```
 
-### Patterns to Avoid
+The difference between `ask` and `request` matters:
 
-**Vague scope:**
-```
-Help me with the project.
-```
+- `ask` blocks and waits for a response
+- `request` posts a deferred question and exits
 
-**Context-free:**
-```
-Write some API documentation.
-```
+This is much cleaner than treating every interruption as an ad hoc chat exchange.
 
-**Better:**
-```
-Read [Architecture](/architecture) and [Task API Design](/task-api-design), then write
-API documentation for the auth endpoints.
-```
+## Step 6: Keep the Agent Grounded in Source
 
-## Agent Capabilities by Shard
+A good Flint-agent loop usually looks like this:
 
-| Shard | What Agents Can Do |
-|-------|-------------------|
-| **Flint** | Navigate, search, create notes |
-| **Increments** | Create/update version releases |
-| **Projects** | Manage tasks and backlog |
-| **Notepad** | Quick capture of ideas |
-| **Plan** | High-level project planning |
-| **OrbCode** | Map codebases semantically |
+1. declare or fulfill the needed codebase references
+2. point the agent at the init note and relevant shard init files
+3. have it inspect the actual code or source materials
+4. direct the durable result back into `Mesh/`
 
-Load the relevant shard init before asking for shard-specific work.
+That last step is critical. The transcript is not the product. The updated note, plan, report, or guide is the product. Flint is where the cognitive program runs; Mesh is where its durable output lands.
 
-## Workflow: Daily Agent Session
+## Step 7: Use the Agent for Bounded Tasks
 
-```
-# Morning
-1. "Read the init file and check (Dashboard) Backlog"
-2. "What's the status of our current increment?"
-3. "Let's work on [task]"
+Flint works best when agent tasks are concrete and scoped.
 
-# During work
-4. Agent creates/updates notes
-5. Agent uses shards as needed
-6. Human reviews, provides feedback
+Good examples:
 
-# End of day
-7. "Update task statuses based on our work"
-8. "Create a session summary"
-9. Human commits changes
+- update docs from source
+- summarize a subsystem
+- draft a note from a code audit
+- continue a prior investigation
+- answer a targeted research question
+
+Less effective tasks are the vague ones that ask the agent to “figure out everything” with no clear workspace landing zone.
+
+## Step 8: Optional Server and Runtime Layer
+
+If you want server-backed sessions or runtime automation, start them explicitly:
+
+```bash
+flint server start
+flint runtime start
 ```
 
-## Troubleshooting
+That is optional. The `agent` command group itself is already a usable workflow without the runtime/server layer.
 
-### Agent seems confused
+## A Strong Collaboration Pattern
 
-```
-Re-read Mesh/(System) Flint Init.md and tell me what you
-understand about this workspace.
-```
+The best Flint-agent collaboration pattern is simple:
 
-### Agent not following conventions
+1. prepare the workspace
+2. run the agent on a bounded task
+3. inspect the session
+4. review the result
+5. keep the durable outcome in `Mesh/`
 
-```
-Look at the existing (Task) files in Mesh/ and follow that
-exact format for the new task.
-```
-
-### Agent context seems lost
-
-```
-Let's start fresh. Read the init file again, then
-check our current increment status.
-```
-
-## What You've Learned
-
-- **Init file importance** - The foundation of agent context
-- **Shard loading** - On-demand capability extension
-- **Convention documentation** - Teaching agents your preferences
-- **Session patterns** - Maintaining continuity across sessions
-- **Effective prompting** - Grounded, specific, convention-aware
-
-## Next Steps
-
-- [Module - Shards & Mods](/modules/shards-mods) - Deep dive into available shards
-- [Reference - CLI Commands](/reference/cli-commands) - All available commands
-- [Guide - Core Concepts](/guide/core-concepts) - Review mental model
+When you do that consistently, the workspace stays clean and the agent becomes much more useful over time.

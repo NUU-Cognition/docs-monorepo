@@ -1,0 +1,132 @@
+---
+title: "References"
+---
+
+References are Flint's dependency declaration layer. They let a workspace say what external codebases or other Flints it depends on without committing machine-specific paths into version control.
+
+This is one of the key ideas in Flint's environment model:
+
+- `flint.toml` declares what the workspace depends on
+- `.flint/references.json` stores how the current machine fulfills those dependencies
+
+That split keeps the workspace portable while still making local execution possible.
+
+## Supported Reference Types
+
+Flint currently supports two public reference types:
+
+- `codebase`
+- `flint`
+
+They are declared in `flint.toml` under `[references]`.
+
+```toml
+[references]
+codebases = [
+  { name = "Flint" },
+]
+flints = [
+  { name = "Research Hub" },
+]
+```
+
+## Codebase References
+
+Codebase references point at local source trees outside the current Flint.
+
+```bash
+flint reference codebase "Flint"
+flint fulfill codebase "Flint" /Users/me/dev/flint
+flint resolve codebase "Flint"
+```
+
+This is the normal path when a Flint needs access to an external repository but should not clone or own that repo itself. An agent can then resolve the path and read the code directly.
+
+## Flint References
+
+Flint references point at other registered Flints.
+
+```bash
+flint reference flint "Research Hub"
+flint resolve flint "Research Hub"
+```
+
+If the target Flint is already present in the local registry, Flint can auto-fulfill the reference. This is why `flint sync` is important: sync attempts to auto-fulfill declared Flint references from the registry and then refreshes the related metadata.
+
+## Fulfillment State
+
+Local fulfillment is stored in:
+
+```text
+.flint/references.json
+```
+
+Current state shape:
+
+```json
+{
+  "version": 2,
+  "codebases": [],
+  "flints": []
+}
+```
+
+Each fulfillment records a name, local path, and fulfillment timestamp.
+
+## Commands
+
+Declare references:
+
+```bash
+flint reference codebase "Flint"
+flint reference flint "Research Hub"
+```
+
+List current status:
+
+```bash
+flint reference list
+```
+
+Remove a reference:
+
+```bash
+flint reference remove "Flint"
+```
+
+Fulfill codebases:
+
+```bash
+flint fulfill codebase "Flint" /Users/me/dev/flint
+flint fulfill codebase --all
+```
+
+Resolve a fulfilled path:
+
+```bash
+flint resolve codebase "Flint"
+flint resolve flint "Research Hub"
+```
+
+## How References Fit the Agent Workflow
+
+References matter because they make the environment executable for an agent without forcing the workspace to own every dependency.
+
+For example:
+
+- a planning shard may need to inspect an external app repo
+- a reporting shard may need to read another Flint's Mesh
+- a documentation shard may need both a codebase reference and a sourced export
+
+References make those external surfaces addressable by name.
+
+## References vs Sources
+
+Use references when the agent only needs a stable pointer to something external.
+
+Use sources when the agent needs a copied local snapshot inside the workspace itself.
+
+In short:
+
+- references point
+- sources copy

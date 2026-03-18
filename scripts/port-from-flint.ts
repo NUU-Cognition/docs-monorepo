@@ -2,8 +2,9 @@
 /**
  * Port markdown files from a Flint to Fumadocs format
  *
- * Reads configuration from Mesh/(System) NUU Documentation.md
- * Auto-discovers titles from document headings and generates slugs from filenames.
+ * Discovers all (NUU Docs) *.md config files under Mesh/ and ports each one
+ * to its target site. Each config is a self-contained docs declaration with
+ * its own site target, sections, and page references.
  *
  * Usage: pnpm port --source <flint-path>
  */
@@ -38,6 +39,32 @@ interface ResolvedPage {
 }
 
 // ============================================================================
+// Discovery
+// ============================================================================
+
+function discoverDocsConfigs(meshPath: string): string[] {
+  const configs: string[] = [];
+
+  function walk(dir: string): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (
+        entry.isFile() &&
+        entry.name.startsWith("(NUU Docs) ") &&
+        entry.name.endsWith(".md")
+      ) {
+        configs.push(fullPath);
+      }
+    }
+  }
+
+  walk(meshPath);
+  return configs.sort();
+}
+
+// ============================================================================
 // Parsing
 // ============================================================================
 
@@ -47,7 +74,7 @@ function parseDocsConfig(configPath: string): DocsConfig {
   // Extract first YAML code block
   const yamlMatch = content.match(/```ya?ml\n([\s\S]*?)```/);
   if (!yamlMatch) {
-    throw new Error("No YAML code block found in (System) NUU Documentation.md");
+    throw new Error(`No YAML code block found in ${path.basename(configPath)}`);
   }
 
   return yaml.parse(yamlMatch[1]);
@@ -84,12 +111,40 @@ function generateSlug(fileName: string): string {
     .replace(/^-|-$/g, "");
 }
 
+/**
+ * Find a markdown file by name under meshPath, searching recursively.
+ * Returns the first match.
+ */
+function findFile(meshPath: string, fileName: string): string | null {
+  const target = `${fileName}.md`;
+
+  function walk(dir: string): string | null {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name === target) {
+        return path.join(dir, entry.name);
+      }
+      if (entry.isDirectory()) {
+        const found = walk(path.join(dir, entry.name));
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  return walk(meshPath);
+}
+
 function resolvePage(meshPath: string, wikiLink: string): ResolvedPage {
   const fileName = resolveWikiLink(wikiLink);
-  const sourcePath = path.join(meshPath, `${fileName}.md`);
 
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`File not found: ${sourcePath}`);
+  // Try direct path first, then recursive search
+  const directPath = path.join(meshPath, `${fileName}.md`);
+  const sourcePath = fs.existsSync(directPath)
+    ? directPath
+    : findFile(meshPath, fileName);
+
+  if (!sourcePath) {
+    throw new Error(`File not found: ${fileName}.md (searched under ${meshPath})`);
   }
 
   return {
@@ -182,25 +237,12 @@ function createMetaJson(title: string, pages: string[]): string {
 // Main Porting Logic
 // ============================================================================
 
-function portFromFlint(sourcePath: string): void {
-  const meshPath = path.join(sourcePath, "Mesh");
-  const configPath = path.join(meshPath, "(System) NUU Documentation.md");
-
-  if (!fs.existsSync(meshPath)) {
-    console.error(`Error: Mesh folder not found at ${meshPath}`);
-    process.exit(1);
-  }
-
-  if (!fs.existsSync(configPath)) {
-    console.error(`Error: (System) NUU Documentation.md not found at ${configPath}`);
-    process.exit(1);
-  }
-
+function portDocsConfig(configPath: string, meshPath: string): void {
   const config = parseDocsConfig(configPath);
 
-  console.log(`Porting: ${config.title}`);
-  console.log(`Site: ${config.site}`);
-  console.log(`Base Path: ${config.basePath ?? "/"}`);
+  console.log(`\nPorting: ${config.title} (from ${path.basename(configPath)})`);
+  console.log(`  Site: ${config.site}`);
+  console.log(`  Base Path: ${config.basePath ?? "/"}`);
 
   const targetPath = path.join(
     process.cwd(),
@@ -216,7 +258,7 @@ function portFromFlint(sourcePath: string): void {
   }
   fs.mkdirSync(targetPath, { recursive: true });
 
-  console.log(`Target: ${targetPath}\n`);
+  console.log(`  Target: ${targetPath}\n`);
 
   // Build link map for wiki link resolution
   const basePath = config.basePath ?? "/";
@@ -283,7 +325,36 @@ function portFromFlint(sourcePath: string): void {
     createMetaJson(config.title, sectionIds)
   );
 
-  console.log("\nDone!");
+  console.log(`\n  Done: ${config.title}`);
+}
+
+function portFromFlint(sourcePath: string): void {
+  const meshPath = path.join(sourcePath, "Mesh");
+
+  if (!fs.existsSync(meshPath)) {
+    console.error(`Error: Mesh folder not found at ${meshPath}`);
+    process.exit(1);
+  }
+
+  // Discover all (NUU Docs) configs
+  const configs = discoverDocsConfigs(meshPath);
+
+  if (configs.length === 0) {
+    console.error(`Error: No (NUU Docs) *.md config files found under ${meshPath}`);
+    console.error("Each docs config should be named like: (NUU Docs) Flint.md");
+    process.exit(1);
+  }
+
+  console.log(`Found ${configs.length} docs config(s):`);
+  for (const c of configs) {
+    console.log(`  - ${path.relative(meshPath, c)}`);
+  }
+
+  for (const configPath of configs) {
+    portDocsConfig(configPath, meshPath);
+  }
+
+  console.log(`\nAll done! Ported ${configs.length} doc set(s).`);
 }
 
 // ============================================================================
@@ -304,7 +375,7 @@ if (!sourcePath) {
   console.log("Usage: pnpm port --source <flint-path>");
   console.log("");
   console.log("The Flint must contain:");
-  console.log("  - Mesh/(System) NUU Documentation.md (config with YAML code block)");
+  console.log("  - One or more (NUU Docs) *.md files under Mesh/ (each with a YAML config block)");
   console.log("  - Mesh/ folder with markdown source files");
   process.exit(1);
 }
