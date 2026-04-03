@@ -1,0 +1,62 @@
+---
+title: "Introduction"
+---
+
+Orbh is a headless agent orchestration system built into the Flint CLI. It launches AI coding agents as background processes, tracks their lifecycle, captures structured transcripts, and provides a CLI and programmatic interface for observing and interacting with running sessions. Orbh treats each agent runtime — Claude Code, Codex, Droid (Factory), Gemini, or any future tool — as an opaque process wrapped behind a unified abstraction.
+
+The name stands for "Orb Harness." An orb is a running agent session; a harness is the adapter that connects a specific runtime to the Orbh framework.
+
+## Why Orbh Exists
+
+Traditional agent CLI tools run interactively — a human types, the agent responds, and the conversation flows in a terminal session. This works well for pair programming but breaks down when you want to:
+
+- **Run agents in the background** while you work on something else
+- **Launch multiple agents** working on different tasks simultaneously
+- **Track progress** without reading raw terminal output
+- **Ask questions and get answers** asynchronously across session boundaries
+- **Record and replay** what an agent did for review or audit
+
+Orbh solves these problems by wrapping agent runtimes in a managed process model with structured session state, a key-value interface for progress reporting, and request/response chains for human-in-the-loop interaction.
+
+## Key Concepts
+
+### Sessions
+
+A session is the top-level unit of work. When you run `flint orb launch claude "implement auth"`, Orbh creates a session with a unique ID, stores the prompt, and spawns the agent process. The session persists as a JSON file in `.flint/sessions/` and tracks everything about the work: status, interface state, runs, and request/response history.
+
+Sessions have a lifecycle status: `queued`, `in-progress`, `blocked`, `deferred`, `finished`, `failed`, or `cancelled`. Agents update their own status as they work, and humans can observe it via `flint orb list` or `flint orb inspect`.
+
+### Runs
+
+A session can have multiple runs. The first run starts when the session is launched. If the agent posts a deferred question and exits, a second run begins when the human responds and the session resumes. Each run tracks its own PID, timestamps, exit code, result, and request history. This design means a single session can span multiple agent process invocations while maintaining continuity.
+
+### Harnesses
+
+A harness is the adapter between Orbh and a specific agent runtime. The Claude Code harness knows how to spawn `claude` with the right flags, parse its stream-JSON output, and read its JSONL transcript files. The Codex, Droid, and Gemini harnesses do the same for their respective CLIs. Harnesses implement a standard interface (`HarnessRuntime`) so Orbh core code never needs to know which runtime is running. Four harnesses ship out of the box: `claude`, `codex`, `droid`, and `gemini`.
+
+### The Interface
+
+Every session has a free-form key-value interface. Agents write to it with `flint orb set <id> <key> <value>` and humans read it with `flint orb get` or `flint orb inspect`. Common keys include `phase` (what the agent is doing), `progress` (how far along it is), and `artifacts` (what it has produced). The interface is the agent's primary channel for communicating its state to the outside world without requiring anyone to read its full transcript.
+
+### Requests and Responses
+
+When an agent needs human input, it can ask a blocking question (the process waits for a response) or post a deferred question (the process exits, and a new run starts when the human answers). Both patterns create structured request entries with timestamps, question text, and response text, providing a clear audit trail of human-agent interaction.
+
+### Universal Transcript
+
+Orbh normalizes raw agent output into a universal transcript format (v2.0.0). Claude Code and Droid produce JSONL files; Gemini produces JSON session files; Codex has its own format. Orbh maps all of them into a common schema with message, thinking, tool-call, tool-result, usage, subagent, compaction, and other entry types. This lets tooling consume transcripts without caring which runtime produced them.
+
+## How It Fits Into Flint
+
+Orbh is integrated into the Flint CLI through the `flint orb` command family. It uses the Flint workspace's `.flint/sessions/` directory for storage and respects Flint's configuration and identity systems. Shards can provide headless init files (`hinit-*.md`) and headless workflows (`hwkfl-*.md`) that teach agents how to operate autonomously through Orbh, including which interface keys to set and when to use deferred questions.
+
+The Flint server and Steel dashboard read Orbh session data to provide a web-based view of running and completed sessions, including live transcript streaming and request/response management.
+
+## Further Reading
+
+- [Concept - Architecture](/concepts/architecture) — Session model, run lifecycle, and system layers
+- [Module - Universal Transcript](/modules/universal-transcript) — Transcript format and JSONL mapping
+- [Module - Harness System](/modules/harness-system) — How harnesses adapt agent runtimes
+- [Reference - CLI Commands](/reference/cli-commands) — Complete `flint orb` command reference
+- [Guide - Headless Shard Integration](/guide/headless-shard-integration) — Building shards that work with Orbh
+- [Module - MCP Channel](/modules/mcp-channel) — Inter-session messaging

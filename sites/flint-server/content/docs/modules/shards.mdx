@@ -1,0 +1,35 @@
+---
+title: "Shards"
+---
+
+The Shards module exposes shard management operations over HTTP — listing installed shards, checking health, running repairs, and pulling updates.
+
+## Overview
+
+Shards are cognitive program packages that extend what agents can do inside a Flint. The CLI manages shards via `flint shard` commands. This module mirrors those operations as REST endpoints, enabling plates and dashboards to display shard status and trigger maintenance actions without shelling out to the CLI.
+
+## Listing Shards
+
+`GET /api/shards` returns all installed shards with summary metadata: name, version, shorthand, folder name, description, mode, and counts of dependencies, skills, templates, workflows, and knowledge files.
+
+`GET /api/shards/:identifier` returns detailed information for a single shard, identified by name or shorthand.
+
+## Health Checks
+
+Shard health checks verify that a shard's files, manifest, naming conventions, and dependencies are intact.
+
+- **Per-shard** — `GET /api/shards/:identifier/health` runs checks for one shard and returns an array of results, each with a `check` name, `status` (ok/warning/error), optional `message`, and optional `actionLabel`.
+- **Workspace-wide** — `GET /api/shards/health` runs checks across all shards and returns results plus a summary with `total`, `ok`, `warnings`, and `errors` counts.
+
+## Repair and Pull
+
+- **Heal** — `POST /api/shards/:identifier/heal` repairs a specific shard (folders, manifest, naming, dependencies). Returns an array of repair results.
+- **Pull single** — `POST /api/shards/:identifier/pull` syncs updates for one shard from its source repository.
+- **Pull all** — `POST /api/shards/pull` syncs all shards.
+
+These are the HTTP equivalents of `flint shard heal`, `flint shard pull <name>`, and `flint shard pull`.
+
+## Related
+
+- [Reference - REST API](/reference/rest-api) — full endpoint specifications
+- [Concept - Architecture](/concepts/architecture) — how the server wraps CLI operations

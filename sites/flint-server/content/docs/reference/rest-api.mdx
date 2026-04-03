@@ -1,0 +1,365 @@
+---
+title: "REST API"
+---
+
+Complete reference for all Flint Server HTTP endpoints.
+
+## Health and Identity
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Server health check |
+| GET | `/identity` | Workspace identity and metadata |
+| POST | `/shutdown` | Graceful server shutdown (loopback only, requires `x-flint-shutdown: true` header) |
+
+### GET /health
+
+Returns server status.
+
+```json
+{
+  "status": "ok",
+  "runtimes": 0,
+  "sessions": 5,
+  "flintPath": "/path/to/flint",
+  "chrome": true
+}
+```
+
+### GET /identity
+
+Returns workspace identity including name, shards, connections, codebases, repositories, active increment, and server runtime info.
+
+```json
+{
+  "name": "NUU Flint",
+  "flintId": "uuid-or-null",
+  "flintPath": "/path/to/flint",
+  "server": {
+    "status": "ok",
+    "chrome": true,
+    "runtimes": 0,
+    "activeSessions": 2,
+    "totalSessions": 15
+  },
+  "registry": {
+    "registered": true,
+    "name": "NUU Flint",
+    "path": "/path/to/flint",
+    "tags": [],
+    "description": "..."
+  },
+  "workspace": {
+    "path": "/path/to/flint",
+    "codebases": ["/path/to/codebase"],
+    "connections": ["Connected Flint Name"],
+    "repositories": [{"name": "repo", "url": "https://..."}]
+  },
+  "shards": [...],
+  "activeIncrement": {"title": "5.A - Adhoc", "path": "..."}
+}
+```
+
+## Artifacts
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/artifacts` | Query artifacts with filters |
+| GET | `/api/artifacts/:id` | Get artifact by ID |
+| GET | `/api/artifacts/by-title/:title` | Get artifact by exact title |
+| GET | `/api/resolve` | Resolve a wikilink to an artifact |
+| POST | `/api/artifacts` | Create artifact from template |
+| PATCH | `/api/artifacts/:id` | Update artifact frontmatter/body |
+| DELETE | `/api/artifacts/:id` | Delete or archive artifact |
+| POST | `/api/artifacts/:id/rename` | Rename artifact |
+
+### GET /api/artifacts
+
+Query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `type` | string | Filter by artifact type (e.g. `Task`, `Notepad`) |
+| `status` | string | Filter by status |
+| `tags` | string | Comma-separated tag filter |
+| `increment` | string | Filter by increment |
+| `search` | string | Full-text search |
+| `limit` | number | Max results |
+| `offset` | number | Pagination offset |
+| `include_shards` | boolean | Include shard artifacts (default: false) |
+
+Returns `{ items: [...], total: number }`.
+
+### GET /api/resolve
+
+Query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `link` | string | Wikilink to resolve (e.g. `[Task 100 Name](/task-100-name)`, `[Alias](/link)`, `[Link#anchor](/link-anchor)`) |
+
+Returns `{ resolved: boolean, artifact?: {...} }`.
+
+### POST /api/artifacts
+
+Request body:
+
+```json
+{
+  "template": "tmp-proj-task-v0.1",
+  "data": { "title": "My Task", "status": "todo" }
+}
+```
+
+Returns `201` with the created artifact.
+
+### PATCH /api/artifacts/:id
+
+Request body (all fields optional):
+
+```json
+{
+  "frontmatter": { "status": "done", "completed": "2026-04-03" },
+  "body": "Updated markdown content"
+}
+```
+
+### DELETE /api/artifacts/:id
+
+Query parameters:
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `archive` | boolean | `false` | Move to archive instead of deleting |
+
+### POST /api/artifacts/:id/rename
+
+Request body:
+
+```json
+{ "title": "New Title" }
+```
+
+## Plates
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/plates` | List all plates with metadata |
+| GET | `/api/plates/:name` | Get single plate details |
+| GET | `/plates/:name`, `/plates/:name/`, `/plates/:name/*` | Serve plate built assets |
+| POST | `/api/plates/:name/rebuild` | Trigger plate build |
+| POST | `/api/plates/:name/tools/:tool` | Execute a plate tool |
+
+### POST /api/plates/:name/tools/:tool
+
+Request body:
+
+```json
+{ "args": ["--verbose", "output.json"] }
+```
+
+Returns:
+
+```json
+{ "exitCode": 0, "stdout": "...", "stderr": "..." }
+```
+
+Timeout: 30 seconds. Returns `504` on timeout.
+
+## Orbh Sessions
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/orbh/sessions` | List sessions (or batch-fetch by IDs) |
+| GET | `/orbh/sessions/:id` | Get session detail with summary |
+| POST | `/orbh/sessions` | Launch new session |
+| DELETE | `/orbh/sessions/:id` | Kill running session |
+| POST | `/orbh/sessions/:id/resume` | Resume session with new run |
+| POST | `/orbh/sessions/:id/respond` | Answer pending request |
+| PATCH | `/orbh/sessions/:id/metadata` | Update session metadata (shallow merge) |
+| GET | `/orbh/sessions/:id/requests` | List all requests across runs |
+| GET | `/orbh/sessions/:id/transcript` | Fetch full transcript |
+| GET | `/orbh/harnesses` | List available runtimes |
+| GET | `/orbh/requests` | List all pending requests globally |
+
+### GET /orbh/sessions
+
+Query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `ids` | string | Comma-separated session IDs for batch fetch |
+
+### POST /orbh/sessions
+
+Request body:
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `prompt` | string | Yes | | The prompt for the agent |
+| `runtime` | string | No | `claude` | Harness type |
+| `title` | string | No | | Session title |
+| `description` | string | No | | Session description |
+| `continues` | string | No | | ID of previous session |
+| `maxTurns` | number | No | | Agent turn limit |
+| `model` | string | No | | Model override |
+| `artifactId` | string | No | | Link to Mesh artifact |
+| `metadata` | object | No | | Arbitrary metadata |
+
+### POST /orbh/sessions/:id/resume
+
+Request body:
+
+```json
+{ "prompt": "Continue with the next step" }
+```
+
+Default prompt: `"Continue working"`.
+
+### POST /orbh/sessions/:id/respond
+
+Request body:
+
+```json
+{ "text": "Fix all three issues" }
+```
+
+Returns `{ status: "responded", resumed: boolean, sessionId: string }`. The `resumed` field is `true` when a deferred request triggered a new run.
+
+### GET /orbh/requests
+
+Returns all pending (unanswered) requests across all sessions:
+
+```json
+{
+  "requests": [
+    {
+      "sessionId": "...",
+      "sessionTitle": "...",
+      "sessionRuntime": "claude",
+      "requestId": "...",
+      "type": "blocking",
+      "question": "Should I fix all 3 issues?",
+      "asked": "2026-04-03T12:00:00Z"
+    }
+  ]
+}
+```
+
+## Event Streaming
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/events/stream` | Subscribe to SSE event stream |
+
+### GET /events/stream
+
+Query parameters:
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `channels` | string | all | Comma-separated: `sessions`, `artifacts`, `orbh`, `transcripts`, `logs` |
+| `sessionIds` | string | | Comma-separated session IDs (filters `transcripts` channel) |
+
+Returns `text/event-stream`. See [Module - Event Streaming](/modules/event-streaming) for event formats.
+
+## Shards
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/shards` | List installed shards |
+| GET | `/api/shards/:identifier` | Get shard details |
+| GET | `/api/shards/:identifier/health` | Per-shard health check |
+| GET | `/api/shards/health` | Workspace-wide health check |
+| POST | `/api/shards/:identifier/heal` | Repair a shard |
+| POST | `/api/shards/:identifier/pull` | Pull updates for one shard |
+| POST | `/api/shards/pull` | Pull all shards |
+
+### GET /api/shards/health
+
+Returns:
+
+```json
+{
+  "results": [
+    { "check": "manifest-valid", "status": "ok" },
+    { "check": "naming-convention", "status": "warning", "message": "...", "actionLabel": "Fix naming" }
+  ],
+  "summary": { "total": 12, "ok": 10, "warnings": 1, "errors": 1 }
+}
+```
+
+## Runtimes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/runtimes` | List active runtimes |
+| POST | `/runtimes` | Start a runtime |
+| GET | `/runtimes/:id` | Get runtime status |
+| GET | `/runtimes/:id/events` | Get runtime event log |
+| DELETE | `/runtimes/:id` | Stop a runtime |
+
+### POST /runtimes
+
+Request body:
+
+```json
+{ "path": "/path/to/flint/workspace" }
+```
+
+## Steel State
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/steel/preferences` | Get global preferences |
+| PUT | `/api/steel/preferences` | Save global preferences |
+| GET | `/api/steel/plates/:name/state/:key` | Get plate state entry |
+| PUT | `/api/steel/plates/:name/state/:key` | Save plate state entry |
+| GET | `/api/steel/plates/:name/state` | Get all state for plate |
+| GET | `/api/steel/plates/:name/boards` | List board configs |
+| GET | `/api/steel/plates/:name/boards/:board` | Get board config |
+| PUT | `/api/steel/plates/:name/boards/:board` | Save board config |
+
+All `PUT` endpoints auto-add an `updated` ISO timestamp.
+
+## Dashboard
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/dashboard` | Comprehensive workspace snapshot |
+
+Returns identity, stats (artifact/note/media/shard/plate/connection/session counts), artifacts by type and status, shards, plates, connections, codebases, repositories, and active increment.
+
+## Logs
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/logs` | Query request log buffer |
+
+Query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `method` | string | HTTP method filter |
+| `min_status` | number | Minimum status code |
+| `max_status` | number | Maximum status code |
+| `path` | string | Path substring match |
+| `since` | string | ISO timestamp filter |
+| `limit` | number | Max entries |
+
+Returns `{ entries: [...], bufferSize: number, maxEntries: 1000 }`.
+
+## Workspace
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/workspace/files` | Fuzzy-search markdown files |
+
+Query parameters:
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `q` | string | | Search query |
+| `limit` | number | 20 | Max results |
+
+Returns `{ files: ["relative/path.md", ...] }`. Excludes dot directories, `node_modules`, and `dist`.

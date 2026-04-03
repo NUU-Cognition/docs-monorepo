@@ -1,0 +1,73 @@
+---
+title: "Runtimes"
+---
+
+The Runtimes module provides file watching and hook execution for Flint workspaces, managed through an HTTP lifecycle API.
+
+## Overview
+
+A runtime is a long-running process that watches a Flint workspace for file changes and executes hooks in response. Hooks are user-defined commands triggered by events like artifact status changes, tag additions, or agent completions. The runtime system turns a static Flint workspace into a reactive environment.
+
+Runtimes are distinct from Orbh sessions — a runtime watches and reacts to file changes, while a session is an agent working autonomously. They coexist within the same server.
+
+## How Runtimes Work
+
+Each runtime watches three file patterns:
+
+| Pattern | Events |
+|---------|--------|
+| `Mesh/**/*.md` | Artifact status changes, tag changes |
+| `.flint/sessions/*.json` | Agent session state changes |
+| `flint-hooks.toml` | Hook configuration changes (triggers reload) |
+
+When a watched file changes, the runtime parses the event (what changed, from what to what) and evaluates it against the configured hooks. Matching hooks are executed as spawned processes with event data piped to stdin as JSON.
+
+## Hooks
+
+Hooks are defined in `flint-hooks.toml` at the Flint root. Each hook specifies:
+
+- **Event matchers** — glob patterns, tag filters, field/value matchers, from/to transitions
+- **Command** — the shell command to execute
+- **Timeout** — optional execution timeout in seconds
+
+Hook execution results:
+- Exit code `0` — success
+- Exit code `2` — blocked (soft failure, logged but not fatal)
+- Any other exit code — error
+
+The runtime emits events for each hook execution and maintains an event log (default: 200 entries).
+
+## Runtime Events
+
+| Event Type | Trigger |
+|------------|---------|
+| `FileChanged` | A watched file was modified |
+| `StatusChanged` | An artifact's status field changed |
+| `TagAdded` | A tag was added to an artifact |
+| `TagRemoved` | A tag was removed from an artifact |
+| `AgentStart` | An agent session started |
+| `AgentComplete` | An agent session completed |
+| `RuntimeStart` | The runtime began watching |
+| `RuntimeStop` | The runtime stopped |
+
+## HTTP API
+
+The runtime lifecycle is managed through REST endpoints:
+
+- `GET /runtimes` — list all active runtimes
+- `POST /runtimes` — start a runtime for a workspace path
+- `GET /runtimes/:id` — get runtime status
+- `GET /runtimes/:id/events` — get the event log
+- `DELETE /runtimes/:id` — stop a runtime
+
+The `RuntimeManager` coordinates multiple runtime instances and handles cleanup on server shutdown.
+
+## Configuration
+
+Runtime event log size defaults to 200 entries. Hooks configuration is read from `flint-hooks.toml` and reloaded automatically when the file changes.
+
+## Related
+
+- [Reference - Configuration](/reference/configuration) — flint-hooks.toml format
+- [Module - Event Streaming](/modules/event-streaming) — how runtime events feed into SSE
+- [Concept - Architecture](/concepts/architecture) — file watching design

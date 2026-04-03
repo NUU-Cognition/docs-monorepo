@@ -88,6 +88,22 @@ One session can contain multiple runs. Flint supports:
 
 That is why the model tracks both session-level state and run-level state. The session is the durable container. Each run is a concrete execution attempt inside that container.
 
+## Session Tracking in Artifacts
+
+Agents track their involvement in Mesh artifacts through the `orbh-sessions` frontmatter field. This is a unified field — all agent runtimes (Claude Code, Codex, etc.) write to the same field.
+
+```yaml
+orbh-sessions:
+  - "[session-uuid-1](/session-uuid-1)"
+  - "[session-uuid-2](/session-uuid-2)"
+```
+
+Each entry is the Orbh session ID wrapped in wikilink syntax. The Orbh session maps to native runtime sessions via its runs model. When an agent creates or substantively edits an artifact, it appends its session ID to this list.
+
+Previously, session tracking used per-runtime fields (`claude-sessions`, `codex-sessions`). These have been consolidated into the single `orbh-sessions` field. A migration handles converting existing files.
+
+Agents not launched via `flint orb` (e.g. interactive Claude Code sessions) should still write to `orbh-sessions` using whatever session identifier they have available, or skip session tracking if no identifier exists.
+
 ## Sessions and the Rest of Flint
 
 Agent sessions connect Flint's environment model together:

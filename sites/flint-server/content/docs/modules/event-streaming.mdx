@@ -1,0 +1,92 @@
+---
+title: "Event Streaming"
+---
+
+The Event Streaming module provides real-time updates to connected clients via Server-Sent Events (SSE). It is the primary mechanism for plates, dashboards, and external tools to stay synchronized with workspace state.
+
+## Overview
+
+Clients connect to `GET /events/stream` and receive a continuous stream of typed events. The connection starts with a snapshot of current state for each subscribed channel, then switches to streaming deltas as changes occur. A heartbeat fires every 30 seconds to keep connections alive.
+
+SSE was chosen over WebSockets because the communication pattern is one-directional (server pushes to client) and SSE provides automatic reconnection via the browser's `EventSource` API. See [Concept - Architecture](/concepts/architecture) for the full rationale.
+
+## Channels
+
+Clients subscribe to one or more channels via the `channels` query parameter (comma-separated). If omitted, all channels are subscribed.
+
+| Channel | Events | Source |
+|---------|--------|--------|
+| `sessions` | `session.created`, `session.status_changed`, `session.finished`, `session.failed`, `session.cancelled`, `session.deleted`, `session.updated`, `run.started`, `run.completed`, `run.failed` | Session file watcher |
+| `artifacts` | `artifact.created`, `artifact.updated`, `artifact.deleted` | Mesh/Shards file watchers |
+| `orbh` | `request.created`, `request.answered` | Session file watcher |
+| `transcripts` | `transcript.turns` | Live transcript writer |
+| `logs` | `log` | Request logging hook |
+
+## Connection Flow
+
+1. Client sends `GET /events/stream?channels=sessions,artifacts`
+2. Server registers the client in the `ChannelRegistry`
+3. Server computes and sends a `snapshot` event for each channel:
+   - `sessions` — all session summaries
+   - `artifacts` — all artifact summaries
+   - `orbh` — all pending requests across sessions
+   - `transcripts` — current transcript state for watched sessions
+   - `logs` — recent request log entries
+4. Server streams delta events as they occur
+5. Server sends `: heartbeat` comments every 30 seconds
+6. On client disconnect, the server unregisters the subscriber
+
+## Session ID Filtering
+
+The `sessionIds` query parameter (comma-separated) filters the `transcripts` channel to only include turns from specified sessions. This prevents clients from receiving transcript data for every active session.
+
+For other channels, `sessionIds` has no effect — all events are delivered.
+
+## Snapshot vs Delta Events
+
+**Snapshots** are sent once on connection. They carry the full current state:
+
+```
+event: snapshot
+data: {"channel":"sessions","sessions":[...]}
+```
+
+**Deltas** are sent as changes occur. Each delta is a typed event:
+
+```
+event: session.status_changed
+data: {"sessionId":"...","from":"in-progress","to":"finished","session":{...},"timestamp":"..."}
+```
+
+## Channel Registry
+
+The `ChannelRegistry` class manages SSE subscriptions:
+
+- **Register** — adds a subscriber with its writable stream, channel set, and optional session ID filter
+- **Broadcast** — sends an event to all subscribers of a channel. For `transcripts`, filters by session ID if the subscriber specified one
+- **Heartbeat** — writes a comment to every subscriber every 30 seconds
+- **Backpressure** — tracks consecutive write failures per subscriber. After 10 failed writes, the subscriber is disconnected
+
+## Event Format
+
+Events use the standard SSE format:
+
+```
+event: <event-name>
+data: <JSON payload>
+
+```
+
+Comments (heartbeats) use:
+
+```
+: heartbeat
+
+```
+
+## Related
+
+- [Concept - Architecture](/concepts/architecture) — why SSE over WebSockets
+- [Module - Orbh Sessions](/modules/orbh-sessions) — session events and transcript streaming
+- [Module - Plates](/modules/plates) — artifact events from file watchers
+- [Reference - REST API](/reference/rest-api) — the `/events/stream` endpoint specification

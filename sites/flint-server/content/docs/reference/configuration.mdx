@@ -1,0 +1,138 @@
+---
+title: "Configuration"
+---
+
+All configuration options for the Flint Server, including CLI flags, environment variables, programmatic options, and flint.toml settings.
+
+## CLI Commands
+
+### flint server start
+
+Start the server in production mode.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --port <port>` | Port to bind | `13040` |
+| `--path <dir>` | Path to Flint workspace | Auto-detected from cwd |
+| `--steel-url <url>` | Paired Steel host URL for cascading shutdown | None |
+
+### flint server dev
+
+Start the server in development mode with auto-reload on source changes. Only works from the monorepo development environment.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-p, --port <port>` | Port to bind | `13040` |
+| `--path <dir>` | Path to Flint workspace | Auto-detected from cwd |
+
+### flint server status
+
+Check whether the server is running and display session/runtime info.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--server <url>` | Server URL to check | `http://127.0.0.1:13040` |
+
+### flint server stop
+
+Stop a running server via the shutdown endpoint.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--server <url>` | Server URL to stop | `http://127.0.0.1:13040` |
+
+### flint server list
+
+List all running Flint servers from the shared registry at `~/.nuucognition/servers.json`.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FLINT_PATH` | Override workspace path (used by dev mode) | Auto-detected |
+| `FLINT_SERVER_PORT` | Override server port (used by dev mode) | `13040` |
+
+## flint.toml Settings
+
+The server reads configuration from `flint.toml` in the Flint root:
+
+```toml
+[server]
+port = 13040
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `server.port` | number | `13040` | Server listen port |
+
+Priority order: CLI flag > environment variable > flint.toml > default.
+
+## Programmatic Options
+
+When using `startFlintServer()` directly:
+
+```typescript
+interface FlintServerOptions {
+  port?: number;       // Default: 13040
+  logger?: boolean;    // Fastify logger (default: false)
+  flintPath?: string;  // Auto-detected if omitted
+  steelUrl?: string;   // Paired Steel host URL
+}
+```
+
+## Network
+
+| Setting | Value |
+|---------|-------|
+| Listen address | `127.0.0.1` (loopback only) |
+| Default port | `13040` |
+| Protocol | HTTP/1.1 |
+| CORS | All origins, all methods (GET, HEAD, PUT, PATCH, POST, DELETE) |
+
+## Timeouts and Limits
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| Shutdown timeout | 5,000 ms | Forced exit if graceful shutdown stalls |
+| Plate tool timeout | 30,000 ms | Max execution time for plate tool calls |
+| Server health check timeout | 2,000 ms | Registry validation health probe |
+| Identity check timeout | 2,000 ms | Registry validation identity probe |
+| Log buffer size | 1,000 entries | Max request log entries kept in memory |
+| Runtime event log size | 200 entries | Max events per runtime instance |
+
+## Debounce and Intervals
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Artifact watcher debounce | 50 ms | Per-file debounce for Mesh/Shards changes |
+| Session watcher debounce | 100 ms | Debounce for `.flint/sessions/` changes |
+| Watcher stability | 200 ms | Chokidar `awaitWriteFinish` stability threshold |
+| SSE heartbeat interval | 30,000 ms | Heartbeat comment to all SSE subscribers |
+| Transcript flush interval | 5,000 ms | Live transcript write frequency |
+| Echo suppression duration | 500 ms | Default path suppression for API writes |
+| SSE backpressure threshold | 10 writes | Consecutive failed writes before disconnect |
+
+## Shutdown
+
+The server accepts graceful shutdown via:
+
+1. **Signal** — `SIGINT` or `SIGTERM` (e.g. `Ctrl+C`)
+2. **CLI** — `flint server stop`
+3. **API** — `POST /shutdown` with `x-flint-shutdown: true` header (loopback only)
+
+Shutdown sequence: close SSE streams, stop watchers, deregister from server registry, stop runtimes, optionally cascade to paired Steel host.
+
+## Server Registry
+
+Running servers register in a shared file at `~/.nuucognition/servers.json`. Each entry records:
+
+| Field | Description |
+|-------|-------------|
+| `flintId` | Workspace UUID (or null) |
+| `flintPath` | Absolute workspace path |
+| `port` | Listen port |
+| `pid` | Process ID |
+| `started` | ISO 8601 timestamp |
+| `name` | Workspace name |
+
+The registry is validated on read with a triple-check: PID alive, health endpoint responds, identity matches.

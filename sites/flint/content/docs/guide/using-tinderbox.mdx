@@ -1,0 +1,242 @@
+---
+title: "Using Tinderbox: Orchestrating Multiple Flints"
+---
+
+Tinderbox is Flint's multi-workspace orchestration layer. It lets you declare a group of Flints in one `tinderbox.toml`, materialize owned Flints from git, reference local Flints from the registry, wire their references, and keep the set healthy over time.
+
+This guide is for the moment when one Flint is no longer enough and you want a repeatable way to manage a whole cluster of related workspaces.
+
+## What a Tinderbox Is
+
+A Tinderbox is:
+
+- one plain directory that is **not** itself a Flint
+- a `tinderbox.toml` file at that directory root
+- a set of child Flints as direct subdirectories
+
+That means the layout looks like this:
+
+```text
+NUU Flints/
+├── tinderbox.toml
+├── (Flint) NUU Flint/
+├── (Flint) NUU Mesh/
+└── (Flint) NUU Steel/
+```
+
+The Tinderbox root is just the orchestrator. The actual work still happens inside the child Flints.
+
+## Before You Start
+
+Two ideas matter up front:
+
+- Tinderbox uses the Flint registry for local references and uses git URLs for owned Flints
+- all `flint tinderbox` commands use walk-up discovery, so you can run them from the Tinderbox root **or from inside any child Flint**
+
+Tinderbox now has a simple source rule:
+
+- `registry:Name` means **reference this already-local Flint**
+- a git URL means **own this Flint inside the Tinderbox**
+
+If you have not worked with the registry before, read [Guide - Registry Management](/guide/registry-management) first.
+
+## Step 1: Write `tinderbox.toml`
+
+Create a root config file:
+
+```toml
+[tinderbox]
+name = "NUU Flints"
+
+[flints]
+required = [
+  { name = "NUU Flint", source = "git@github.com:nuucognition/nuu-flint.git", mode = "own" },
+  { name = "NUU Mesh", source = "https://github.com/nuucognition/nuu-mesh.git" },
+  { name = "NUU Steel", source = "registry:NUU Steel" },
+]
+
+[connections]
+required = [
+  { interconnected = ["NUU Flint", "NUU Mesh"] },
+  { from = "NUU Flint", to = "NUU Steel" },
+]
+```
+
+What those fields mean:
+
+- `[flints].required` declares which Flints belong in the set
+- `source = "registry:Name"` resolves a Flint from the global registry and treats it as a reference
+- `source = "git@...git"` or `source = "https://..."` clones from git and treats the Flint as owned
+- `mode = "own"` is valid only for git-backed declarations
+- `mode = "reference"` is valid only for registry-backed declarations
+- if `mode` is omitted, registry sources default to `reference` and git sources default to `own`
+- `interconnected` means every listed Flint should reference every other listed Flint
+- `from` / `to` means only the source Flint gets the reference
+
+The declared `name` must match the child Flint's own `flint.toml` name.
+
+## Step 2: Materialize Everything with `sync`
+
+Run:
+
+```bash
+flint tinderbox sync
+```
+
+`sync` does six things in one pass:
+
+1. parses and validates `tinderbox.toml`
+2. scans the Tinderbox root for child Flints
+3. clones missing owned git Flints and resolves registry-backed references
+4. registers all present child Flints in the global registry
+5. wires declared Flint-to-Flint references
+6. prints a summary of what changed
+
+This is the main Tinderbox command. In practice, if you change the declaration, `sync` is usually the next thing you run.
+
+### Ownership vs Reference
+
+Choose the source based on what you want Tinderbox to do.
+
+Use a git URL when:
+
+- the Flint should be materialized into the Tinderbox root
+- the Tinderbox should own that clone locally
+- you want the declaration to stay portable across machines
+
+Use `registry:Name` when:
+
+- the Flint should stay where it already lives on this machine
+- you only need Tinderbox to wire references to it
+- you are intentionally depending on local registry state
+
+If a `registry:Name` Flint is not found in the registry, `sync` warns and continues rather than copying or failing the entire run.
+
+This matches Flint's existing git workflow more cleanly: owned Tinderbox entries are git-remotes you can clone on any machine, while registry references stay local-only.
+
+## Step 3: Inspect the Set
+
+Use `status` when you want a quick operational view:
+
+```bash
+flint tinderbox status
+```
+
+This shows one row per declared Flint with:
+
+- whether it is present on disk
+- whether it is correctly registered
+- how many required connections are fulfilled
+
+Use `check` when you want drift detection:
+
+```bash
+flint tinderbox check
+```
+
+`check` reports:
+
+- undeclared Flints on disk
+- renamed Flints
+- missing declared Flints
+- stale registry entries
+- missing or stale wired connections
+- unresolved registry-backed references as warnings
+
+If everything is healthy, it exits cleanly. If not, it exits non-zero so it can be used in scripts or CI-style checks.
+
+## Step 4: Repair Drift with `heal`
+
+When the Tinderbox has drifted, run:
+
+```bash
+flint tinderbox heal
+```
+
+`heal` is the automatic repair pass. It can:
+
+- add undeclared child Flints back into `tinderbox.toml`
+- update renamed declarations
+- materialize missing owned Flints
+- refresh registry paths
+- re-wire missing or stale connections
+
+`heal` does not invent registry entries for registry-backed references. If a reference is not in the registry, the right fix is usually to register that Flint or change the declaration to a git-backed owned entry.
+
+The important mental model is:
+
+- `check` tells you what is wrong
+- `heal` tries to converge the set back to the declared state
+
+## Step 5: Propagate Identity Across Child Flints
+
+If all child Flints should use the same person identity, run:
+
+```bash
+flint tinderbox whoami "Nathan Luo"
+```
+
+This applies Flint identity setup across the whole Tinderbox instead of forcing you to enter every child workspace and run `flint iam` one by one.
+
+## Step 6: Keep Git State Moving
+
+If each child Flint is already a git repo, you can run a parallel git sync across the whole set:
+
+```bash
+flint tinderbox git sync
+```
+
+This walks up to the Tinderbox root, discovers the child Flints there, and runs `flint git sync` inside each one.
+
+Use this when the Tinderbox is already materialized and you want a fast "sync everything" loop.
+
+## Step 7: Move a Flint Cleanly
+
+If you need to relocate one Flint, use:
+
+```bash
+flint move "NUU Mesh" ../archive/"(Flint) NUU Mesh"
+```
+
+or by direct path:
+
+```bash
+flint move "./(Flint) NUU Mesh" "../archive/(Flint) NUU Mesh"
+```
+
+`flint move` updates the global registry after the move. That matters because Tinderbox wiring and Flint reference fulfillment rely on accurate registered paths.
+
+Use `--force` only when you intentionally want to overwrite the destination:
+
+```bash
+flint move "NUU Mesh" "../archive/(Flint) NUU Mesh" --force
+```
+
+## A Practical Tinderbox Loop
+
+For day-to-day multi-Flint work, the reliable loop is:
+
+1. edit `tinderbox.toml`
+2. run `flint tinderbox sync`
+3. run `flint tinderbox status`
+4. work inside the child Flints
+5. run `flint tinderbox git sync` when you want to update all repos
+6. run `flint tinderbox check` before you consider the set clean again
+
+## When Tinderbox Is the Right Tool
+
+Use Tinderbox when:
+
+- multiple Flints need stable references to each other
+- you want one declarative root for materializing a set of workspaces
+- you are repeatedly cloning, wiring, and repairing the same cluster by hand
+
+Do not reach for it when a single Flint with a few external references is enough. Tinderbox adds real structure, which is useful only when the orchestration problem is real.
+
+## Related Pages
+
+- [Guide - Registry Management](/guide/registry-management)
+- [Guide - Global Configuration](/guide/global-configuration)
+- [Module - References](/modules/references)
+- [Reference - CLI Commands](/reference/cli-commands)
+- [Reference - Configuration](/reference/configuration)

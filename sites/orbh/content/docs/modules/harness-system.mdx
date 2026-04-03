@@ -1,0 +1,146 @@
+---
+title: "Harness System"
+---
+
+The harness system is Orbh's runtime abstraction layer. Each harness adapts a specific agent CLI — Claude Code, Codex, Droid (Factory), Gemini, or any future runtime — to Orbh's unified session model. Harnesses handle CLI argument construction, transcript path resolution, live transcript watching, and transcript parsing so that Orbh core code never needs to know which agent is running.
+
+## Overview
+
+Orbh treats agent runtimes as opaque processes. It does not embed or link against any agent SDK. Instead, each runtime gets a harness — a module that implements the `HarnessRuntime` interface and knows how to:
+
+- Build CLI arguments for launch and resume operations
+- Resolve the path to native transcript files
+- Create a live watcher for incremental transcript reading
+- Parse raw transcript content into universal transcript entries
+- Check whether the runtime CLI is available on the system
+
+This design means adding support for a new agent runtime requires writing one harness module without touching Orbh core, the CLI, or any consumer. Process spawning and lifecycle management are handled separately by the monitor module.
+
+## The HarnessRuntime Interface
+
+Every harness implements the `HarnessRuntime` interface:
+
+```typescript
+interface HarnessRuntime {
+  name: string
+  capabilities: HarnessCapabilities
+  buildSpawnArgs(config: SpawnConfig): string[]
+  buildResumeArgs(nativeSessionId: string, config: ResumeConfig): string[]
+  resolveTranscriptPath(nativeSessionId: string, cwd: string): string | null
+  createWatcher(transcriptPath: string): TranscriptWatcher
+  parseTranscript(content: string, options?: ParseTranscriptOptions): TranscriptEntry[]
+  isAvailable(): Promise<boolean>
+}
+```
+
+The harness is a pure adapter — it knows how to talk to its runtime's CLI but does not manage processes directly. The monitor module (`monitor.ts`) handles spawning, PID tracking, and lifecycle management using the arguments that harnesses produce.
+
+### Capabilities
+
+Harnesses declare what they support so Orbh can adapt its behavior:
+
+| Capability | Meaning |
+|---|---|
+| `headless` | Supports non-interactive launch (no TTY) |
+| `interactive` | Supports terminal passthrough (TUI mode) |
+| `preassignSessionId` | Accepts a session ID at launch time |
+| `maxTurns` | Supports `--max-turns` flag |
+| `budgetLimit` | Supports budget limiting (USD) |
+| `toolHooks` | Has a hook system Orbh can plug into |
+| `subagentVisibility` | Reports subagent activity in output |
+| `structuredOutput` | Supports structured (stream-JSON) output format |
+| `permissionBypass` | Supports permission-skipping flags |
+
+Orbh checks capabilities before using optional features. If a runtime doesn't support max-turns, the CLI silently omits the flag rather than failing.
+
+### SpawnConfig
+
+The configuration passed to `buildSpawnArgs()`:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `prompt` | string | The agent's task prompt |
+| `cwd` | string | Working directory |
+| `sessionId` | string? | Pre-assigned native session ID |
+| `maxTurns` | number? | Turn limit |
+| `maxBudgetUsd` | number? | Budget limit (USD) |
+| `model` | string? | Model override |
+| `extraArgs` | string[]? | Runtime-specific extra arguments |
+
+### ResumeConfig
+
+The configuration passed to `buildResumeArgs()`:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `cwd` | string | Working directory |
+| `prompt` | string? | Optional prompt for resumed session |
+| `extraArgs` | string[]? | Runtime-specific extra arguments |
+
+## Claude Code Harness
+
+The Claude Code harness is the reference implementation, supporting all capabilities.
+
+**Capabilities:** headless, interactive, preassignSessionId, maxTurns, budgetLimit, toolHooks, subagentVisibility, structuredOutput, permissionBypass — all `true`.
+
+### Launch Process
+
+1. Builds CLI arguments: `-p` (print mode), `--dangerously-skip-permissions`, `--output-format stream-json`, `--session-id <id>`
+2. Appends optional flags: `--max-turns`, `--max-budget-usd`, `--model`
+3. The monitor spawns the `claude` process and parses newline-delimited stream-JSON output
+
+### Transcript Path
+
+Claude Code stores transcripts at `~/.claude/projects/<sanitized-cwd>/<sessionId>.jsonl`, where the cwd is sanitized by replacing non-alphanumeric characters with hyphens. The harness resolves this path deterministically from the native session ID and working directory.
+
+### Watcher
+
+Creates a JSONL-based transcript watcher that reads new lines incrementally and maps them through the Claude mapper.
+
+## Codex Harness
+
+The Codex harness adapts OpenAI's Codex CLI. It supports headless and interactive modes with structured output and permission bypass, but does not support max-turns, budget limits, tool hooks, or subagent visibility.
+
+## Droid Harness
+
+The Droid harness adapts the Factory Droid CLI. It stores transcripts at `~/.factory/sessions/<sanitized-cwd>/<sessionId>.jsonl` with a fallback to `~/.factory/sessions/<sessionId>.jsonl` for legacy paths. It supports native session discovery by scanning recent transcripts for the orbh session ID. Capabilities are similar to Codex — headless, interactive, structured output, and permission bypass are supported.
+
+## Gemini Harness
+
+The Gemini harness adapts Google's Gemini CLI. Unlike other harnesses, Gemini stores transcripts as JSON files (not JSONL) at `~/.gemini/tmp/<project-slug>/chats/session-<id>.json`. The harness uses a JSON session watcher instead of the JSONL watcher, and implements native session discovery by scanning recent session files. Gemini does not support pre-assigning session IDs — orbh discovers the native session ID after launch. The default model is `gemini-3.1-pro-preview`.
+
+## Runtime Registry
+
+Harnesses are registered in a central registry at startup:
+
+```typescript
+registerHarness(createClaudeHarness());
+registerHarness(createCodexHarness());
+registerHarness(createDroidHarness());
+registerHarness(createGeminiHarness());
+```
+
+The registry provides lookup by name (`getHarness("claude")`) and enumeration (`listHarnesses()`). When `flint orb launch claude` is called, the CLI resolves `"claude"` to the registered harness and delegates to it.
+
+## Building a Custom Harness
+
+To add support for a new agent runtime:
+
+1. Create a module exporting a factory function (e.g., `createMyHarness()`) that returns a `HarnessRuntime`
+2. Set `name` to the runtime identifier (used in CLI commands)
+3. Declare accurate `capabilities`
+4. Implement `buildSpawnArgs()` to construct the CLI arguments for launching
+5. Implement `buildResumeArgs()` to construct the CLI arguments for resuming
+6. Implement `resolveTranscriptPath()` to locate native transcript files
+7. Implement `createWatcher()` to create a live transcript watcher (JSONL or JSON based)
+8. Implement `parseTranscript()` to convert raw transcript content into universal entries
+9. Implement `isAvailable()` to check if the runtime CLI is installed
+10. Register the harness in `registry.ts`
+
+All methods are required. The harness does not manage process lifecycle — the monitor module handles spawning using the arguments the harness produces.
+
+## Related
+
+- [Concept - Architecture](/concepts/architecture) — How harnesses fit into the system layers
+- [Module - Universal Transcript](/modules/universal-transcript) — The format harnesses map to
+- [Reference - CLI Commands](/reference/cli-commands) — Commands that use harnesses (`launch`, `resume`, `watch`)

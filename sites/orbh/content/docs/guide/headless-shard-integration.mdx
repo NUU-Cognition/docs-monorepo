@@ -1,0 +1,201 @@
+---
+title: "Headless Shard Integration"
+---
+
+This guide explains how to build shards that work with Orbh headless sessions. Shard authors can provide headless init files, headless workflows, and Orbh interface conventions so that agents running in the background know how to report progress and interact with humans.
+
+## Prerequisites
+
+- Familiarity with shard authoring (init files, skills, workflows, templates)
+- Understanding of Orbh session concepts (sessions, runs, interface keys, requests)
+- A working shard with at least one interactive workflow
+
+## Overview
+
+Interactive shards assume a human is at the terminal. Workflows have stage gates where the agent presents findings and waits for confirmation. In headless mode, there is no human — the agent runs autonomously and communicates through structured Orbh interface keys and deferred questions.
+
+To support headless operation, a shard provides:
+
+1. **A headless init file** (`hinit-<shorthand>.md`) — teaches agents headless-specific rules
+2. **Headless workflows** (`hwkfl-<shorthand>-<name>.md`) — replace interactive workflows
+3. **Interface key conventions** — what keys to set and their valid values
+4. **Phase and progress patterns** — how to report work stages
+
+## Creating a Headless Init File
+
+The headless init file lives alongside the regular init file in the shard root:
+
+```
+Shards/(Dev) MyProject/
+├── init-mp.md              # Regular init (interactive)
+├── hinit-mp.md             # Headless init (Orbh)
+├── workflows/
+│   ├── wkfl-mp-process.md  # Interactive workflow
+│   └── hwkfl-mp-process.md # Headless workflow
+└── ...
+```
+
+The headless init:
+
+1. References the regular init for fundamentals (don't duplicate)
+2. Lists which headless workflows replace which interactive ones
+3. Defines the Orbh interface schema — keys, valid values, update cadence
+4. Explains the interaction model differences
+
+### Example Structure
+
+```markdown
+# MyProject Shard — Headless
+
+You are running headless via Orbh. This file replaces `init-mp.md`
+for headless sessions. Read `init-mp.md` for fundamentals.
+
+## Headless Workflows
+
+| Workflow | File | Replaces |
+|----------|------|----------|
+| Process Item | `hwkfl-mp-process.md` | `wkfl-mp-process.md` |
+
+## Orbh Interface Schema
+
+### Required Keys
+
+| Key | Type | When to update |
+|-----|------|----------------|
+| `phase` | string | Every phase transition |
+| `task` | string | Once, at session start |
+| `progress` | string | After each meaningful step |
+
+### Phase Values
+
+| Phase | Meaning |
+|-------|---------|
+| `reading` | Understanding the input |
+| `processing` | Actively working |
+| `blocked` | Waiting for human input |
+| `complete` | Done |
+```
+
+## Writing Headless Workflows
+
+Headless workflows (`hwkfl-*`) differ from interactive workflows (`wkfl-*`) in three ways:
+
+### 1. No Stage Gates
+
+Interactive workflows have explicit checkpoints: "Present findings to the user and wait for confirmation." Headless workflows remove these — the agent proceeds autonomously through all stages.
+
+### 2. Orbh Interface Reporting
+
+At each phase transition, the agent updates its interface keys:
+
+```bash
+flint orb set <id> phase "processing"
+flint orb set <id> progress "2/5 items"
+```
+
+This replaces the conversational updates an interactive agent would give.
+
+### 3. Deferred Questions for Blockers
+
+When genuinely stuck, the headless workflow uses `flint orb request` instead of asking in the terminal:
+
+```bash
+flint orb request <id> "Found conflicting requirements in items 3 and 5. Which takes priority?"
+```
+
+This posts the question, exits the session, and resumes automatically when the human responds.
+
+### Example Headless Workflow
+
+```markdown
+# Headless Workflow: Process Item
+
+## 1. Setup
+- Read the item specification
+- Set Orbh interface:
+  flint orb set <id> phase "reading"
+  flint orb set <id> progress "0/N steps"
+
+## 2. Execute
+- Process each step
+- Update progress after each step:
+  flint orb set <id> phase "processing"
+  flint orb set <id> progress "<done>/<total> steps"
+- If blocked, use deferred question:
+  flint orb request <id> "<question>"
+
+## 3. Complete
+- Verify all work is done
+- Return result:
+  flint orb set <id> phase "complete"
+  flint orb return <id> "<summary>"
+```
+
+## Interface Key Conventions
+
+### Phase and Progress
+
+Every headless workflow should set `phase` and `progress`. These are the primary signals humans and dashboards use to understand what an agent is doing.
+
+**Phase** is a short string describing the current stage of work. Define phase values specific to your shard — don't use generic labels. `"reading-task"` is better than `"reading"`.
+
+**Progress** is a compact, scannable string showing how far along the work is. Use the `"N/M items"` pattern:
+
+```
+"0/5 requirements"          — starting
+"3/5 requirements"          — mid-work
+"5/5 requirements"          — complete
+"verifying 2/7 checkboxes"  — review phase
+```
+
+### Task Tracking
+
+Set `task` once at session start to identify what the agent is working on:
+
+```bash
+flint orb set <id> task "(Task) 341 Pre-Pass Title"
+```
+
+### Artifact Tracking
+
+When the agent creates or modifies a Mesh artifact, register it:
+
+```bash
+flint orb artifact <id> "(Report) 012 Auth Review"
+```
+
+This lets humans and dashboards see what the session produced without reading the transcript.
+
+## Result Delivery
+
+Every headless workflow must end with `flint orb return`. The result is the agent's primary output — the human reads it via `flint orb inspect`. Keep results concise and actionable:
+
+```bash
+flint orb return <id> "Completed task (Task) 341. Implemented all 4 requirements: pre-pass title validation, description length check, session launch navigation, tab persistence. Moved to review."
+```
+
+## Launch Prompt Conventions
+
+When launching agents that use headless shards, the launch prompt should tell the agent which headless init to load:
+
+```bash
+flint orb launch claude "Load [hinit-mp](/hinit-mp) and follow the [hwkfl-mp-process](/hwkfl-mp-process) workflow on item X."
+```
+
+The `[wikilink](/wikilink)` syntax signals to the agent which files to read from the Mesh.
+
+## Testing Headless Workflows
+
+To verify a headless workflow works correctly:
+
+1. Launch a session with the workflow prompt
+2. Watch the session live: `flint orb watch <id>`
+3. Verify interface keys update at each phase: `flint orb inspect <id>`
+4. If the workflow uses deferred questions, verify the session blocks and resumes correctly
+5. Check that the final `return` result is structured and complete
+
+## Next Steps
+
+- [Concept - Architecture](/concepts/architecture) — Understanding the session model that headless shards interact with
+- [Reference - CLI Commands](/reference/cli-commands) — Complete reference for all Orbh commands
+- [Module - MCP Channel](/modules/mcp-channel) — Inter-session messaging for multi-agent coordination

@@ -1,0 +1,435 @@
+---
+title: "Shard CLI Commands"
+---
+
+Complete reference for `flint shard` and all its subcommands. Every command accepts `-p, --path <dir>` to specify the Flint workspace path; if omitted, the current directory is searched upward for a Flint root.
+
+Source: `apps/flint-cli/src/commands/shard.ts`
+
+---
+
+## Shard Overview and Script Execution
+
+### `flint shard`
+
+With no arguments, shows help. With a shard shorthand, shows an overview of that shard including contents, available scripts, and suggested commands.
+
+```bash
+flint shard                  # show help
+flint shard inc              # show overview for shard with shorthand "inc"
+```
+
+### `flint shard <shorthand> <script> [args...]`
+
+Run a script provided by an installed shard. Scripts live in the shard's `scripts/` directory. This is an implicit invocation -- any argument that is not a known subcommand is treated as a shorthand for script execution.
+
+```bash
+flint shard inc migrate      # run "migrate" script from shard "inc"
+```
+
+### `flint shard <shorthand> exec <command...>`
+
+Run an arbitrary shell command in the shard's directory. Useful for running git commands or other tools directly inside the shard folder.
+
+```bash
+flint shard inc exec git log --oneline
+flint shard inc exec ls -la
+```
+
+---
+
+## Package Management
+
+### `flint shard install <source[@version]>`
+
+Install a shard from a source identifier.
+
+```bash
+flint shard install NUU-Cognition/shard-reports
+flint shard install NUU-Cognition/shard-reports@1.0.0
+flint shard install path:./my-shard
+```
+
+The source can be `owner/repo` (GitHub), `owner/repo@version`, or `path:./local`. The `@version` suffix pins the install to a specific git tag.
+
+| Flag | Description |
+|------|-------------|
+| `-f, --force` | Overwrite existing shard files (including `mode = "once"` install entries) |
+| `--with-deps` | Auto-install missing dependencies before installing the target shard |
+
+When `--with-deps` is used, the system resolves dependencies from the shard's manifest, checks which are missing or outdated, and installs them from their declared `owner/repo` sources. Dev and custom dependencies are skipped (they must be installed manually).
+
+After installation, the command reports any unmet dependencies as warnings.
+
+### `flint shard uninstall <name>`
+
+Uninstall a shard and clean up its files.
+
+```bash
+flint shard uninstall reports
+```
+
+The name can be the shard's kebab-case name, folder name, or shorthand. Uninstallation:
+
+1. Removes install files declared in the shard's manifest
+2. Removes empty folders declared in the manifest (deepest first)
+3. Deletes the shard directory from `Shards/`
+4. Removes the declaration from `flint.toml`
+
+### `flint shard update`
+
+Update all remote shards to the latest version. Dev and custom shards are skipped.
+
+```bash
+flint shard update
+flint shard update --reinstall
+```
+
+| Flag | Description |
+|------|-------------|
+| `--reinstall` | Force re-download and reinstall all remote shards regardless of version |
+
+By default, the command compares the local shard version against the remote `shard.yaml` version via the GitHub API. Shards are only re-downloaded when the remote version is newer. Pinned shards at their target version are also skipped.
+
+After updating, the command reports any available migrations for version bumps.
+
+### `flint shard pull [name]`
+
+Sync shard install entries from the manifest. This is a lightweight operation that re-applies folders and install files without re-downloading shard source files.
+
+```bash
+flint shard pull           # sync all shards
+flint shard pull reports   # sync a specific shard
+```
+
+If a shard's version has increased since the last recorded version, available migrations are detected and reported.
+
+### `flint shard list`
+
+List installed shards with version, mode, and pin information.
+
+```bash
+flint shard list
+flint shard list --sources
+```
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `-s, --sources` | -- | Show source declarations from `flint.toml` instead of installed shards |
+
+The default view shows each installed shard with its folder name, version, mode label (dev/custom), version pin, and git remote (for dev shards). A summary line shows the count of remote, dev, and custom shards.
+
+With `--sources`, shows the raw shard declarations from `flint.toml` with their source identifiers and modes.
+
+### `flint shard info <name>`
+
+Show detailed information about an installed shard.
+
+```bash
+flint shard info reports
+```
+
+Displays: name, version, shorthand, source, mode, folder path, content counts (skills, templates, workflows, knowledge), dependency status, and version pin.
+
+### `flint shard versions <name>`
+
+List available version tags from a shard's remote repository.
+
+```bash
+flint shard versions reports
+flint shard versions NUU-Cognition/shard-reports
+```
+
+The name can be an installed shard name, a declaration key, or a direct `owner/repo` source. Shows all git tags sorted by version, with the currently installed version marked.
+
+### `flint shard pin <name> <version>`
+
+Pin a shard to a specific version in `flint.toml`.
+
+```bash
+flint shard pin reports 1.0.0
+```
+
+Validates the version exists as a tag on the shard's remote before writing the config. Dev shards cannot be pinned. After pinning, run `flint shard update` to apply the pin.
+
+### `flint shard unpin <name>`
+
+Remove the version pin for a shard. The next `flint shard update` will install the latest version.
+
+```bash
+flint shard unpin reports
+```
+
+### `flint shard reinstall <name>`
+
+Re-run install entries for a shard. Internally calls `pullShard()` for the specified shard. Useful for dev testing to verify what files a shard installs.
+
+```bash
+flint shard reinstall reports
+flint shard reinstall reports --force
+```
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Override `mode = "once"` entries and re-install all files |
+
+### `flint shard add <source>`
+
+Add a shard source to `flint.toml` without installing any files. This is a config-only operation.
+
+```bash
+flint shard add NUU-Cognition/shard-reports
+flint shard add NUU-Cognition/shard-reports -n custom-name
+```
+
+| Flag | Description |
+|------|-------------|
+| `-n, --name <name>` | Override the shard name used as the config key |
+
+If no name is provided, the source is resolved to read the manifest and derive the name. After adding, run `flint sync` to install.
+
+### `flint shard remove <name>`
+
+Remove a shard declaration from `flint.toml` without deleting installed files.
+
+```bash
+flint shard remove reports
+```
+
+This is the inverse of `add`. Run `flint sync` afterward to clean up files.
+
+---
+
+## Authoring and Distribution
+
+### `flint shard create <mode> <name>`
+
+Scaffold a new local shard.
+
+```bash
+flint shard create dev "Code Review" -s cr -d "Code review workflows"
+flint shard create custom "My Tools" --setup --state
+```
+
+The first argument is the mode: `dev` (publishable, gets its own git repo) or `custom` (workspace-specific, no distribution).
+
+| Flag | Description |
+|------|-------------|
+| `-s, --shorthand <id>` | Shard shorthand identifier. Default: derived from name (first letter of each word, lowercase, max 4 chars) |
+| `-d, --description <text>` | Shard description. Default: `"{Name} shard"` |
+| `--setup` | Include a `setup-{shorthand}.md` file for one-time initialization |
+| `--state` | Create a `(Shard) {Name}.md` state file in `Mesh/Shards/` |
+
+Creates `Shards/(Dev) Name/` or `Shards/(Custom) Name/` with the full directory structure, manifest, init file, and README. Dev shards automatically get `git init`.
+
+### `flint shard dev <source>`
+
+Clone an existing shard into a `(Dev)` folder for local editing.
+
+```bash
+flint shard dev NUU-Cognition/shard-reports
+flint shard dev path:./external/my-shard
+```
+
+Resolves the source, copies files into `Shards/(Dev) Name/`, and registers as a dev shard in `flint.toml`. If the `(Dev)` folder already exists, it only updates the config entry.
+
+### `flint shard edit <name>`
+
+Transition a normal (remotely installed) shard to dev mode.
+
+```bash
+flint shard edit reports
+```
+
+Renames the shard folder to add the `(Dev)` prefix, initializes git (cloning history from the GitHub source if available), and updates `flint.toml`. Cannot be used on shards that are already dev or custom.
+
+### `flint shard freeze <name>`
+
+Transition a dev shard back to normal mode.
+
+```bash
+flint shard freeze reports
+```
+
+Safety checks: rejects if there are uncommitted changes or unpushed commits. Removes `.git`, renames the folder to drop the `(Dev)` prefix, and updates `flint.toml`. The shard becomes part of the parent Flint repository.
+
+### `flint shard register <folder>`
+
+Register an existing `Shards/` folder as a shard in `flint.toml`.
+
+```bash
+flint shard register "(Dev) Bookmarks"
+```
+
+Reads `shard.yaml` from the folder, validates required fields, and writes the config entry. Mode is inferred from folder prefix: `(Custom)` folders register as custom, others as dev.
+
+### `flint shard gitinit <name> <url>`
+
+Initialize a git repo for a dev shard and push to a remote.
+
+```bash
+flint shard gitinit reports https://github.com/org/shard-reports.git
+```
+
+Performs the full sequence: `git init` (if needed), `git remote add origin`, `git branch -M main`, `git add -A`, `git commit -m "initial commit"`, `git push -u origin main`. Only works on dev shards. Rejects if a remote already exists.
+
+### `flint shard git <name> <url>`
+
+Add a GitHub remote to a dev shard and update its source declaration in `flint.toml`.
+
+```bash
+flint shard git reports https://github.com/org/shard-reports.git
+```
+
+Adds the remote to an existing `.git` directory. Rejects if a remote already exists. Updates the `flint.toml` source from a path reference to the `owner/repo` format. Only GitHub URLs are supported.
+
+### `flint shard push <name>`
+
+Commit and push a dev shard to its remote.
+
+```bash
+flint shard push reports
+flint shard push reports -m "add review template"
+flint shard push reports -m "new feature" -b minor
+```
+
+| Flag | Description |
+|------|-------------|
+| `-m, --message <msg>` | Commit message. Default: `"update {Name} shard"` |
+| `-b, --bump <level>` | Bump version in `shard.yaml` before committing. Values: `patch`, `minor`, `major` |
+
+If the working tree is clean but there are unpushed commits, pushes those without creating a new commit. If `-b` is used, the version in `shard.yaml` is rewritten and the commit message is prefixed with the new version.
+
+---
+
+## Publishing
+
+### `flint shard release <name> [version]`
+
+Tag and push a versioned release from a dev shard.
+
+```bash
+flint shard release reports
+flint shard release reports 1.2.0
+```
+
+Version is derived from `shard.yaml` if not specified. If specified, it must match `shard.yaml` exactly.
+
+Pre-release validation:
+- Must be a dev shard with a git remote
+- No uncommitted changes or unpushed commits
+- Tag `v{version}` must not exist locally or on remote
+- Dependencies with version requirements are checked against their upstream tags
+
+Creates an annotated tag `v{version}` with message `Release v{version}` and pushes the current branch and tags to origin.
+
+### `flint shard publish <name>`
+
+Publish a shard to the NUU Shard Registry. Requires authentication via `flint login`.
+
+```bash
+flint shard publish reports
+flint shard publish reports --org NUU-Cognition
+```
+
+| Flag | Description |
+|------|-------------|
+| `--org <slug>` | Publish as an organisation (verifies membership) |
+
+Reads metadata from `shard.yaml` and `README.md`, resolves the GitHub repo from the source declaration or git remote, and registers with the registry API. The registry slug is `{owner}/{shorthand}`.
+
+### `flint shard unpublish <slug>`
+
+Remove a shard from the NUU Shard Registry. Requires authentication.
+
+```bash
+flint shard unpublish NUU-Cognition/notepad
+```
+
+Takes the full registry slug (`owner/shorthand`) as the argument.
+
+### `flint shard published`
+
+List your published shards on the NUU Shard Registry. Requires authentication.
+
+```bash
+flint shard published
+```
+
+Shows name, slug, and repo for each published shard.
+
+---
+
+## Health
+
+### `flint shard check`
+
+Check shard system integrity and report issues.
+
+```bash
+flint shard check
+```
+
+Runs health checks across all installed shards. Reports issues with status levels: ok, warning, or error. Suggests `flint shard heal` if fixable issues are found.
+
+### `flint shard heal [name]`
+
+Check and fix shard issues. Ensures folders, manifests, naming, and declarations are correct.
+
+```bash
+flint shard heal            # heal all shards
+flint shard heal reports    # heal a specific shard
+flint shard heal --dry-run  # preview fixes without applying
+```
+
+| Flag | Description |
+|------|-------------|
+| `-n, --dry-run` | Preview fixes without applying them |
+
+Without a name, heals all installed shards. Displays each fix applied (or that would be applied in dry-run mode).
+
+---
+
+## Scripts
+
+### `flint shard scripts <name>`
+
+List executable scripts provided by a shard.
+
+```bash
+flint shard scripts reports
+```
+
+Shows all scripts found in the shard's `scripts/` directory.
+
+### `flint shard <shorthand> <script-name> [args...]`
+
+Run a shard script. This is the implicit script execution form -- any `flint shard <word>` where `<word>` is not a known subcommand is treated as a shard shorthand.
+
+```bash
+flint shard inc migrate
+flint shard rpt generate --format pdf
+```
+
+The script runs as a subprocess with stdout and stderr inherited. The exit code of the script is forwarded to the caller.
+
+---
+
+## Global Flags
+
+Every `flint shard` subcommand supports:
+
+| Flag | Description |
+|------|-------------|
+| `-p, --path <dir>` | Path to the Flint workspace. If omitted, searches upward from `cwd` for a Flint root |
+
+## Shard Identifier Resolution
+
+Most commands that take a `<name>` argument resolve it flexibly. The identifier is matched against:
+
+- kebab-case shard name (e.g., `living-documents`)
+- folder name (e.g., `(Dev) Living Documents`)
+- kebab-case of folder name
+- shorthand (e.g., `ld`)
+
+This means you can use whichever form is most convenient. The `resolveInstalledShardInfo()` function handles this lookup.

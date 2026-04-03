@@ -1,0 +1,151 @@
+---
+title: "Health & Heal"
+---
+
+The health system diagnoses shard installation problems without changing anything. The heal system fixes them. Together they keep the shard system in a consistent state -- manifests present, directories intact, config declarations matching what's on disk, and dependencies satisfied.
+
+## Overview
+
+Health and heal are two distinct operations with different scopes:
+
+- **`flint shard check`** runs system-wide diagnostics. It compares the `Shards/` folder contents against `flint.toml` declarations, validates manifests, checks directory structure, and verifies dependency satisfaction. It never modifies anything.
+- **`flint shard heal [name]`** operates per-shard. It runs the same structural checks plus additional ones (init file, mesh folders, file naming conventions), and provides executable fix actions for each issue found.
+
+Every health result carries a status (`ok`, `warning`, or `error`), a human-readable message, and optionally a closure that can execute the repair. The CLI decides whether to run these closures based on flags.
+
+## System Health Check
+
+`checkShardHealth()` runs six checks across the entire shard system.
+
+### 1. Orphaned Folders
+
+Scans `Shards/` for directories that are not declared in `flint.toml`. If the orphaned folder has a valid `shard.yaml` with `name` and `shorthand` fields, heal can register it. The detected mode is `custom` for folders prefixed with `(Custom)` and `dev` for everything else.
+
+```
+! Shards/Reports
+  Folder not declared in flint.toml
+```
+
+### 2. Missing Folders
+
+Checks every `flint.toml` declaration that uses a `path:` source to verify the referenced folder actually exists on disk. If not, heal can remove the stale declaration.
+
+```
+✗ reports (path:./Shards/(Dev) Reports)
+  Declared folder does not exist
+```
+
+### 3. Source Coherence
+
+For dev shards using `path:` sources, checks whether the shard folder has a git remote pointing to GitHub. If so, the `flint.toml` source should use the `owner/repo` format instead of `path:` so that updates and version tracking work correctly. Heal can update the source declaration.
+
+```
+! reports source
+  Source is "path:./Shards/(Dev) Reports" but git remote exists: NUU-Cognition/shard-reports
+```
+
+### 4. Missing or Invalid Manifests
+
+Checks every installed shard folder for a `shard.yaml` file. If missing entirely, heal can create a minimal manifest derived from the folder name. If present but missing required fields (`version`, `name`, `shorthand`), a warning is reported.
+
+```
+✗ Shards/Reports/shard.yaml
+  Missing shard.yaml
+
+! Shards/Reports/shard.yaml
+  Missing fields: version, shorthand
+```
+
+### 5. Missing Directories
+
+Verifies that each shard has the expected subdirectories. The set of expected directories depends on the shard's mode:
+
+| Mode | Expected Directories |
+|------|---------------------|
+| Consumer (normal) | `skills/`, `workflows/`, `templates/`, `knowledge/` |
+| Dev | `skills/`, `workflows/`, `templates/`, `knowledge/`, `assets/`, `install/`, `migrations/`, `scripts/` |
+
+Heal creates any missing directories.
+
+### 6. Dependency Satisfaction
+
+For every shard that declares dependencies in its manifest, checks whether those dependencies are installed and meet minimum version requirements. Dependencies are matched by converting the source's repo name to kebab-case (stripping `shard-` prefixes).
+
+```
+! Reports → NUU-Cognition/shard-core
+  Missing dependency: NUU-Cognition/shard-core >= 0.3.0
+```
+
+If the dependency source is an `owner/repo` format, heal can auto-install it. Local or non-GitHub dependencies require manual resolution.
+
+## Per-Shard Heal
+
+`healShard()` runs the system checks scoped to a single shard, plus three additional checks that are only meaningful per-shard.
+
+### 7. Init File Missing
+
+Checks for the shard's init file at `init-{shorthand}.md`. If absent, heal creates a minimal placeholder.
+
+```
+! init-rpt.md
+  Missing init file
+```
+
+### 8. Manifest Mesh Folders Missing
+
+If the manifest declares `folders`, checks that each folder exists in the workspace. Heal creates missing directories.
+
+```
+! Mesh/Types/Reports
+  Declared Mesh folder missing
+```
+
+### 9. File Naming Conventions
+
+Scans shard content directories for files that don't follow the expected naming prefix:
+
+| Directory | Expected Prefix | Example |
+|-----------|----------------|---------|
+| `skills/` | `sk-{shorthand}-` | `sk-rpt-generate.md` |
+| `workflows/` | `wkfl-{shorthand}-` | `wkfl-rpt-review.md` |
+| `templates/` | `tmp-{shorthand}-` | `tmp-rpt-summary.md` |
+| `knowledge/` | `knw-{shorthand}-` | `knw-rpt-formats.md` |
+| `install/` (dev only) | `type-{shorthand}-` or `inst-{shorthand}-` | `type-rpt-report.md` |
+
+These are warnings only -- no auto-fix is provided. Install directory naming is only checked for dev shards.
+
+## Dry Run
+
+The heal command supports `--dry-run` to preview fixes without applying them:
+
+```bash
+flint shard heal --dry-run
+flint shard heal reports --dry-run
+```
+
+In dry-run mode, actionable repairs are shown with a preview marker instead of being executed. The CLI reports how many fixes are available.
+
+## CLI Commands
+
+```bash
+# System-wide diagnostics (read-only)
+flint shard check
+
+# Heal a specific shard
+flint shard heal reports
+
+# Heal all installed shards
+flint shard heal
+
+# Preview repairs without applying
+flint shard heal --dry-run
+flint shard heal reports --dry-run
+```
+
+When `heal` is called without a name argument, it iterates every installed shard folder and runs `healShard()` on each.
+
+## Related
+
+- [Module - Manifest](/modules/manifest) -- the `shard.yaml` fields that health checks validate
+- [Module - File Conventions](/modules/file-conventions) -- the naming prefixes that heal checks for
+- [Module - Install & Update](/modules/install-update) -- the install pipeline that heal can trigger for missing dependencies

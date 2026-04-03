@@ -1,0 +1,316 @@
+---
+title: "Creating a Shard"
+---
+
+This guide walks through creating a shard from scratch, populating it with skills and templates, testing it locally, and publishing it for others to install. By the end you will have a working dev shard with an init file, a skill, a template, install files, and a release workflow.
+
+## Prerequisites
+
+- Flint CLI installed (`npm install -g @nuucognition/flint-cli`)
+- An initialized Flint workspace (run `flint init` if you don't have one)
+- You are inside the Flint workspace directory
+
+## 1. Create the Shard
+
+Use `flint shard create` to scaffold a new shard. The first argument is the mode (`dev` for publishable shards, `custom` for workspace-only shards), the second is the name.
+
+```bash
+flint shard create dev "Bookmarks" --shorthand bk --description "Bookmark management for research links"
+```
+
+You should see output like:
+
+```
+Created (Dev) Bookmarks (dev)
+  Path:      ~/my-flint/Shards/(Dev) Bookmarks
+  Shorthand: bk
+
+  Next steps:
+    1. Edit init-bk.md -- define shard context
+    2. Add skills to skills/sk-bk-*.md
+    3. Add templates to templates/tmp-bk-*.md
+```
+
+If you omit `--shorthand`, the CLI derives one from the name's initials (e.g., "Code Review" becomes `cr`). The shorthand is limited to 4 characters.
+
+This command does several things behind the scenes:
+
+- Creates `Shards/(Dev) Bookmarks/` with the full directory scaffold
+- Runs `git init` inside the shard directory (dev shards always get their own git repo)
+- Generates a `shard.yaml` manifest with version `0.1.0`
+- Creates a starter `init-bk.md` file
+- Adds the shard declaration to `flint.toml`
+- Updates `.gitignore` to exclude the dev shard from the parent Flint's git
+
+## 2. Tour the Scaffold
+
+List the created directory to see the standard structure:
+
+```
+Shards/(Dev) Bookmarks/
+  shard.yaml              # Manifest -- name, version, shorthand, install entries
+  init-bk.md              # Init file -- shard context for agents
+  README.md               # Human-readable overview
+  skills/                 # sk-bk-{name}.md -- focused agent instructions
+  workflows/              # wkfl-bk-{name}.md -- multi-step processes
+  templates/              # tmp-bk-{name}.md -- artifact templates
+  knowledge/              # knw-bk-{name}.md -- reference material
+  assets/                 # ast-bk-{name}.{ext} -- images, diagrams
+  install/                # Files to install into Mesh/
+  migrations/             # mig-bk-{from}-to-{to}.md -- version migration guides
+  scripts/                # Executable scripts (sh, js, py)
+```
+
+Dev shards include all directories. Consumer-installed (normal) shards only get `skills/`, `workflows/`, `templates/`, and `knowledge/`.
+
+## 3. Write the Init File
+
+The init file is the first thing an agent reads when loading the shard. Open `init-bk.md` and replace the starter content:
+
+```markdown
+# Bookmarks
+
+Bookmark management for research links. This shard provides skills for adding,
+organizing, and reviewing bookmarks stored as typed artifacts in the Mesh.
+
+## Shard Structure
+
+| Artifact | File | Purpose |
+|----------|------|---------|
+| Init | `init-bk.md` | This file -- shard context |
+
+## Skills
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| Add Bookmark | `sk-bk-add.md` | Add a new bookmark artifact |
+
+## Templates
+
+| Template | File | Purpose |
+|----------|------|---------|
+| Bookmark | `tmp-bk-bookmark-v0.1.md` | Bookmark artifact template |
+
+## Knowledge
+
+(No knowledge files yet)
+```
+
+Keep the init file as a structured table of contents. Agents use it to discover what the shard offers.
+
+## 4. Add a Skill
+
+Create `skills/sk-bk-add.md`:
+
+```markdown
+# Add Bookmark
+
+Add a new bookmark to the workspace.
+
+## Inputs
+
+- **url** (required) -- the URL to bookmark
+- **title** (optional) -- a title for the bookmark (default: derived from URL)
+- **tags** (optional) -- tags to apply
+
+## Steps
+
+1. Generate a new UUID for the artifact ID
+2. Create a new file using the [tmp-bk-bookmark-v0.1](/tmp-bk-bookmark-v0-1) template
+3. Fill in the URL, title, and tags
+4. Save to `Mesh/Types/Bookmarks/`
+
+## Output
+
+Confirm the bookmark was created with its file path and title.
+```
+
+Skills use the `sk-{shorthand}-{name}.md` naming pattern. The health check system will warn if files in `skills/` don't follow this convention.
+
+## 5. Add a Template
+
+Create `templates/tmp-bk-bookmark-v0.1.md`. Template files wrap their content in a fenced code block so agents can read the raw template. Here is an example of the file's contents:
+
+````markdown
+# Template: Bookmark
+
+```yaml
+---
+id: {{uuid}}
+tags:
+  - "#bk/bookmark"
+url: [URL]
+title: [Title]
+added: {{date}}
+---
+
+# [Title]
+
+**URL:** [URL]
+
+## Notes
+
+(Notes about this bookmark)
+```
+````
+
+Templates use `{{uuid}}` and `{{date}}` placeholders. These are processed by the install system when template files are installed into the Mesh -- `{{uuid}}` generates a random UUID v4, and `{{date}}` inserts the current date as `YYYY-MM-DD`.
+
+## 6. Add Install Files
+
+Install files are copied from the shard's `install/` directory into the Mesh when the shard is installed or pulled. They are useful for type definitions, dashboards, and other Mesh-level content.
+
+Create `install/type-bk-bookmark.md`:
+
+```markdown
+---
+id: {{uuid}}
+tags:
+  - "#bk/type"
+type: Bookmark
+folder: Mesh/Types/Bookmarks
+---
+
+# (Type) Bookmark
+
+A saved URL with notes and tags.
+
+## Fields
+
+| Field | Type | Required |
+|-------|------|----------|
+| url | string | yes |
+| title | string | yes |
+| tags | list | no |
+| added | date | no |
+```
+
+Install files in the `install/` directory follow the naming patterns `inst-{shorthand}-{name}.md`, `type-{shorthand}-{name}.md`, or `otmp-{shorthand}-{name}.md`.
+
+## 7. Update shard.yaml
+
+Edit `shard.yaml` to declare the install entry and the folder it needs:
+
+```yaml
+shard-spec: "0.1.0"
+version: "0.1.0"
+name: Bookmarks
+shorthand: bk
+description: Bookmark management for research links
+install:
+  - source: type-bk-bookmark.md
+    dest: "Mesh/Types/Bookmarks/(Type) Bookmark.md"
+    mode: once
+folders:
+  - Mesh/Types/Bookmarks/
+```
+
+Key details:
+
+- `source` is relative to the shard's `install/` directory
+- `dest` is relative to the Flint root
+- `mode: once` means the file is only installed if it doesn't already exist (this is the default). Use `mode: force` to overwrite on every pull.
+- `folders` lists directories to create in the Flint when the shard is installed
+
+If you want a persistent state file, add `state: true` and the shard system will create `Mesh/Shards/(Shard) Bookmarks.md` automatically.
+
+## 8. Test Locally
+
+Run `flint shard pull bk` to sync install entries from the manifest:
+
+```bash
+flint shard pull bk
+```
+
+This reads `shard.yaml`, creates any declared folders, and copies install files to their destinations. You should see:
+
+```
+Pulling bk...
+
+  Bookmarks (1 folders, 1 files)
+```
+
+Run `flint shard check` to verify the shard system is healthy:
+
+```bash
+flint shard check
+```
+
+All checks should pass. If any naming conventions are wrong or directories are missing, the check output will tell you. Run `flint shard heal bk` to auto-fix any issues:
+
+```bash
+flint shard heal bk
+```
+
+The heal command creates missing directories, generates missing manifests, registers undeclared shards, and reports naming convention violations.
+
+## 9. Add a Script
+
+Scripts are executable files in the `scripts/` directory. Create `scripts/count.sh`:
+
+```bash
+#!/bin/bash
+# Count bookmarks in the workspace
+find "$FLINT_ROOT/Mesh/Types/Bookmarks" -name "*.md" -not -name "(Type)*" | wc -l | tr -d ' '
+```
+
+Run it with:
+
+```bash
+flint shard bk count
+```
+
+The script receives `FLINT_ROOT` and `FLINT_SHARD` as environment variables. The CLI auto-detects the runner based on file extension (`.sh` uses bash, `.js` uses node, `.ts` uses tsx, `.py` uses python3).
+
+## 10. Publish
+
+When your shard is ready for others to use:
+
+**Add a git remote:**
+
+```bash
+flint shard git bk https://github.com/your-org/shard-bookmarks.git
+```
+
+This adds the remote to the shard's git repo and updates the source declaration in `flint.toml` from `path:./Shards/(Dev) Bookmarks` to `your-org/shard-bookmarks`.
+
+**Push your code:**
+
+```bash
+flint shard push bk -m "initial shard content"
+```
+
+This stages all changes, commits, and pushes to the remote.
+
+**Create a release:**
+
+```bash
+flint shard release bk
+```
+
+This reads the version from `shard.yaml` (currently `0.1.0`), creates a `v0.1.0` git tag, and pushes it. Other users can now install your shard:
+
+```bash
+flint shard install your-org/shard-bookmarks
+```
+
+To bump the version for future releases, either edit `shard.yaml` directly or use the `--bump` flag on push:
+
+```bash
+flint shard push bk -m "add search skill" --bump patch
+flint shard release bk
+```
+
+**Publish to the NUU Shard Registry** (optional, requires a NUU account):
+
+```bash
+flint shard publish bk
+```
+
+This registers the shard in the public registry, making it discoverable beyond direct GitHub URLs.
+
+## Next Steps
+
+- [Concept - What Are Shards](/getting-started/what-are-shards) -- understand the design philosophy behind the shard system
+- [Module - Manifest](/modules/manifest) -- full reference for all `shard.yaml` fields
+- [Module - File Conventions](/modules/file-conventions) -- naming patterns and directory structure details

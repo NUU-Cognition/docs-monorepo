@@ -12,6 +12,11 @@
 export { tailwindPreset, cssVariables } from "./tailwind-preset";
 export { Logo } from "./components/logo";
 export { Callout } from "./components/callout";
+export { DocsRootLayout } from "./components/root-layout";
+export { DocsContentLayout } from "./components/content-layout";
+export { DocsPageContent } from "./components/page-content";
+export { createMetadata } from "./helpers/metadata";
+export { createSearchHandler } from "./helpers/search";
 export {
   type SiteConfig,
   nuuDefaults,

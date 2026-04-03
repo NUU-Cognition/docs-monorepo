@@ -1,0 +1,195 @@
+---
+title: "Architecture"
+---
+
+Orbh is structured as a three-layer system: a core library that manages sessions and transcripts, a CLI that exposes commands for humans and agents, and an optional server layer that provides HTTP APIs and live event streaming for dashboards and integrations.
+
+## System Layers
+
+### Core Library (`@nuucognition/orbh`)
+
+The core library handles session persistence, harness registration, transcript normalization, and process lifecycle management. It has zero external runtime dependencies and operates entirely through the filesystem.
+
+Key responsibilities:
+- **Session store** — CRUD operations on session JSON files with atomic writes
+- **Session lifecycle** — State transition validation, run management, request handling
+- **Harness registry** — Registration and lookup of runtime adapters (claude, codex, droid, gemini)
+- **Transcript mapping** — Converting raw JSONL/JSON to the universal format via per-runtime mappers
+- **Transcript watching** — Live watching of transcript files via JSONL and JSON watchers
+- **Process monitoring** — Tracking PIDs, detecting exits, handling cleanup
+
+### Flint CLI (`flint orb`)
+
+The CLI is the primary interface for both humans and agents. Humans use it to launch, observe, and interact with sessions. Agents use it to register themselves, report progress, ask questions, and return results. The CLI reads and writes session files directly — it does not require the server to be running.
+
+### Server Layer (`flint-server`)
+
+The Flint server provides HTTP endpoints for session CRUD, process launch/resume, transcript reading, and live event streaming via SSE. It uses a state-diffing pattern to detect changes in session files and broadcast granular events (session created, run started, request asked, etc.) to connected clients like the Steel dashboard.
+
+## Session Model
+
+### AgentSession
+
+The session is the root data structure. It contains:
+
+```
+AgentSession
+├── id                    UUID
+├── runtime               "claude" | "codex" | "droid" | "gemini" | ...
+├── status                queued | in-progress | blocked | deferred | finished | failed | cancelled
+├── prompt                Original launch prompt
+├── title                 Short label (set by agent or launcher)
+├── description           What the agent is doing
+├── metadata              Record<string, unknown> — free-form structured metadata
+├── continues             Previous session ID (for continuations)
+├── started               ISO timestamp
+├── updated               ISO timestamp
+├── interface             Record<string, string> — free-form key-value pairs
+└── runs[]                Array of RuntimeRun
+```
+
+### RuntimeRun
+
+Each time a session's agent process is invoked — whether the initial launch or a resume after a deferred question — a new run is appended. Runs are the unit of process execution.
+
+```
+RuntimeRun
+├── id                    UUID
+├── continuesRunId        Previous run ID (for resume chains)
+├── nativeSessionId       Agent CLI's own session ID
+├── pid                   OS process ID
+├── started               ISO timestamp
+├── ended                 ISO timestamp (null while running)
+├── exitCode              Process exit code (null while running)
+├── status                running | completed | failed | cancelled | suspended
+├── result                Final markdown output (set by `flint orb return`)
+└── requests[]            Array of AgentRequest
+```
+
+### AgentRequest
+
+Requests represent human-in-the-loop interactions. Each request belongs to the run that created it.
+
+```
+AgentRequest
+├── id                    UUID
+├── type                  "blocking" | "deferred"
+├── question              Question text
+├── asked                 ISO timestamp
+├── answered              ISO timestamp (null until responded)
+└── response              Human's answer (null until responded)
+```
+
+## Run Lifecycle
+
+A run progresses through these states:
+
+```
+running → completed     (agent calls `flint orb return`)
+running → failed        (process exits with non-zero code)
+running → cancelled     (human calls `flint orb kill`)
+running → suspended     (process exits cleanly without calling return)
+```
+
+When a run ends, its metadata is updated atomically — exit code, end timestamp, and status are written together to prevent partial state.
+
+### Resume Chain
+
+When a session is resumed, a new run is created with `continuesRunId` pointing to the previous run. This creates a linked chain:
+
+```
+Run 1 (initial launch)
+  → Run 2 (resumed after deferred question, continuesRunId = Run 1)
+    → Run 3 (resumed again, continuesRunId = Run 2)
+```
+
+Each run has its own result and requests. The session's overall status reflects the most recent run's state.
+
+## Session Lifecycle
+
+```
+queued                    Session created, process not yet spawned
+  ↓
+in-progress               Agent is actively working
+  ↓
+blocked                   Agent asked a blocking question (process alive, waiting)
+  ↓
+in-progress               Human responded, agent continues
+  ↓
+deferred                  Agent posted deferred question and exited
+  ↓
+in-progress               Human responded, new run started via resume
+  ↓
+finished                  Agent called `return` — work complete
+```
+
+Terminal states: `finished`, `failed`, `cancelled`. A session in any of these states cannot be resumed — a new session linked via `continues` must be launched instead.
+
+## Storage
+
+All session data is stored as JSON files in `.flint/sessions/`:
+
+```
+.flint/sessions/
+├── <session-id>.json           Session record
+└── ...
+```
+
+Writes use a temp-file-and-rename pattern to prevent corruption from crashes or concurrent access. The session ID is a UUID v4 assigned at launch before the agent process starts.
+
+### ID Resolution
+
+Sessions can be referenced by full UUID or by the shortest unambiguous prefix. `flint orb inspect a7c3` resolves to the session whose ID starts with `a7c3`, as long as no other session shares that prefix.
+
+## Interface Model
+
+The session interface is a `Record<string, string>` — a flat key-value store where agents write arbitrary metadata about their work. There are no enforced keys, but shards define conventions:
+
+| Key | Convention | Example |
+|-----|-----------|---------|
+| `phase` | Current work phase | `"implementing"` |
+| `progress` | Human-readable progress | `"3/7 requirements"` |
+| `task` | Task being worked on | `"(Task) 341 Pre-Pass"` |
+| `artifacts` | Produced artifacts | `"(Report) 012"` |
+| `blockers` | What's blocking | `"need API key"` |
+| `confidence` | Work quality assessment | `"high"` |
+| `context-pressure` | Context window state | `"high"` |
+
+The interface is readable via `flint orb inspect` and `flint orb get`, and is displayed in the Steel dashboard's session cards.
+
+## Request/Response Flow
+
+### Blocking Questions
+
+```
+Agent calls `flint orb ask <id> "question"`
+  → Request created (type: blocking)
+  → Session status set to "blocked"
+  → macOS notification sent
+  → Agent process blocks, polling for response
+Human calls `flint orb respond <id> "answer"`
+  → Response written to request
+  → Session status set to "in-progress"
+  → `ask` command returns the response to stdout
+  → Agent continues working
+```
+
+### Deferred Questions
+
+```
+Agent calls `flint orb request <id> "question"`
+  → Request created (type: deferred)
+  → Session status set to "blocked"
+  → Agent process exits
+Human calls `flint orb respond <id> "answer"`
+  → Response written to request
+  → Session automatically resumed via `flint orb resume`
+  → New run starts with the human's answer as context
+```
+
+## Further Reading
+
+- [Concept - Introduction](/concepts/introduction) — What Orbh is and why it exists
+- [Module - Universal Transcript](/modules/universal-transcript) — How raw agent output becomes a normalized transcript
+- [Module - Harness System](/modules/harness-system) — The runtime adapter layer
+- [Reference - CLI Commands](/reference/cli-commands) — Full command reference

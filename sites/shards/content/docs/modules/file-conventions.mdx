@@ -1,0 +1,201 @@
+---
+title: "Shard File Conventions"
+---
+
+Every shard follows a standardized directory structure and file naming scheme. These conventions make shards predictable for both agents and the CLI tooling. The health check system (`flint shard check` and `flint shard heal`) validates these conventions and can auto-fix structural issues.
+
+## Overview
+
+The shard file conventions serve two audiences. For **agents**, consistent naming makes it possible to locate skills, templates, and knowledge files by pattern rather than by explicit listing. For the **CLI**, naming conventions enable health checks that catch misplaced files, verify structural completeness, and auto-repair common issues.
+
+The conventions are enforced through warnings, not errors. A shard with unconventional naming still works -- agents read files by explicit reference from the init file. But the health system will flag naming deviations so authors can correct them.
+
+## Directory Structure
+
+### Dev Shard
+
+Dev shards (`(Dev) Name/`) get the full authoring scaffold. The `scaffoldNewShard()` function creates all of these directories:
+
+```
+Shards/(Dev) Bookmarks/
+  .git/                   # Own git repository (auto-initialized)
+  shard.yaml              # Manifest (required)
+  init-bk.md              # Init file (required)
+  README.md               # Human-readable overview (generated)
+  skills/                 # Agent skill instructions
+  workflows/              # Multi-step agent processes
+  templates/              # Artifact templates
+  knowledge/              # Reference material
+  assets/                 # Images, diagrams, non-markdown files
+  install/                # Files to copy into the Mesh
+  migrations/             # Version migration guides
+  scripts/                # Executable scripts
+```
+
+### Consumer (Normal) Shard
+
+Normal shards installed from a remote source get a subset of directories. The `installShardFromSource()` function copies everything except `install/`, `.git/`, and `README.md` (install files are applied to destinations, not kept in the shard folder):
+
+```
+Shards/Bookmarks/
+  shard.yaml              # Manifest (required)
+  init-bk.md              # Init file (required)
+  skills/                 # Agent skill instructions
+  workflows/              # Multi-step agent processes
+  templates/              # Artifact templates
+  knowledge/              # Reference material
+  scripts/                # Executable scripts
+```
+
+The health check system expects only the consumer directories (`skills/`, `workflows/`, `templates/`, `knowledge/`) for normal shards. Dev shards are expected to also have `assets/`, `install/`, `migrations/`, and `scripts/`.
+
+### Custom Shard
+
+Custom shards (`(Custom) Name/`) have the same directory structure as dev shards but no `.git/` directory. They live inside the parent Flint's git history.
+
+## Folder Prefixes
+
+The folder name prefix determines the shard's mode:
+
+| Prefix | Mode | Git | Publishable | Example |
+|--------|------|-----|-------------|---------|
+| `(Dev)` | dev | Own `.git/` repo | Yes | `Shards/(Dev) Bookmarks/` |
+| `(Custom)` | custom | Parent Flint's git | No | `Shards/(Custom) Team Rules/` |
+| *(none)* | normal | N/A (read-only) | N/A (already published) | `Shards/Bookmarks/` |
+
+The `registerExistingShard()` function detects mode from the prefix -- folders starting with `(Custom)` register as custom, everything else as dev.
+
+## Shorthand
+
+The shorthand is a 2-4 character namespace prefix derived from the shard name. It appears as a prefix in every file the shard owns.
+
+**Derivation rules** (from the `create` CLI command):
+
+1. If `--shorthand` is explicitly provided, use that value
+2. Otherwise, take the first letter of each word in the name, lowercase, max 4 characters (e.g., "Code Review" becomes `cr`)
+3. Fallback: lowercase the name, strip whitespace, take first 4 characters
+
+The shorthand is stored in `shard.yaml` and used for:
+
+- File naming prefixes (see table below)
+- Shard lookup (`flint shard info bk` resolves by shorthand)
+- State file tags (`#shard/{shorthand}`)
+- Init file naming (`init-{shorthand}.md`)
+
+## File Naming Patterns
+
+All markdown files within a shard's subdirectories follow a `{prefix}-{shorthand}-{name}.md` pattern. The health check system validates these prefixes and warns about non-conforming files.
+
+| Directory | Prefix | Pattern | Example |
+|-----------|--------|---------|---------|
+| *(root)* | `init-` | `init-{sh}.md` | `init-bk.md` |
+| *(root)* | `setup-` | `setup-{sh}.md` | `setup-bk.md` |
+| `skills/` | `sk-` | `sk-{sh}-{name}.md` | `sk-bk-add.md` |
+| `workflows/` | `wkfl-` | `wkfl-{sh}-{name}.md` | `wkfl-bk-review.md` |
+| `templates/` | `tmp-` | `tmp-{sh}-{name}.md` | `tmp-bk-bookmark-v0.1.md` |
+| `knowledge/` | `knw-` | `knw-{sh}-{name}.md` | `knw-bk-tagging.md` |
+| `assets/` | `ast-` | `ast-{sh}-{name}.{ext}` | `ast-bk-logo.png` |
+| `migrations/` | `mig-` | `mig-{sh}-{from}-to-{to}.md` | `mig-bk-0.1-to-0.2.md` |
+
+### Install File Naming
+
+Files in the `install/` directory use a different naming scheme based on what they install:
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `inst-{sh}-` | General install files (dashboards, sections) | `inst-bk-dashboard.md` |
+| `type-{sh}-` | Type definition files | `type-bk-bookmark.md` |
+| `otmp-{sh}-` | One-time template files | `otmp-bk-setup.md` |
+
+The health check only validates install file naming for dev shards, since consumer shards don't retain the `install/` directory.
+
+## Health Check Enforcement
+
+The `healShard()` function in `health.ts` runs the following checks for each shard. Each check can produce an OK, warning, or error result, and many include an auto-fix action.
+
+### Manifest Checks
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| `shard.yaml` missing | error | Creates minimal manifest with derived name, shorthand, description |
+| Missing required fields (`version`, `name`, `shorthand`) | warning | No auto-fix (author must provide values) |
+
+### Declaration Check
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Folder exists in `Shards/` but not declared in `flint.toml` | warning | Registers as dev or custom based on folder prefix |
+| Declared in `flint.toml` with `path:` source but folder missing | error | Removes declaration from `flint.toml` |
+
+### Source Coherence
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Dev shard has `path:` source but git remote exists | warning | Updates source to `owner/repo` format |
+
+### Directory Checks
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Missing expected subdirectory | warning | Creates the directory |
+
+Expected directories depend on mode:
+- **Consumer:** `skills/`, `workflows/`, `templates/`, `knowledge/`
+- **Dev:** all consumer dirs plus `assets/`, `install/`, `migrations/`, `scripts/`
+
+### Init File Check
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Missing `init-{shorthand}.md` | warning | Creates a minimal init file |
+
+### Mesh Folder Check
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Folder declared in manifest `folders` doesn't exist | warning | Creates the directory |
+
+### Naming Convention Check
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| File in `skills/` doesn't start with `sk-{sh}-` | warning | No auto-fix (manual rename needed) |
+| File in `workflows/` doesn't start with `wkfl-{sh}-` | warning | No auto-fix |
+| File in `templates/` doesn't start with `tmp-{sh}-` | warning | No auto-fix |
+| File in `knowledge/` doesn't start with `knw-{sh}-` | warning | No auto-fix |
+| File in `install/` has wrong shorthand prefix | warning | No auto-fix (dev shards only) |
+
+### Dependency Check
+
+| Check | Status | Auto-fix |
+|-------|--------|----------|
+| Dependency not installed | warning | Installs from `owner/repo` source if available |
+| Dependency version too low | warning | Re-installs dependency if `owner/repo` source |
+| Dependency satisfied | ok | N/A |
+
+## Running Health Checks
+
+Check all shards:
+
+```bash
+flint shard check
+```
+
+Heal a specific shard (preview fixes first):
+
+```bash
+flint shard heal bk --dry-run
+flint shard heal bk
+```
+
+Heal all shards at once:
+
+```bash
+flint shard heal
+```
+
+## Related
+
+- [Module - Manifest](/modules/manifest) -- the `shard.yaml` fields that drive installation and folder creation
+- [Guide - Creating a Shard](/getting-started/creating-a-shard) -- step-by-step walkthrough that demonstrates these conventions in practice
+- [Concept - What Are Shards](/getting-started/what-are-shards) -- why shards exist and how the three modes differ

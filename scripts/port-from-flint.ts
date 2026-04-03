@@ -105,7 +105,7 @@ function extractTitle(filePath: string): string {
 function generateSlug(fileName: string): string {
   return fileName
     .replace(/\.md$/, "")
-    .replace(/^(Guide|Module|Reference)\s*-\s*/i, "") // Remove prefixes
+    .replace(/^(Guide|Module|Reference|Concept)\s*-\s*/i, "") // Remove prefixes
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
@@ -134,14 +134,22 @@ function findFile(meshPath: string, fileName: string): string | null {
   return walk(meshPath);
 }
 
-function resolvePage(meshPath: string, wikiLink: string): ResolvedPage {
+function resolvePage(meshPath: string, wikiLink: string, configDir?: string): ResolvedPage {
   const fileName = resolveWikiLink(wikiLink);
 
-  // Try direct path first, then recursive search
-  const directPath = path.join(meshPath, `${fileName}.md`);
-  const sourcePath = fs.existsSync(directPath)
-    ? directPath
-    : findFile(meshPath, fileName);
+  // Try config's own directory first (co-located pages), then direct mesh path, then recursive search
+  let sourcePath: string | null = null;
+  if (configDir) {
+    const colocatedPath = path.join(configDir, `${fileName}.md`);
+    if (fs.existsSync(colocatedPath)) sourcePath = colocatedPath;
+  }
+  if (!sourcePath) {
+    const directPath = path.join(meshPath, `${fileName}.md`);
+    if (fs.existsSync(directPath)) sourcePath = directPath;
+  }
+  if (!sourcePath) {
+    sourcePath = findFile(meshPath, fileName);
+  }
 
   if (!sourcePath) {
     throw new Error(`File not found: ${fileName}.md (searched under ${meshPath})`);
@@ -261,12 +269,13 @@ function portDocsConfig(configPath: string, meshPath: string): void {
   console.log(`  Target: ${targetPath}\n`);
 
   // Build link map for wiki link resolution
+  const configDir = path.dirname(configPath);
   const basePath = config.basePath ?? "/";
   const baseUrl = basePath === "/" ? "" : basePath;
   const linkMap = new Map<string, string>();
 
   // Resolve index
-  const indexPage = resolvePage(meshPath, config.index);
+  const indexPage = resolvePage(meshPath, config.index, configDir);
   linkMap.set(indexPage.fileName, baseUrl || "/");
 
   // Resolve all section pages first to build link map
@@ -276,7 +285,7 @@ function portDocsConfig(configPath: string, meshPath: string): void {
     const pages: ResolvedPage[] = [];
     for (const pageLink of section.pages) {
       try {
-        const page = resolvePage(meshPath, pageLink);
+        const page = resolvePage(meshPath, pageLink, configDir);
         linkMap.set(page.fileName, `${baseUrl}/${section.id}/${page.slug}`);
         pages.push(page);
       } catch (err) {

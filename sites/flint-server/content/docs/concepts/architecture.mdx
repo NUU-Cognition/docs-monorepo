@@ -1,0 +1,64 @@
+---
+title: "Architecture"
+---
+
+Flint Server is a local HTTP backend that exposes a Flint workspace as a real-time API. It bridges the Flint CLI, agent sessions, plate-based UIs, and file system events into a single event-driven surface. Understanding its architecture explains the design trade-offs and constraints you'll encounter when building on top of it.
+
+## Why a Local Server
+
+Flint workspaces are directories of markdown files managed by the Flint CLI. The CLI works well for terminal-based workflows, but graphical UIs (plates, dashboards) and concurrent agent sessions need a persistent process that can serve assets, accept HTTP requests, and push real-time updates. Rather than embedding a server into each UI or agent, Flint Server acts as a single backend that all consumers connect to.
+
+The server runs on `127.0.0.1` (loopback only) and assumes that localhost access grants full authority. There is no authentication, no API keys, and no user sessions. This follows the workspace's security model: if you can reach the server, you have the same access as the Flint CLI itself. See [(Mandate) 002 Localhost Security Boundary](/mandate-002-localhost-security-boundary) for the rationale.
+
+## Fastify and REST
+
+The server is built on Fastify v5 with CORS enabled for all origins. Routes are organized into modules — one per subsystem (plates, orbh, shards, runtimes, etc.). Each route module registers its endpoints and returns cleanup functions for watchers and background tasks.
+
+The REST API mirrors the Flint CLI's capabilities: artifact CRUD, shard health checks, session management. Consumers interact with the same data model they'd use from the terminal, just over HTTP.
+
+## Event-Driven Design with SSE
+
+The most distinctive architectural choice is the use of Server-Sent Events (SSE) instead of WebSockets. Clients subscribe to `GET /events/stream` and receive a continuous stream of typed events.
+
+SSE was chosen over WebSockets for several reasons:
+- **Simplicity** — SSE uses plain HTTP. No upgrade handshake, no frame protocol, no ping/pong management. Fastify serves it natively.
+- **One-directional fit** — the server pushes updates to clients; clients send commands via REST. There is no need for bidirectional streaming.
+- **Reconnection built in** — the `EventSource` browser API handles reconnection automatically. WebSockets require manual reconnect logic.
+
+The `ChannelRegistry` manages subscriptions. Clients specify which channels they want (`sessions`, `artifacts`, `orbh`, `transcripts`, `logs`) and optionally filter by session IDs. On connect, the server sends a snapshot of current state, then streams deltas. A heartbeat fires every 30 seconds to keep connections alive.
+
+Backpressure is handled by counting consecutive write failures. After 10 failed writes, the server disconnects the client.
+
+## File Watching and Echo Suppression
+
+The server watches the file system to detect changes made outside the API — edits in Obsidian, CLI commands, agent sessions writing to the Mesh. When a markdown file changes in `Mesh/` or `Shards/`, the server re-reads it and broadcasts an `artifact.created` or `artifact.updated` event.
+
+This creates a potential echo problem: when the server itself writes a file (via the artifact CRUD API), the file watcher would detect the change and broadcast a duplicate event. The server solves this with **echo suppression** — a shared `suppressedPaths` set. Before writing, the API adds the file path to the set. The watcher checks the set and skips suppressed paths. Suppression expires after 500ms by default.
+
+Watchers use a 50ms per-file debounce for artifact changes and 100ms for session changes, preventing burst events from rapid file operations.
+
+## Multi-Flint Coordination
+
+Multiple Flint Servers can run simultaneously for different workspaces. A shared registry at `~/.nuucognition/servers.json` tracks running instances. Each server registers on startup and deregisters on shutdown.
+
+The registry is validated on read: the server checks that each registered PID is still alive, that the health endpoint responds, and that the identity matches. Stale entries are automatically cleaned up.
+
+## Graceful Shutdown
+
+Shutdown can be triggered three ways: `Ctrl+C` (SIGINT/SIGTERM), `flint server stop` (CLI), or `POST /shutdown` (API). The shutdown endpoint requires the request to come from loopback and include the `x-flint-shutdown: true` header.
+
+On shutdown, the server:
+1. Closes all SSE streams
+2. Stops all file watchers
+3. Deregisters from the server registry
+4. Stops all active runtimes
+5. Optionally cascades shutdown to a paired Steel host
+
+A 5-second timeout forces exit if graceful shutdown stalls.
+
+## Further Reading
+
+- [Reference - Configuration](/reference/configuration) — server options, env vars, and flint.toml settings
+- [Module - Event Streaming](/modules/event-streaming) — detailed channel and event reference
+- [Module - Runtimes](/modules/runtimes) — the file-watching hook engine
+- [Reference - REST API](/reference/rest-api) — complete endpoint documentation

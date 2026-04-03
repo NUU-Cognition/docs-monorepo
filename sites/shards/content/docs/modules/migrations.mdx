@@ -1,0 +1,155 @@
+---
+title: "Migrations"
+---
+
+Shard migrations handle version-to-version changes that affect workspace artifacts. When a shard update changes how files are structured, renames fields in frontmatter, or reorganizes content, the migration system detects which migrations are available and reports them to the user or agent.
+
+## Overview
+
+Shards evolve. A new version might rename a tag, add a required frontmatter field, or restructure a folder. These changes affect files that the shard installed into the workspace, not just the shard's own files. Migrations bridge the gap between the old version's workspace state and the new version's expectations.
+
+The key design decision: migrations are **not auto-executed**. Flint detects available migrations and reports them. The user or their agent decides when and how to apply them. This is because migration content is freeform markdown -- it can describe changes that require judgment, not just mechanical file operations.
+
+## Migration File Convention
+
+Migration files live in the shard's `migrations/` directory and follow a strict naming pattern:
+
+```
+migrations/mig-{shorthand}-{from}-to-{to}.md
+```
+
+Examples:
+
+```
+migrations/mig-rpt-0.1.0-to-0.2.0.md
+migrations/mig-rpt-0.2.0-to-0.3.0.md
+migrations/mig-inc-0.3.0-to-0.4.0.md
+```
+
+The shorthand must match the shard's `shorthand` field in `shard.yaml`. The `from` and `to` segments are version strings.
+
+## Version Recording
+
+Flint tracks each shard's installed version in a per-shard state file:
+
+```
+~/.flint/config/shards/{kebab-name}.json
+```
+
+The state file contains:
+
+```json
+{
+  "version": 1,
+  "shard": "reports",
+  "currentVersion": "0.3.0",
+  "updatedAt": "2026-03-15T10:30:00.000Z"
+}
+```
+
+The `getRecordedShardVersion()` function reads this file to determine what version the workspace was last synced to. The `recordShardVersion()` function writes it after a successful install, update, or pull.
+
+The recorded version is separate from the version in `shard.yaml` -- `shard.yaml` reflects the shard package's version, while the state file reflects what version the workspace has been brought up to.
+
+## Detection Flow
+
+When `detectMigrations()` is called, it follows this process:
+
+1. **Read the recorded version** -- look up the previously installed version from the state file
+2. **Compare with the new version** -- the new version comes from the shard's `shard.yaml` after update
+3. **Scan `migrations/`** -- list all files matching the `mig-{shorthand}-{from}-to-{to}.md` pattern
+4. **Build a chain** -- starting from the recorded version, find the migration whose `from` matches, follow its `to` to the next migration, and continue until reaching the target version
+5. **Return the chain** -- an ordered array of `MigrationInfo` objects, each with `file`, `from`, and `to`
+
+If any step in the chain is missing, no migrations are returned -- partial chains are not reported.
+
+## Linear Chaining
+
+Migrations must form a complete linear chain from the old version to the new version. There are no skip migrations.
+
+For example, updating from `0.2.0` to `0.4.0` requires both:
+
+```
+mig-rpt-0.2.0-to-0.3.0.md
+mig-rpt-0.3.0-to-0.4.0.md
+```
+
+If only the `0.3.0-to-0.4.0` migration exists, the chain is incomplete and no migrations are reported. The detection algorithm uses a visited set to prevent infinite loops from circular chains.
+
+## Integration with Update and Pull
+
+Migration detection is called in two places:
+
+**`updateShards()`** -- after a shard is successfully re-downloaded and installed, `detectMigrations()` is called with the old version (from before the update) and the new version (from the freshly installed `shard.yaml`). Available migrations are included in the `UpdateResult`.
+
+**`pullShard()`** -- after re-applying manifest content, if the shard's `shard.yaml` version is newer than the recorded version, `detectMigrations()` runs and any available migrations are included in the pull result.
+
+In both cases, the CLI prints migration availability:
+
+```
+  ✓ Reports 0.2.0 → 0.4.0
+    ↑ 2 migration(s) available — tell your agent to run them
+      0.2.0 → 0.3.0: mig-rpt-0.2.0-to-0.3.0.md
+      0.3.0 → 0.4.0: mig-rpt-0.3.0-to-0.4.0.md
+```
+
+## Migration Content
+
+Migration files are freeform markdown. There is no enforced schema. The agent reading the migration **is** the migration engine.
+
+A migration might contain:
+
+- **Frontmatter changes** -- "Add `status: active` to all files tagged `#proj/task`"
+- **File renames** -- "Rename `Mesh/Types/Notes/` to `Mesh/Types/Notepads/`"
+- **Content transformations** -- "Replace `#old-tag` with `#new-tag` in all workspace files"
+- **Executable code blocks** -- shell or script snippets the agent can run
+- **Manual instructions** -- steps that require human judgment
+
+This design keeps the migration system simple. Shard authors write natural language instructions. Agents interpret and execute them in the workspace context.
+
+## Authoring a Migration
+
+Write a migration when a new shard version changes something that affects workspace files -- not just shard-internal changes.
+
+### When to Write One
+
+- A tag prefix changes (e.g., `#rpt/` becomes `#report/`)
+- A frontmatter field is added, renamed, or removed
+- Install file destinations change
+- Folder structure is reorganized
+- Template format changes in a way that affects existing files
+
+### Naming Convention
+
+```
+mig-{shorthand}-{old-version}-to-{new-version}.md
+```
+
+Use the exact version strings from `shard.yaml`. The shorthand must match the shard's declared shorthand.
+
+### Example Migration File
+
+```markdown
+# Migration: Reports 0.2.0 to 0.3.0
+
+## Changes
+
+- The `#rpt/report` tag is now `#report/report`
+- Report files now require a `status` field in frontmatter
+
+## Steps
+
+1. In all files under `Mesh/Types/Reports/`, replace the tag `#rpt/report`
+   with `#report/report` in frontmatter.
+
+2. Add `status: draft` to the frontmatter of any report file that does not
+   already have a `status` field.
+
+3. Verify the changes look correct.
+```
+
+## Related
+
+- [Module - Install & Update](/modules/install-update) -- how updates trigger migration detection
+- [Module - Manifest](/modules/manifest) -- the `version` field that drives migration chaining
+- [Module - File Conventions](/modules/file-conventions) -- the `migrations/` directory in shard structure

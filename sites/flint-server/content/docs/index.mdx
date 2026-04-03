@@ -1,0 +1,121 @@
+---
+title: "Quick Start"
+---
+
+Start a Flint Server and make your first API calls in under five minutes.
+
+## Prerequisites
+
+- Flint CLI installed and available on your PATH
+- A Flint workspace (any directory with a `flint.toml` or `.flint/` directory)
+
+## Start the Server
+
+Run the following from inside your Flint workspace:
+
+```bash
+flint server start
+```
+
+You will see output like:
+
+```
+Flint Server
+  URL: http://127.0.0.1:13040
+  Health: http://127.0.0.1:13040/health
+  Flint: /path/to/your/flint
+  Chrome: enabled
+```
+
+The server binds to `127.0.0.1:13040` by default. To use a different port:
+
+```bash
+flint server start --port 8080
+```
+
+## Check Server Health
+
+In a separate terminal, verify the server is running:
+
+```bash
+curl http://127.0.0.1:13040/health
+```
+
+You will see:
+
+```json
+{
+  "status": "ok",
+  "runtimes": 0,
+  "sessions": 0,
+  "flintPath": "/path/to/your/flint",
+  "chrome": true
+}
+```
+
+## Query Workspace Identity
+
+Fetch information about the connected Flint workspace:
+
+```bash
+curl http://127.0.0.1:13040/identity
+```
+
+This returns the workspace name, installed shards, connections, codebases, and active increment.
+
+## List Artifacts
+
+Query artifacts in the Mesh:
+
+```bash
+curl "http://127.0.0.1:13040/api/artifacts?type=Task&status=in-progress"
+```
+
+This returns all in-progress tasks. You can filter by `type`, `status`, `tags`, `increment`, and `search`.
+
+## Subscribe to Live Events
+
+Open a Server-Sent Events stream to receive real-time updates:
+
+```bash
+curl -N "http://127.0.0.1:13040/events/stream?channels=sessions,artifacts"
+```
+
+The server sends a snapshot of all current sessions and artifacts, then streams delta events as changes occur. You will see heartbeat comments (`: heartbeat`) every 30 seconds.
+
+## Launch an Orbh Session
+
+Start a headless agent session via the API:
+
+```bash
+curl -X POST http://127.0.0.1:13040/orbh/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "List all tasks in review status", "runtime": "claude"}'
+```
+
+The response includes the session object with its ID. You can then subscribe to its transcript via the SSE stream.
+
+## Check Server Status
+
+From the CLI:
+
+```bash
+flint server status
+```
+
+This shows the server health, active runtimes, and running sessions.
+
+## Stop the Server
+
+```bash
+flint server stop
+```
+
+Or press `Ctrl+C` in the terminal where the server is running. The server shuts down gracefully, closing all SSE streams and child processes.
+
+## Next Steps
+
+- [Concept - Architecture](/concepts/architecture) — understand why the server works the way it does
+- [Reference - REST API](/reference/rest-api) — full endpoint reference
+- [Reference - Configuration](/reference/configuration) — all configuration options
+- [Module - Event Streaming](/modules/event-streaming) — deep dive into the SSE event system

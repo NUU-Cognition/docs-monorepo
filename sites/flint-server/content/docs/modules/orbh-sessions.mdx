@@ -1,0 +1,87 @@
+---
+title: "Orbh Sessions"
+---
+
+The Orbh Sessions module manages the lifecycle of headless agent sessions through the HTTP API. It handles launching, resuming, responding to, and monitoring agent sessions — the same operations available via `flint orb` CLI commands, exposed as REST endpoints.
+
+## Overview
+
+Orbh is the meta-harness orchestration system for Flint workspaces. Each session wraps an agent runtime (Claude Code, Codex, Droid, Gemini) as a managed process with a structured lifecycle. The server module provides the HTTP interface that plates and external tools use to interact with these sessions.
+
+Sessions are stored as JSON files in `.flint/sessions/`. The server watches this directory and broadcasts state changes via SSE, enabling real-time UIs that track session status, pending requests, and live transcripts.
+
+## Session Lifecycle
+
+A session moves through these states:
+
+| Status | Meaning |
+|--------|---------|
+| `queued` | Created, not yet started |
+| `in-progress` | Agent is actively working |
+| `blocked` | Agent is waiting for a blocking response |
+| `deferred` | Agent exited with a pending deferred question |
+| `finished` | Work complete (set by `flint orb return`) |
+| `failed` | Unrecoverable error |
+| `cancelled` | Killed via `DELETE /orbh/sessions/:id` |
+
+## Launching Sessions
+
+`POST /orbh/sessions` creates a new session and spawns the agent process. The request body requires a `prompt` and accepts optional fields:
+
+- `runtime` — which harness to use (default: `claude`)
+- `title`, `description` — human-readable labels
+- `continues` — ID of a previous session this one continues
+- `maxTurns` — limit agent turns
+- `model` — model override
+- `artifactId` — link the session to a Mesh artifact (auto-appends to `orbh-sessions` frontmatter)
+- `metadata` — arbitrary JSON metadata
+
+The server builds an init prompt that includes the workspace identity, Flint Orbh shard instructions, and the user's prompt. If `artifactId` is provided, the server reads the artifact and appends its content to the prompt.
+
+## Runs and Resumption
+
+Each session can have multiple **runs** — one per harness invocation. The initial launch creates the first run. Resuming a session (`POST /orbh/sessions/:id/resume`) adds a new run with an optional prompt (defaults to "Continue working").
+
+Each run tracks its own PID, native session ID, exit code, timestamps, result, and requests.
+
+## Responding to Requests
+
+When an agent calls `flint orb ask` (blocking) or `flint orb request` (deferred), a request entry is added to the current run. The server exposes pending requests at `GET /orbh/requests` (global) and `GET /orbh/sessions/:id/requests` (per-session).
+
+`POST /orbh/sessions/:id/respond` answers the pending request:
+- For **blocking** requests, the response is written to the request entry. The agent process (still alive) picks it up via polling.
+- For **deferred** requests, the response is recorded and a new run is automatically spawned to resume the agent with the answer.
+
+## Session Summaries
+
+The server computes session summaries for API responses, including:
+- Derived status (e.g., a session with a pending blocking request shows as `blocked`)
+- Run count and latest run info
+- Interface key-value pairs
+- Pending request details
+
+## Live Transcript Streaming
+
+The `LiveTranscriptWriter` streams active session transcripts to `Mesh/Agents/{Runtime}/{sessionId}.md` in real-time, with a 5-second flush interval. When a session completes, a final flush removes the `live: true` marker.
+
+Transcript turns are also broadcast via the `transcripts` SSE channel. Clients can filter by session ID to receive only the transcripts they care about.
+
+On startup, the writer sweeps for orphaned live transcripts (from sessions that are no longer active) and finalizes them.
+
+Runtime directories map as: `claude` to `Claude Code`, `codex` to `Codex`, `droid` to `Droid`, `gemini` to `Gemini`.
+
+## Session File Watching
+
+The server watches `.flint/sessions/` with a 100ms debounce. It uses a diff engine (`session-diff.ts`) to compare previous and current state, emitting granular events:
+
+- `session.created`, `session.status_changed`, `session.finished`, `session.failed`, `session.cancelled`, `session.updated`
+- `run.started`, `run.completed`, `run.failed`
+- `request.created`, `request.answered`
+
+These events flow to both the `sessions` and `orbh` SSE channels.
+
+## Related
+
+- [Module - Event Streaming](/modules/event-streaming) — how session events reach SSE subscribers
+- [Concept - Architecture](/concepts/architecture) — why sessions are file-based
+- [Reference - REST API](/reference/rest-api) — full endpoint specifications

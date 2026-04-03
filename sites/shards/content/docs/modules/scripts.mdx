@@ -1,0 +1,113 @@
+---
+title: "Scripts"
+---
+
+Shard scripts are executable files that ship with a shard and run in the context of the workspace. They let shard authors bundle automation -- data processing, scaffolding helpers, validation checks -- alongside their shard content.
+
+## Overview
+
+Scripts live in the `scripts/` directory inside a shard folder. They can be written in any language that the user's machine can execute. Flint detects the language from the file extension and selects the appropriate runner automatically.
+
+Scripts receive the workspace root and shard folder name through environment variables, so they can locate workspace files and shard content without hardcoded paths.
+
+## Script Location
+
+Scripts are stored in the shard's `scripts/` directory:
+
+```
+Shards/(Dev) Reports/
+  scripts/
+    generate-summary.sh
+    validate-data.ts
+    import-csv.py
+```
+
+Each file in this directory is treated as a runnable script. Subdirectories are not scanned.
+
+## Runner Detection
+
+Flint selects a runner based on the file extension:
+
+| Extension | Runner | Command |
+|-----------|--------|---------|
+| `.js`, `.mjs` | Node.js | `node script.js` |
+| `.ts` | tsx (via npx) | `npx tsx script.ts` |
+| `.py` | Python 3 | `python3 script.py` |
+| `.sh` | Bash | `bash script.sh` |
+| (no extension) | Direct execution | `./script` (if executable) |
+| (other) | Bash fallback | `bash script` |
+
+For files without a recognized extension, Flint checks if the file has the executable permission bit set. If so, it runs the file directly (supporting shebangs). Otherwise it falls back to Bash.
+
+## Environment Variables
+
+Scripts receive two environment variables in addition to the inherited process environment:
+
+| Variable | Value | Example |
+|----------|-------|---------|
+| `FLINT_ROOT` | Absolute path to the flint workspace root | `/Users/me/workspace` |
+| `FLINT_SHARD` | Shard folder name in `Shards/` | `(Dev) Reports` |
+
+The working directory for script execution is set to the flint root.
+
+## Discovery
+
+`listShardScripts()` scans the shard's `scripts/` directory and returns an array of `ScriptInfo` objects, each with a `name` (filename without extension) and the full `path`. If the directory doesn't exist or is empty, an empty array is returned.
+
+Script lookup by name (`findScript()`) first tries an exact filename match, then tries appending common extensions in order: `.sh`, `.js`, `.ts`, `.mjs`, `.py`. This means you can refer to scripts by their base name without the extension.
+
+## Execution
+
+`runShardScript()` resolves the shard by identifier (name, shorthand, kebab-case, or folder name), finds the script file, determines the runner, and spawns the process. It returns a `ScriptResult`:
+
+```typescript
+interface ScriptResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+```
+
+Standard input is inherited from the parent process. Standard output and standard error are captured and returned in the result.
+
+Additional arguments passed after the script name are forwarded to the script process.
+
+## CLI Usage
+
+List available scripts for a shard:
+
+```bash
+flint shard scripts reports
+```
+
+Run a script using the shard shorthand as a subcommand:
+
+```bash
+flint shard reports generate-summary
+flint shard reports validate-data --verbose
+```
+
+The shorthand form `flint shard <shorthand> <script-name> [args]` works because Flint detects when the first argument is not a known subcommand and routes it to script execution.
+
+## Example
+
+A simple script that counts notes in the workspace:
+
+```bash
+#!/usr/bin/env bash
+# scripts/count-notes.sh
+echo "Counting notes in $FLINT_ROOT/Mesh/Types/Notes/"
+find "$FLINT_ROOT/Mesh/Types/Notes" -name "*.md" | wc -l
+```
+
+Run it:
+
+```bash
+flint shard my-shard count-notes
+```
+
+## Related
+
+- [Module - File Conventions](/modules/file-conventions) -- the `scripts/` directory in shard structure
+- [Module - Manifest](/modules/manifest) -- shard identity fields used for script lookup
+- [Reference - CLI Commands](/reference/cli-commands) -- full CLI reference for shard commands

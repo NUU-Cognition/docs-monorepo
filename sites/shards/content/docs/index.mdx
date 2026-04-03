@@ -1,0 +1,60 @@
+---
+title: "What Are Shards"
+---
+
+A shard is a self-contained package that extends agent capabilities in a Flint workspace. Shards ship markdown-based instructions -- init files, skills, workflows, templates, knowledge, install files, scripts -- that agents read and follow. Without shards, a Flint is an empty workspace with a Mesh content layer and nothing else. With shards installed, it becomes a structured environment where agents know how to plan, build, track work, and follow project-specific conventions.
+
+## The Shard Model
+
+A shard is a directory containing a `shard.yaml` manifest and a set of subdirectories that follow a standard structure. Every shard has:
+
+- An **init file** (`init-{shorthand}.md`) -- the entry point that agents read to understand the shard's context, available skills, and operating rules.
+- A **manifest** (`shard.yaml`) -- metadata declaring the shard's name, version, shorthand identifier, and what it needs to install into the workspace.
+- **Skills** (`skills/`) -- focused instruction files that teach agents how to perform specific actions.
+- **Workflows** (`workflows/`) -- multi-step processes that chain skills together.
+- **Templates** (`templates/`) -- artifact templates with frontmatter patterns that agents use to create consistent documents.
+- **Knowledge** (`knowledge/`) -- reference material and domain context agents consult during work.
+- **Install files** (`install/`) -- files that get copied into the Mesh when a shard is installed, such as type definitions and dashboards.
+- **Scripts** (`scripts/`) -- executable files (shell, JS, Python) that can be run via `flint shard <shorthand> <script>`.
+
+Everything is markdown-based. Agents don't execute shard code -- they read shard instructions and follow them. This makes shards inspectable, auditable, and editable by humans.
+
+## Three Shard Modes
+
+The shard system recognizes three modes, each serving a different purpose in the development lifecycle:
+
+**Dev** shards (`(Dev) Name/`) are publishable packages under active development. They have their own `.git` directory (initialized automatically on creation), can be pushed to GitHub, and are gitignored from the parent Flint's repository. Dev shards are the authoring mode -- you create them locally, iterate, then release versions for others to install. They get the full directory scaffold including `install/`, `migrations/`, `assets/`, and `scripts/`.
+
+**Custom** shards (`(Custom) Name/`) are workspace-specific extensions that are never intended for publication. They live inside the Flint's own git history, have no `.git` of their own, and cannot be pushed or released. Custom shards are for project-specific conventions that only matter to one workspace -- a team's particular review checklist, a project's deployment workflow, or an organization's naming rules.
+
+**Normal** shards (no prefix -- just `Name/`) are installed from an external source, typically a GitHub repository. They are read-only in practice: `flint shard update` re-downloads them from source, overwriting local changes. Normal shards are what consumers install via `flint shard install owner/repo`.
+
+The mode is determined by the folder name prefix and recorded in `flint.toml`. You can transition between modes: `flint shard edit` promotes a normal shard to dev mode, and `flint shard freeze` demotes a dev shard back to normal.
+
+## The Capability Layer
+
+Flint's architecture has two distinct layers. The **Mesh** is the content layer -- typed artifacts, notes, tasks, reports, all living under `Mesh/`. Shards form the **capability layer** that sits on top: they define what agents can do with that content.
+
+A shard can declare `folders` in its manifest to create Mesh directories when installed. It can declare `install` entries to place files directly into the Mesh. And it can declare `state: true` to get a persistent state file at `Mesh/Shards/(Shard) Name.md` where agents track shard-specific workspace memory.
+
+This separation means the same Mesh content can be operated on differently depending on which shards are installed. A research workspace might install shards for note-taking and literature review. A software project might install shards for code planning, task tracking, and specifications. The content is universal; the capabilities are modular.
+
+## Distribution and Versioning
+
+Shards are distributed as GitHub repositories. The source format in `flint.toml` is `owner/repo` (e.g., `NUU-Cognition/shard-flint`). When you run `flint shard install owner/repo`, the CLI clones the repository, reads its `shard.yaml`, copies shard files into `Shards/Name/`, runs install entries, creates declared folders, and records the declaration in `flint.toml`.
+
+Versioning uses semver with git tags. A shard author bumps the version in `shard.yaml`, commits, and runs `flint shard release` to create a `v{version}` tag and push it. Consumers can pin to a specific version with `flint shard install owner/repo@1.2.0`, which clones at that tag. The `flint shard update` command compares installed versions against remote `shard.yaml` versions (via the GitHub API, without cloning) and only re-downloads when the remote version is newer.
+
+Shards can also be published to the **NUU Shard Registry** via `flint shard publish`, making them discoverable beyond direct GitHub URLs. The registry stores metadata -- name, description, repo, owner -- and is queried during search and discovery.
+
+## Dependencies
+
+Shards can declare dependencies on other shards. The `dependencies` field in `shard.yaml` lists required shards by their `owner/repo` source with an optional minimum version floor. During installation, the CLI checks whether dependencies are satisfied and warns about missing or outdated ones. The `--with-deps` flag on `flint shard install` auto-installs missing dependencies before the target shard.
+
+Dependencies are advisory -- they produce warnings, not hard failures. This is intentional: a workspace might satisfy a dependency through a dev shard fork or a custom shard that provides equivalent capabilities under a different name.
+
+## Further Reading
+
+- [Guide - Creating a Shard](/getting-started/creating-a-shard) -- step-by-step tutorial for building your first shard
+- [Module - Manifest](/modules/manifest) -- complete reference for `shard.yaml` fields
+- [Module - File Conventions](/modules/file-conventions) -- directory structure, naming patterns, and health checks

@@ -1,0 +1,274 @@
+---
+title: "Universal Transcript"
+---
+
+The universal transcript is Orbh's normalized format for representing agent session activity. It converts raw, runtime-specific output — Claude Code's JSONL files, Codex's log format — into a common schema that tooling can consume without knowing which runtime produced it.
+
+## Overview
+
+Each agent runtime stores session data in its own format. Claude Code and Droid write JSONL transcript files with deeply nested content blocks. Gemini writes JSON session files. Codex uses its own rollout format. The universal transcript abstracts these differences behind a flat list of typed entries that capture the essential events: messages, thinking, tool calls, tool results, usage, subagent activity, compaction events, and more.
+
+This matters because everything downstream — the `flint orb watch` renderer, the Steel dashboard's transcript view, the session stats calculator, the markdown exporter, and any future analytics — operates on the universal format. Adding a new runtime means writing a mapper, not changing every consumer.
+
+## Transcript Structure
+
+A transcript contains metadata and a flat array of entries:
+
+```typescript
+interface Transcript {
+  formatVersion: "2.0.0"
+  mapper: "claude" | "codex" | "droid" | "gemini" | string
+  sessionId: string
+  nativeSessionId?: string
+  nativeTranscriptPath: string
+  entries: TranscriptEntry[]
+}
+```
+
+The `mapper` field identifies which adapter produced the transcript. The `nativeTranscriptPath` points back to the original raw file for debugging or re-mapping. The optional `nativeSessionId` stores the runtime's own session ID when it differs from the orbh session ID.
+
+## Entry Types
+
+Entries are the atomic units of a transcript. Each has a `type` field and a `timestamp`.
+
+### Message
+
+A text message from either the human or the agent.
+
+```typescript
+{
+  type: "message"
+  role: "human" | "agent"
+  text: string
+  isSummary?: boolean   // True if this is a compaction summary
+  isMeta?: boolean      // True if this is system metadata
+  timestamp: string     // ISO 8601
+}
+```
+
+Human messages are the prompts and responses. Agent messages are the natural-language output between tool calls.
+
+### Thinking
+
+An agent's internal reasoning, shown in Claude Code as extended thinking blocks.
+
+```typescript
+{
+  type: "thinking"
+  text: string
+  encrypted?: boolean   // True if thinking content is encrypted
+  timestamp: string
+}
+```
+
+### Tool Call
+
+An invocation of a tool by the agent. Each call has a unique ID that pairs it with its result.
+
+```typescript
+{
+  type: "tool-call"
+  id: string          // Unique ID for pairing with tool-result
+  tool: string        // Tool name (e.g., "Read", "Edit", "Bash")
+  input: Record<string, unknown>
+  timestamp: string
+}
+```
+
+### Tool Result
+
+The output returned by a tool after execution.
+
+```typescript
+{
+  type: "tool-result"
+  id: string          // Matches the tool-call ID
+  tool: string
+  output: string
+  error: boolean
+  timestamp: string
+}
+```
+
+### Usage
+
+Token usage report emitted after each agent turn.
+
+```typescript
+{
+  type: "usage"
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens?: number
+  cacheCreationTokens?: number
+  reasoningTokens?: number
+  model?: string
+  timestamp: string
+}
+```
+
+### Turn Duration
+
+Measured duration of an agent turn.
+
+```typescript
+{
+  type: "turn-duration"
+  durationMs: number
+  timestamp: string
+}
+```
+
+### Compaction
+
+Emitted when the agent's context window is compacted (older messages summarized and removed).
+
+```typescript
+{
+  type: "compaction"
+  summary?: string
+  summaryTokens?: number
+  summaryKind?: string
+  anchorMessageId?: string
+  removedCount?: number
+  timestamp: string
+}
+```
+
+### Subagent Start / Entry / End
+
+Track nested agent invocations (e.g., Claude Code's Agent tool spawning subagents).
+
+```typescript
+{
+  type: "subagent-start"
+  agentId: string
+  parentToolCallId: string
+  prompt?: string
+  agentType?: string
+  timestamp: string
+}
+
+{
+  type: "subagent-entry"
+  agentId: string
+  entry: TranscriptEntry    // Nested entry from the subagent
+  timestamp: string
+}
+
+{
+  type: "subagent-end"
+  agentId: string
+  timestamp: string
+}
+```
+
+### Hook
+
+Internal hook event fired by the harness.
+
+```typescript
+{
+  type: "hook"
+  event: string
+  hookName: string
+  timestamp: string
+}
+```
+
+## Turn Grouping
+
+The flat entry list is useful for storage and streaming, but consumers often need a higher-level view organized by conversational turns. The `groupIntoTurns()` function converts flat entries into structured turns:
+
+```typescript
+interface Turn {
+  role: "human" | "agent"
+  timestamp: string
+  content: TurnContent[]
+  usage?: TurnUsage        // Token usage for this turn
+  durationMs?: number      // How long the turn took
+}
+
+type TurnContent =
+  | { type: "thinking"; text: string; encrypted?: boolean }
+  | { type: "text"; text: string }
+  | { type: "tool-batch"; tools: ToolUse[] }
+  | { type: "subagent"; agentId: string; prompt?: string; agentType?: string; transcript: Turn[] }
+
+interface ToolUse {
+  id: string
+  tool: string
+  input: Record<string, unknown>
+  output: string
+  error: boolean
+  calledAt: string
+  completedAt: string
+}
+
+interface TurnUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens?: number
+  cacheCreationTokens?: number
+  reasoningTokens?: number
+  model?: string
+}
+```
+
+Turn grouping preserves role alternation, groups consecutive tool calls into parallel batches, pairs each tool call with its result by ID, and recursively groups subagent entries into nested turn arrays. Usage and duration entries are attached to their corresponding agent turns. This is what `flint orb watch` and the dashboard use for rendering.
+
+### Utility Functions
+
+Beyond turn grouping, the transcript module provides:
+
+- `getUsageSummary(entries)` — Aggregates all usage entries into a total token count across the session
+- `getCompactionPoints(entries)` — Extracts all compaction events for context window analysis
+- `formatTranscriptMarkdown(transcript)` — Exports the transcript as a readable markdown document
+
+## Mappers
+
+Each runtime has a dedicated mapper that converts its native format into universal transcript entries.
+
+### Claude Mapper
+
+The Claude mapper converts JSONL transcript files from `~/.claude/projects/<sanitized-cwd>/<sessionId>.jsonl`.
+
+| Claude JSONL | Universal Transcript |
+|---|---|
+| `type: "user"` with `text` content | `message` entry, role `human` |
+| `type: "assistant"` with `text` content | `message` entry, role `agent` |
+| `type: "assistant"` with `thinking` content | `thinking` entry |
+| `type: "assistant"` with `tool_use` content | `tool-call` entry |
+| `type: "user"` with `tool_result` content | `tool-result` entry |
+| Subagent `tool_use` + nested entries | `subagent-start`, `subagent-entry`, `subagent-end` |
+
+### Droid Mapper
+
+The Droid mapper converts JSONL files from `~/.factory/sessions/`. Its format is similar to Claude's but with Factory-specific content block types.
+
+### Gemini Mapper
+
+The Gemini mapper converts JSON session files from `~/.gemini/tmp/<project-slug>/chats/`. Unlike JSONL-based runtimes, Gemini stores the full conversation as a single JSON object with a `messages` array. The mapper iterates the messages array and maps each entry individually.
+
+### Codex Mapper
+
+The Codex mapper converts Codex rollout JSONL files into universal entries.
+
+## Watchers
+
+For live transcript streaming (`flint orb watch`), each harness creates a watcher appropriate to its format:
+
+- **JSONL Watcher** — Used by Claude and Droid. Polls the JSONL file for new lines and maps each through the runtime's entry mapper. Maintains a byte offset to read incrementally.
+- **JSON Session Watcher** — Used by Gemini. Re-reads the full JSON file on each poll, extracts the messages array, and maps only new messages since the last poll using a message index cursor.
+
+Both watchers implement the `TranscriptWatcher` interface and emit universal `TranscriptEntry` arrays on each poll.
+
+## Storage
+
+Transcripts are generated on demand from native transcript files rather than stored separately. Since native transcript files can be large (tens of MB for long sessions), `flint orb watch` uses watchers for incremental reading while `flint orb stats` reads and maps the full file when requested. The `flint orb export` command generates a markdown-formatted transcript and writes it to `Mesh/Agents/<Runtime>/`.
+
+## Related
+
+- [Concept - Architecture](/concepts/architecture) — How transcripts fit into the session model
+- [Module - Harness System](/modules/harness-system) — Harnesses provide the raw data that mappers normalize
+- [Reference - CLI Commands](/reference/cli-commands) — Commands that consume transcripts (`watch`, `stats`, `inspect`)

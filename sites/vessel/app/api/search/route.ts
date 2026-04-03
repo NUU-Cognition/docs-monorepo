@@ -1,4 +1,4 @@
 import { source } from "@/lib/source";
-import { createFromSource } from "fumadocs-core/search/server";
+import { createSearchHandler } from "@nuucognition/docs-theme";
 
-export const { GET } = createFromSource(source);
+export const { GET } = createSearchHandler(source);

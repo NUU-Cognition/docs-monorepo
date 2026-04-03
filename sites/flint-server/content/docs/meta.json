@@ -1,0 +1,10 @@
+{
+  "title": "Flint Server",
+  "pages": [
+    "index",
+    "getting-started",
+    "concepts",
+    "modules",
+    "reference"
+  ]
+}

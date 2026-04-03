@@ -1,0 +1,248 @@
+---
+title: "Shard Manifest"
+---
+
+The shard manifest is a `shard.yaml` file at the root of every shard directory. It declares the shard's identity, version, what it installs into the workspace, what folders it needs, and what other shards it depends on. The manifest is the source of truth for the shard system -- the CLI reads it during install, pull, update, health check, and uninstall operations.
+
+## Overview
+
+Every shard must have a `shard.yaml`. The manifest is parsed using the `readShardManifest()` function, which reads the file and runs it through `normalizeManifest()` to handle legacy field migration. The resulting object conforms to the `ShardManifest` interface defined in `types.ts`.
+
+The manifest serves three purposes: **identity** (name, version, shorthand), **installation** (files to copy, folders to create, state file), and **dependency management** (other shards this shard requires). All fields are declarative -- the CLI interprets them, agents never parse YAML directly.
+
+## Required Fields
+
+These fields must be present in every `shard.yaml`. The health check system warns when any are missing.
+
+### `name`
+
+**Type:** `string`
+
+The human-readable shard name. Used as the folder name when installing (e.g., `Shards/Bookmarks/`), displayed in `flint shard list`, and used to derive the kebab-case identifier for config lookups.
+
+```yaml
+name: Bookmarks
+```
+
+### `version`
+
+**Type:** `string` (semver)
+
+The shard's current version as a semver string. Used for update detection (comparing local vs. remote), version pinning, release tagging (`v{version}`), and migration path resolution.
+
+```yaml
+version: "1.2.0"
+```
+
+The CLI compares versions using `compareVersions()` from `@nuucognition/flint-migrations`. During `flint shard update`, the remote version is fetched from GitHub's API without cloning and compared against the installed version -- re-download only happens when the remote version is newer.
+
+### `shorthand`
+
+**Type:** `string`
+
+A short identifier (typically 2-4 characters) used as a namespace prefix for all shard files. The shorthand appears in file naming patterns: `init-{sh}.md`, `sk-{sh}-name.md`, `tmp-{sh}-name.md`, etc.
+
+```yaml
+shorthand: bk
+```
+
+The shorthand is also used to resolve shards by identifier -- `flint shard info bk` matches against installed shards' shorthand fields.
+
+### `description`
+
+**Type:** `string`
+
+A one-line description of what the shard provides. Displayed in `flint shard list`, `flint shard info`, and the NUU Shard Registry.
+
+```yaml
+description: Bookmark management for research links
+```
+
+## Optional Fields
+
+### `shard-spec`
+
+**Type:** `string` (semver)
+
+Declares which version of the shard package specification this manifest conforms to. Currently `"0.1.0"`. This field is optional but recommended for forward compatibility.
+
+```yaml
+shard-spec: "0.1.0"
+```
+
+### `state`
+
+**Type:** `boolean`
+
+When `true`, the shard system creates a persistent state file at `Mesh/Shards/(Shard) {Name}.md` during installation. The state file uses "once" semantics -- it is only created if it doesn't already exist, preserving any content agents have written to it.
+
+```yaml
+state: true
+```
+
+The generated state file has this structure:
+
+```markdown
+---
+id: {auto-generated-uuid}
+tags:
+  - "#shard/{shorthand}"
+shard: {shorthand}
+---
+
+# (Shard) {Name}
+
+State for the {Name} shard.
+```
+
+### `install`
+
+**Type:** `ShardInstallFileEntry[]`
+
+A list of files to install from the shard's `install/` directory into the Flint workspace. Each entry specifies a source path (relative to `install/`), a destination path (relative to the Flint root), and an install mode.
+
+```yaml
+install:
+  - source: type-bk-bookmark.md
+    dest: "Mesh/Types/Bookmarks/(Type) Bookmark.md"
+    mode: once
+  - source: inst-bk-dashboard.md
+    dest: "Mesh/Sections/(Shard) Bookmarks Dashboard.md"
+    mode: force
+```
+
+#### Entry fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `source` | `string` | (required) | File path relative to the shard's `install/` directory |
+| `dest` | `string` | (required) | Destination path relative to the Flint root |
+| `mode` | `"once"` or `"force"` | `"once"` | `once` skips if destination exists; `force` overwrites |
+
+#### Template variables
+
+File content is processed through `processTemplate()` before being written. Two placeholders are supported:
+
+| Variable | Replacement |
+|----------|-------------|
+| `{{uuid}}` | A new random UUID v4 (each occurrence gets a unique value) |
+| `{{date}}` | Current date as `YYYY-MM-DD` |
+
+#### ID preservation
+
+When `mode: force` overwrites an existing file, the installer reads the existing file's frontmatter `id` field and preserves it in the new content. This prevents Obsidian and other tools from losing track of the file's identity across updates.
+
+#### Path safety
+
+All destination paths are validated to ensure they resolve within the Flint directory. Any path that would escape the Flint root (via `../` traversal) is silently skipped with a warning.
+
+### `folders`
+
+**Type:** `string[]`
+
+A list of directories to create in the Flint workspace when the shard is installed or pulled. Paths are relative to the Flint root.
+
+```yaml
+folders:
+  - Mesh/Types/Bookmarks/
+  - Mesh/OrbCode/
+```
+
+Folders are created with `recursive: true`, so nested paths work without declaring parent directories. During uninstall, declared folders are removed only if they are empty, working deepest-first to avoid deleting user content.
+
+### `dependencies`
+
+**Type:** `ShardDependency[]`
+
+Declares that this shard requires other shards to be installed. Each dependency specifies a source (in `owner/repo` format) and an optional minimum version floor.
+
+```yaml
+dependencies:
+  - source: NUU-Cognition/shard-flint
+    version: "0.3.0"
+  - source: NUU-Cognition/shard-specifications
+```
+
+#### Dependency fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source` | `string` | yes | Shard source in `owner/repo` format |
+| `version` | `string` | no | Minimum required version (semver floor -- "at least this version") |
+
+#### Behavior
+
+Dependencies are **advisory**. The system checks them and produces warnings but does not block installation:
+
+- **Missing dependency:** warns `Missing dependency: owner/repo >= version`
+- **Version too low:** warns `Dependency version too low: installed X, needs >= Y`
+- **Satisfied:** reported as OK during `flint shard info` and `flint shard check`
+
+During `flint shard install --with-deps`, missing dependencies with `owner/repo` sources are auto-installed before the target shard. Dev and custom shards are never auto-installed.
+
+During `flint shard release`, the CLI checks whether declared dependency versions exist as tags on the upstream repository and warns if they don't.
+
+## Legacy Fields
+
+These fields are recognized for backward compatibility but should not be used in new manifests.
+
+### `repos`
+
+**Migrated:** Silently stripped with a console warning: `Ignoring legacy shard manifest field "repos". Use setup-to-state instead.`
+
+The `repos` field was used in an earlier design where shards could declare git repositories. It has no replacement -- the functionality moved to workspace-level source declarations.
+
+### `depends`
+
+**Migrated to:** `dependencies`
+
+The `depends` field accepted a simple array of source strings:
+
+```yaml
+# Legacy format (still works, auto-migrated)
+depends:
+  - NUU-Cognition/shard-flint
+
+# New format (preferred)
+dependencies:
+  - source: NUU-Cognition/shard-flint
+    version: "0.3.0"
+```
+
+The `normalizeManifest()` function converts `depends` entries into `ShardDependency` objects with just a `source` field (no version constraint). This migration happens transparently at parse time.
+
+## Full Example
+
+```yaml
+shard-spec: "0.1.0"
+version: "1.2.0"
+name: Bookmarks
+shorthand: bk
+description: Bookmark management for research links
+state: true
+dependencies:
+  - source: NUU-Cognition/shard-flint
+    version: "0.3.0"
+install:
+  - source: type-bk-bookmark.md
+    dest: "Mesh/Types/Bookmarks/(Type) Bookmark.md"
+    mode: once
+  - source: inst-bk-dashboard.md
+    dest: "Mesh/Sections/(Shard) Bookmarks Dashboard.md"
+    mode: force
+folders:
+  - Mesh/Types/Bookmarks/
+```
+
+This manifest declares a shard named "Bookmarks" at version 1.2.0 that:
+
+1. Requires the Flint shard at version 0.3.0 or higher
+2. Creates `Mesh/Types/Bookmarks/` if it doesn't exist
+3. Installs a type definition file (once) and a dashboard file (overwritten on every pull)
+4. Maintains a persistent state file at `Mesh/Shards/(Shard) Bookmarks.md`
+
+## Related
+
+- [Concept - What Are Shards](/getting-started/what-are-shards) -- design philosophy and the three shard modes
+- [Module - File Conventions](/modules/file-conventions) -- naming patterns for files within each shard directory
+- [Guide - Creating a Shard](/getting-started/creating-a-shard) -- step-by-step tutorial that demonstrates manifest configuration

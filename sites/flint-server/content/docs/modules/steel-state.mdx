@@ -1,0 +1,55 @@
+---
+title: "Steel State"
+---
+
+The Steel State module provides persistent key-value storage for plates, enabling them to save preferences, view configurations, and board layouts across sessions.
+
+## Overview
+
+Plates are stateless web UIs — they lose all state when the browser tab closes. Steel provides a server-side persistence layer so plates can store and retrieve structured data. This includes global preferences, per-plate state keyed by arbitrary identifiers, and board/view configurations.
+
+All Steel data is stored as JSON files under the `.steel/` directory in the Flint root.
+
+## Storage Layout
+
+```
+.steel/
+├── preferences.json                          # Global preferences
+└── plates/
+    └── {plateName}/
+        ├── {key}.json                        # Per-plate state entries
+        └── boards/
+            └── {board}.json                  # Board/view configurations
+```
+
+## Global Preferences
+
+- `GET /api/steel/preferences` — read all global preferences
+- `PUT /api/steel/preferences` — write global preferences (full replacement)
+
+The server auto-adds an `updated` ISO timestamp on write.
+
+## Per-Plate State
+
+Each plate can store arbitrary state entries keyed by a string identifier:
+
+- `GET /api/steel/plates/:name/state/:key` — read a single state entry
+- `PUT /api/steel/plates/:name/state/:key` — write a single state entry
+- `GET /api/steel/plates/:name/state` — read all state entries for a plate (returns an object keyed by entry name)
+
+The server auto-adds an `updated` ISO timestamp on write. Directories are created automatically on first write.
+
+## Board Configurations
+
+Boards represent saved view layouts within a plate (e.g., column arrangements, filter presets, sort orders):
+
+- `GET /api/steel/plates/:name/boards` — list all board names (filenames without `.json`)
+- `GET /api/steel/plates/:name/boards/:board` — read a board configuration
+- `PUT /api/steel/plates/:name/boards/:board` — write a board configuration
+
+The server auto-adds an `updated` ISO timestamp on write.
+
+## Related
+
+- [Module - Plates](/modules/plates) — the UIs that consume Steel state
+- [Reference - REST API](/reference/rest-api) — full endpoint specifications

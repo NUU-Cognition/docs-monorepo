@@ -1,0 +1,61 @@
+---
+title: "Plates"
+---
+
+The Plates module serves plate assets, manages artifact CRUD, and watches the file system for changes. It is the largest route module in flint-server, handling both the plate delivery pipeline and the core artifact API.
+
+## Overview
+
+Plates are shard-provided web UIs that run in the browser. Each plate is a built web application (typically React) that the server serves as static files. The Plates module does three things:
+
+1. **Serves plate assets** — built HTML/JS/CSS from each plate's `dist/` directory
+2. **Exposes the artifact API** — CRUD operations on Mesh artifacts, used by plates and external consumers
+3. **Watches for file changes** — detects edits from Obsidian, the CLI, or agent sessions and broadcasts events
+
+## Plate Serving
+
+Plates are served at `/plates/:name/` where `:name` is the plate's package name. The server resolves each plate's build directory and serves its assets with appropriate caching:
+
+- **Immutable assets** (filenames containing 8+ hex character hashes) get `Cache-Control: public, max-age=31536000, immutable`
+- **All other files** get `Cache-Control: no-store`
+
+On startup, the server checks for stale or unbuilt plates and triggers background builds. If a plate's `node_modules` directory is missing, the server auto-installs dependencies before building.
+
+Plate metadata is available at `GET /api/plates` and `GET /api/plates/:name`, returning the plate's name, title, version, description, icon, shard, handles (tag bindings), actions, and tools.
+
+## Artifact CRUD
+
+The artifact API provides full create/read/update/delete operations:
+
+- **Query** — `GET /api/artifacts` with filters for `type`, `status`, `tags`, `increment`, `search`, plus `limit`/`offset` pagination. Use `include_shards=true` to include shard artifacts.
+- **Get by ID** — `GET /api/artifacts/:id`
+- **Get by title** — `GET /api/artifacts/by-title/:title`
+- **Resolve link** — `GET /api/resolve?link=[Link](/link)` resolves wikilinks (including aliases and anchors) to artifact objects
+- **Create** — `POST /api/artifacts` with `{ template, data }` body
+- **Update** — `PATCH /api/artifacts/:id` with `{ frontmatter?, body? }`
+- **Delete** — `DELETE /api/artifacts/:id?archive=true|false`
+- **Rename** — `POST /api/artifacts/:id/rename` with `{ title }`
+
+All write operations suppress the file path (see below) and broadcast events to SSE subscribers.
+
+## Plate Tools
+
+Plates can expose tools — executable commands that the server runs on demand:
+
+- **Execute** — `POST /api/plates/:name/tools/:tool` with optional `{ args: string[] }`
+- Tools run with a 30-second timeout. The response includes `exitCode`, `stdout`, and `stderr`.
+- **Rebuild** — `POST /api/plates/:name/rebuild` triggers a fresh build of the plate
+
+## File Watching and Echo Suppression
+
+The server watches `Mesh/` and `Shards/` for `.md` file changes using resilient file watchers with a 50ms per-file debounce.
+
+When a file changes, the server re-reads it, parses frontmatter to extract the artifact ID, and broadcasts either `artifact.created` (new file) or `artifact.updated` (known file) to the `artifacts` SSE channel.
+
+**Echo suppression** prevents duplicate events when the server itself writes a file. Before any write operation, the file path is added to a shared `suppressedPaths` set. The watcher skips paths in this set. Suppression expires after 500ms by default. This means external edits (Obsidian, CLI, agents) are broadcast, but API-triggered writes are not double-counted.
+
+## Related
+
+- [Reference - REST API](/reference/rest-api) — full endpoint specifications
+- [Module - Event Streaming](/modules/event-streaming) — how artifact events reach SSE subscribers
+- [Concept - Architecture](/concepts/architecture) — echo suppression design rationale

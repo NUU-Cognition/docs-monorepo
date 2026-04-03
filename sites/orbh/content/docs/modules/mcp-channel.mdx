@@ -1,0 +1,182 @@
+---
+title: "MCP Channel"
+---
+
+The Orbh MCP channel enables inter-session messaging between Claude Code sessions. It is an MCP (Model Context Protocol) server that allows one running agent to send messages to another running agent, enabling multi-agent coordination without shared memory or direct process communication.
+
+## Overview
+
+When multiple headless sessions are running in the same Flint, they operate in isolation — each has its own context window, its own process, and its own session file. The MCP channel bridges this gap by providing a message-passing mechanism that uses session JSON files as the transport layer.
+
+The channel works by:
+
+1. Registering as an MCP server in Claude Code's configuration
+2. Exposing a `orbh_send_message` tool that agents can call
+3. Polling the current session's file for incoming messages
+4. Delivering received messages as channel notifications that appear in the agent's context
+
+This design requires no central server — messages are written directly to session files on disk and discovered through polling.
+
+## Architecture
+
+### Message Flow
+
+```
+Session A                          Session B
+    │                                  │
+    ├─ calls orbh_send_message ──────► │
+    │   (writes _msg_* key to         │
+    │    Session B's JSON file)        │
+    │                                  │
+    │                        poll ◄────┤
+    │                        detects   │
+    │                        new key   │
+    │                                  │
+    │                        emits ────┤
+    │                        message_  │
+    │                        received  │
+    │                        event     │
+```
+
+### Storage Model
+
+Messages are stored as key-value pairs in the target session's `interface` object:
+
+```json
+{
+  "interface": {
+    "phase": "implementing",
+    "progress": "3/7",
+    "_msg_1711100400000_x7k2": "{\"text\":\"auth module is ready\",\"from\":\"a7c3e8f1\",\"timestamp\":\"2026-03-22T12:00:00Z\"}"
+  }
+}
+```
+
+Message keys use the `_msg_` prefix followed by a timestamp and random suffix to ensure uniqueness. The value is a JSON-serialized object containing the message text, sender session ID, and timestamp.
+
+## Tools
+
+### `orbh_send_message`
+
+Send a message to another running session.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `session_id` | string | Target session ID to send the message to |
+| `message` | string | The message text to send |
+
+The tool:
+1. Resolves the target session from the sessions directory
+2. Generates a unique message ID with `_msg_` prefix
+3. Writes the message to the target session's interface object
+4. Persists the updated session to disk
+
+```
+Use orbh_send_message to tell session b3d4e5f6:
+"The auth module refactor is complete. You can now integrate it."
+```
+
+## Events
+
+### `message_received`
+
+Emitted when the polling loop detects a new `_msg_*` key in the current session's interface. The event contains:
+
+| Field | Description |
+|---|---|
+| `event` | `"message_received"` |
+| `from_session` | Sender's session ID |
+| `content` | Message text |
+| `meta.session_id` | Current session's ID |
+| `meta.from_session` | Sender's session ID |
+| `meta.message_id` | Unique message key |
+
+When an agent receives this event, it should read the message and act on it. Messages may contain instructions, context updates, or requests for coordination.
+
+## Configuration
+
+The MCP channel is configured in `.mcp.json` at the Flint root:
+
+```json
+{
+  "mcpServers": {
+    "orbh": {
+      "command": "node",
+      "args": [
+        "/path/to/orbh-channel/dist/index.js"
+      ],
+      "env": {
+        "ORBH_CWD": "/path/to/flint",
+        "ORBH_SESSIONS_DIR": "/path/to/flint/.flint/sessions"
+      }
+    }
+  }
+}
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `ORBH_SESSIONS_DIR` | `~/.flint/sessions` | Directory containing session JSON files |
+| `ORBH_SESSION_ID` | (none) | Current session's ID, used to identify the sender and poll for incoming messages |
+| `ORBH_POLL_INTERVAL_MS` | `2000` | How often to check for new messages (milliseconds) |
+| `ORBH_CWD` | (none) | Working directory context |
+
+`ORBH_SESSION_ID` is set automatically by the Orbh launcher when spawning agent sessions. It does not need to be configured manually. If not set, the channel still works for sending messages but cannot poll for incoming ones.
+
+## Design Decisions
+
+### File-Based Transport
+
+The channel uses session JSON files as the message transport rather than a dedicated message queue or server. This means:
+
+- **No server required** — messaging works even without the Flint server running
+- **Messages persist** — they're part of the session record and survive process restarts
+- **Polling latency** — messages are detected within the poll interval (default 2 seconds)
+- **Atomic writes** — the channel uses temp-file-and-rename to prevent corruption
+
+### Seen Message Tracking
+
+The channel maintains a set of seen message IDs in memory to prevent replaying old messages when polling. On startup, it scans the current session's interface for existing `_msg_*` keys and marks them as seen, so only new messages trigger events.
+
+### Graceful Shutdown
+
+The channel clears its polling timer on SIGTERM and SIGINT to ensure clean process exit.
+
+## Use Cases
+
+### Task Coordination
+
+One session can notify another when a prerequisite is complete:
+
+```
+Session A (auth module): orbh_send_message → Session B
+  "Auth module is deployed. You can start the integration tests."
+```
+
+### Context Sharing
+
+A research session can share findings with an implementation session:
+
+```
+Session A (research): orbh_send_message → Session B
+  "The API rate limit is 1000 req/min. Use exponential backoff."
+```
+
+### Delegation
+
+A parent session can launch a child session and send it instructions:
+
+```bash
+# Parent launches child
+child_id=$(flint orb launch claude "implement auth" --title "Auth impl")
+# Parent sends context
+orbh_send_message(session_id=child_id, message="Use the new JWT library, not the old one")
+```
+
+## Related
+
+- [Concept - Architecture](/concepts/architecture) — How the MCP channel fits into the session model
+- [Reference - CLI Commands](/reference/cli-commands) — `launch` and `resume` commands that set up MCP channels
+- [Guide - Headless Shard Integration](/guide/headless-shard-integration) — Building shards that coordinate across sessions

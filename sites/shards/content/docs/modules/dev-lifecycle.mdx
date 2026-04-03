@@ -1,0 +1,254 @@
+---
+title: "Dev Lifecycle"
+---
+
+Shards are not static packages you download and forget. They can be authored, tested, versioned, released, and published from inside a Flint workspace. The shard system provides a complete authoring lifecycle that spans from initial scaffolding through to public registry listing.
+
+This page covers that lifecycle end to end: how shards are created, transitioned between modes, versioned, and distributed.
+
+## Entry Points
+
+There are four ways a shard enters dev mode in a workspace. Each serves a different starting scenario.
+
+### Create: Scaffold a New Shard
+
+`flint shard create` builds a shard from scratch. You choose a mode (`dev` or `custom`) and a name. The system generates the full directory structure with standard folders and starter files.
+
+```bash
+flint shard create dev "Code Review" -s cr -d "Code review workflows"
+flint shard create custom "My Tools" --setup --state
+```
+
+What `scaffoldNewShard()` creates:
+
+- `Shards/(Dev) Name/` or `Shards/(Custom) Name/` directory
+- `shard.yaml` manifest with version `0.1.0`
+- `init-{shorthand}.md` init file
+- `README.md`
+- Empty `skills/`, `workflows/`, `templates/`, `knowledge/`, `assets/`, `install/`, `migrations/`, `scripts/` directories
+- Optional `setup-{shorthand}.md` if `--setup` is passed
+- Optional `Mesh/Shards/(Shard) Name.md` state file if `--state` is passed
+
+Dev shards (`mode = "dev"`) automatically get `git init` run in their directory. This is what makes them independently version-controlled and gitignored from the parent Flint repository.
+
+The shorthand is derived automatically from the name (first letter of each word, lowercase, max 4 characters) unless overridden with `-s`.
+
+### Dev: Clone an Existing Shard
+
+`flint shard dev` takes a remote source and clones it into a `(Dev)` folder for local editing.
+
+```bash
+flint shard dev NUU-Cognition/shard-reports
+```
+
+`cloneShardToDev()` copies the resolved shard files into `Shards/(Dev) Name/` and records the shard in `flint.toml` with `mode = "dev"`. If the `(Dev)` folder already exists, it skips the copy and just registers the config entry.
+
+### Edit: Transition an Installed Shard to Dev
+
+`flint shard edit` converts a normal (remotely installed) shard into a dev shard. This is for when you want to modify a shard you are already using.
+
+```bash
+flint shard edit reports
+```
+
+`editShard()` performs these steps:
+
+1. Validates the shard is not already a dev or custom shard
+2. Renames `Shards/Name` to `Shards/(Dev) Name`
+3. Initializes git -- if the source is a GitHub repo, it clones `.git` from the remote so you inherit commit history; otherwise it runs a fresh `git init`
+4. Updates `flint.toml`: removes the old declaration, adds a new one with `mode = "dev"`
+
+Custom shards cannot be transitioned to dev mode. They are workspace-specific by design.
+
+### Register: Adopt an Existing Folder
+
+`flint shard register` takes a folder that already exists in `Shards/` and registers it in `flint.toml`. This is for adopting manually placed shard directories.
+
+```bash
+flint shard register "(Dev) Bookmarks"
+```
+
+`registerExistingShard()` reads `shard.yaml` from the folder, validates it has `name` and `shorthand` fields, then writes the config entry. Mode is inferred from the folder prefix: `(Custom)` folders register as custom, everything else as dev.
+
+## Authoring
+
+Once a shard is in dev mode, you edit its files directly. The standard authoring workflow is:
+
+1. Edit shard files (skills, templates, workflows, knowledge, init, shard.yaml)
+2. Test install behavior with `flint shard reinstall <name>` or `flint shard pull <name>`
+3. Run `flint shard check` to verify shard health
+4. Use `flint shard heal <name>` to fix any structural issues
+
+### Local Testing
+
+`flint shard reinstall` re-applies a shard's install entries from its current manifest. This is useful during dev to test what the shard will do when installed elsewhere. The `--force` flag overrides files that have `mode = "once"` semantics, which would normally be skipped if the destination already exists.
+
+`flint shard pull` syncs install entries for one or all shards. It creates declared folders, copies install files (respecting once/overwrite modes), ensures state files exist, and detects available migrations when versions change.
+
+## Git Operations
+
+Dev shards have their own `.git` directory, independent of the parent Flint's repository. The Flint gitignore system automatically excludes `(Dev)` shard folders from the parent repo.
+
+### Adding a Remote
+
+There are two ways to connect a dev shard to a GitHub remote:
+
+**`flint shard gitinit`** -- full initialization sequence. Initializes git if needed, adds the remote, creates branch `main`, commits all files, and pushes:
+
+```bash
+flint shard gitinit my-shard https://github.com/org/shard-tools.git
+```
+
+This runs `git init`, `git remote add origin`, `git branch -M main`, `git add -A`, `git commit`, and `git push -u origin main` in sequence.
+
+**`flint shard git`** -- adds a remote to a shard that already has git initialized:
+
+```bash
+flint shard git my-shard https://github.com/org/shard-tools.git
+```
+
+`addShardGitRemote()` validates the shard is a dev shard with a `.git` directory, checks no remote already exists, extracts the `owner/repo` from the URL, runs `git remote add origin`, and updates the source declaration in `flint.toml` from a path reference to the `owner/repo` format.
+
+### Push
+
+`flint shard push` commits and pushes a dev shard:
+
+```bash
+flint shard push my-shard -m "add review template" -b patch
+```
+
+The push command:
+
+1. Verifies the shard is in dev mode with a `.git` directory
+2. Checks for changes -- if the working tree is clean, it looks for unpushed commits and pushes those instead
+3. Optionally bumps the version in `shard.yaml` (`-b patch`, `-b minor`, `-b major`)
+4. Stages all changes with `git add -A`
+5. Commits with the provided message (or a default derived from the shard name)
+6. Pushes, falling back to `git push -u origin <branch>` if no upstream is set
+
+If a bump is requested, the version in `shard.yaml` is rewritten before the commit, and the commit message is prefixed with the new version (e.g., `v0.2.0 add review template`).
+
+## Release
+
+`flint shard release` creates a versioned release by tagging the current state and pushing the tag upstream. This is the mechanism that makes specific versions installable by other Flints.
+
+```bash
+flint shard release my-shard
+flint shard release my-shard 1.2.0
+```
+
+The release process performs several validation steps before tagging:
+
+1. **Mode check**: only dev shards can release
+2. **Remote check**: the shard must have a git remote configured
+3. **Version resolution**: reads version from `shard.yaml`. If a version argument is provided, it must match `shard.yaml` exactly -- the command will not override the manifest version
+4. **Clean working tree**: rejects if there are uncommitted changes
+5. **Unpushed commits**: rejects if there are commits not yet pushed to the remote
+6. **Tag uniqueness**: checks both local and remote tags to ensure `v{version}` does not already exist
+7. **Dependency validation**: for each dependency with a version requirement, verifies the required version tag exists on the dependency's remote
+
+After validation passes:
+
+- Creates an annotated git tag `v{version}` with message `Release v{version}`
+- Pushes the current branch and tags to origin with `pushWithTags()`
+
+The version can be specified as an argument or auto-derived from `shard.yaml`. When specified, it must match `shard.yaml` -- this is a safety check, not an override. The workflow is: bump the version in `shard.yaml` first (manually or via `flint shard push -b`), then release.
+
+### Version Listing
+
+`flint shard versions` lists available version tags from the shard's remote:
+
+```bash
+flint shard versions reports
+```
+
+This queries git tags from the remote GitHub repository, showing which version is currently installed.
+
+### Version Pinning
+
+`flint shard pin` and `flint shard unpin` control version locking in `flint.toml`:
+
+```bash
+flint shard pin reports 1.0.0
+flint shard unpin reports
+```
+
+Pinning validates the version exists as a tag on the remote before writing the config. Dev shards cannot be pinned (they are locally managed). Pinned shards are skipped during `flint shard update` if they are already at the pinned version.
+
+## Publish
+
+`flint shard publish` registers the shard with the NUU Shard Registry, a Convex-backed API. This makes the shard discoverable and installable by other users.
+
+```bash
+flint shard publish my-shard
+flint shard publish my-shard --org NUU-Cognition
+```
+
+Publishing requires authentication via `flint login`. The command:
+
+1. Reads shard metadata from `shard.yaml` and README.md
+2. Resolves the GitHub repo from the `flint.toml` source declaration or git remote
+3. Authenticates with the NUU account system via cli-core
+4. If `--org` is provided, verifies org membership and uses the org as the owner
+5. Posts metadata to the registry API (`/api/register`)
+
+The registry slug is `{owner}/{shorthand}`.
+
+### Unpublish
+
+`flint shard unpublish` removes a shard from the registry:
+
+```bash
+flint shard unpublish NUU-Cognition/notepad
+```
+
+Takes the full slug as an argument. Requires authentication.
+
+### Listing Published Shards
+
+`flint shard published` lists your published shards from the registry. Requires authentication.
+
+## Freeze: Dev to Normal
+
+`flint shard freeze` transitions a dev shard back to a normal shard. This is the reverse of `edit` -- it removes the independent git history and makes the shard part of the parent Flint's repository.
+
+```bash
+flint shard freeze my-shard
+```
+
+`freezeShard()` performs safety checks before proceeding:
+
+1. **Must be a dev shard**: the folder must start with `(Dev)`
+2. **Must have `.git`**: validates the git directory exists
+3. **No uncommitted changes**: runs `git status --porcelain` and rejects if dirty
+4. **No unpushed commits**: if a remote exists, checks `git log @{u}..HEAD` and rejects if there are unpushed commits
+
+After validation:
+
+1. Removes the `.git` directory
+2. Renames `Shards/(Dev) Name` to `Shards/Name`
+3. Updates `flint.toml`: removes the dev declaration and adds a normal one (using the GitHub source if available, otherwise a local path reference)
+
+## Mode Transitions
+
+The shard system supports the following mode transitions:
+
+| From | To | Command | Reversible |
+|------|----|---------|------------|
+| (none) | dev | `create dev` | -- |
+| (none) | custom | `create custom` | -- |
+| remote | dev | `dev` | -- |
+| normal | dev | `edit` | yes (via `freeze`) |
+| dev | normal | `freeze` | yes (via `edit`) |
+| folder | dev/custom | `register` | -- |
+
+Custom shards cannot transition to dev mode. They are workspace-specific artifacts that are not intended for distribution.
+
+Dev shards have their own git repositories and are gitignored from the parent Flint. Normal shards have no `.git` directory and are committed to the parent repository. This distinction is the fundamental difference that `edit` and `freeze` manage.
+
+## See Also
+
+- [Module - Manifest](/modules/manifest) -- shard.yaml structure and fields
+- [Module - Install & Update](/modules/install-update) -- how shards are installed and updated
+- [Module - Scripts](/modules/scripts) -- running shard-provided scripts
+- [Reference - CLI Commands](/reference/cli-commands) -- complete command reference for all `flint shard` subcommands

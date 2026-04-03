@@ -99,15 +99,14 @@ Manage the shard layer, which is the main way a Flint gains cognitive programs.
 
 Common subcommands:
 
-- `install`
-- `uninstall`
-- `list`
-- `update`
-- `check`
-- `heal`
-- `info`
-
-The current CLI also exposes a larger shard-authoring surface including create, pinning, scripts, publish, release, versions, and git-oriented flows.
+- `install`, `uninstall`, `list`, `update`, `pull`
+- `check`, `heal`, `info`
+- `create`, `dev`, `edit`, `freeze`
+- `add`, `remove`, `reinstall`
+- `pin`, `unpin`, `versions`
+- `publish`, `unpublish`, `published`, `release`
+- `git`, `gitinit`, `push`, `register`
+- `scripts`
 
 ### `flint source`
 
@@ -189,36 +188,90 @@ Send a bundle of files to another registered Flint's inbox.
 
 ## Agents and Coding Tools
 
-### `flint agent`
-
-Manage headless agent sessions.
-
-This is the stateful session-management surface for agent runs, question handling, watching, and session inspection.
-
 ### `flint code`
 
 Launch interactive coding agents in the current Flint.
 
-Current subcommands:
+Subcommands:
 
 - `claude`
 - `codex`
+- `gemini`
 
 These commands integrate the coding tool with Flint's session export and workspace context model.
 
+### `flint agent`
+
+Manage headless agent sessions.
+
+Subcommands:
+
+- `claude` — launch a headless Claude Code session
+- `list` — list all sessions
+- `watch` — stream live session transcript
+- `session` — inspect or manage a specific session
+- `interface` — agent I/O interface
+
+`session` supports actions:
+
+- `title`
+- `register`
+- `status`
+- `kill`
+- `respond`
+- `return`
+- `artifact`
+
+`interface` supports:
+
+- `set`
+- `get`
+- `ask` — blocks and waits for response
+- `request` — posts deferred question and exits
+
+### `flint export-session`
+
+Export a Claude Code session transcript from the current Flint.
+
+### `flint export-codex-session`
+
+Export a Codex session transcript from the current Flint.
+
 ### `flint lattice`
 
-Connect the workspace to registered lattice programs and run lattice functions.
+Manage lattice connections and execute lattice functions.
+
+Subcommands:
+
+- `list`
+- `run`
+- `connect`
+- `disconnect`
+- `pin`
+- `unpin`
+- `sync`
 
 ### `flint server`
 
-Start, inspect, or stop the local Flint server.
+Manage the local Flint server.
+
+Subcommands:
+
+- `start`
+- `status`
+- `stop`
 
 ### `flint runtime`
 
-Manage runtimes through the server.
+Manage runtimes through the local server.
 
-Important current detail: `runtime` is dev-gated in the CLI entrypoint, while `server` is part of the normal command surface.
+Subcommands:
+
+- `start`
+- `stop`
+- `list`
+
+This command group is dev-gated in the current CLI.
 
 ## Utilities
 
@@ -233,6 +286,26 @@ Special subcommands:
 - `publish`
 
 If the first argument is not one of those helpers, Flint passes the rest through to `git`.
+
+### `flint tinderbox`
+
+Orchestrate operations across multiple Flints in a Tinderbox.
+
+Subcommands:
+
+- `sync` — materialize, register, and wire the declared Tinderbox
+- git-backed declarations are owned/materialized; `registry:Name` declarations are references
+- `git sync` — run git sync across all child Flints
+- `whoami <name>` — set identity across all child Flints
+- `status` — show present/registered/connection state per declared Flint
+- `check` — detect drift between `tinderbox.toml` and reality
+- `heal` — auto-fix drift and re-run reconciliation
+
+All `flint tinderbox` subcommands use walk-up discovery to find `tinderbox.toml`, so they can be run from the Tinderbox root or from inside a child Flint.
+
+### `flint move`
+
+Move a Flint by name or path and update the global registry entry afterward.
 
 ### `flint open`
 
@@ -267,7 +340,7 @@ flint helper type newnumber <Type>
 
 ### `flint features`
 
-Inspect the feature registry and availability surface.
+List and manage feature flags through the shared CLI-core feature system.
 
 ### `flint login` and `flint logout`
 
@@ -283,98 +356,3 @@ For everyday work, think in terms of a few dependable loops:
 - `export` to publish results
 
 That sequence matches Flint's actual shape as a workspace where agents execute cognitive programs and leave durable artifacts behind.
-
-- `type newnumber`
-
-## Agent and Coding Commands
-
-### `flint code`
-
-Launch interactive coding agents.
-
-Implemented subcommands:
-
-- `claude`
-- `codex`
-- `gemini`
-
-### `flint agent`
-
-Manage headless agent sessions.
-
-Subcommands:
-
-- `claude`
-- `list`
-- `watch`
-- `session`
-- `interface`
-
-`session` supports actions such as:
-
-- `title`
-- `register`
-- `status`
-- `kill`
-- `respond`
-- `return`
-- `artifact`
-
-`interface` supports:
-
-- `set`
-- `get`
-- `ask`
-- `request`
-
-## Runtime, Server, and Lattice
-
-### `flint server`
-
-Manage the local Flint server.
-
-Subcommands:
-
-- `start`
-- `status`
-- `stop`
-
-### `flint runtime`
-
-Manage runtimes through the local server.
-
-Subcommands:
-
-- `start`
-- `stop`
-- `list`
-
-This command group is dev-gated in the current CLI.
-
-### `flint lattice`
-
-Manage lattice connections and execute lattice functions.
-
-Subcommands:
-
-- `list`
-- `run`
-- `connect`
-- `disconnect`
-- `pin`
-- `unpin`
-- `sync`
-
-## Other Top-Level Commands
-
-### `flint features`
-
-List and manage feature flags through the shared CLI-core feature system.
-
-### `flint login`
-
-Shared auth login command from `@nuucognition/cli-core`.
-
-### `flint logout`
-
-Shared auth logout command from `@nuucognition/cli-core`.

@@ -1,0 +1,492 @@
+---
+title: "CLI Commands"
+---
+
+Complete reference for all `flint orb` subcommands. These commands manage the full lifecycle of headless agent sessions — launching, observing, interacting, and completing.
+
+## Launch and Resume
+
+### `flint orb launch`
+
+Launch a new headless agent session.
+
+```bash
+flint orb launch <runtime> <prompt> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<runtime>` | Harness runtime: `claude`, `codex`, `droid`, `gemini` |
+| `<prompt>` | Task prompt for the agent |
+
+| Option | Description |
+|---|---|
+| `--continues <id>` | Link as continuation of a previous session |
+| `--max-turns <n>` | Maximum number of agent turns |
+| `--model <model>` | Model override (e.g., `opus`, `sonnet`) |
+| `--title <title>` | Pre-set session title (skips agent self-registration) |
+| `--description <desc>` | Pre-set session description |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+# Basic launch
+flint orb launch claude "implement the auth module"
+
+# Launch with model override and turn limit
+flint orb launch claude "review this PR" --model opus --max-turns 20
+
+# Launch as continuation of a previous session
+flint orb launch claude "continue the refactor" --continues a7c3e8f1
+
+# Launch with pre-set title
+flint orb launch claude "fix the bug" --title "Fix auth bug"
+```
+
+### `flint orb resume`
+
+Resume an existing session by adding a new run.
+
+```bash
+flint orb resume <id> [prompt] [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or shortest unambiguous prefix) |
+| `[prompt]` | Optional prompt for the resumed session (default: "Continue working") |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb resume a7c3e8f1
+flint orb resume a7c3e8f1 "now add tests for the auth module"
+```
+
+### `flint orb i`
+
+Launch an interactive agent session with Orbh tracking. Alias: `interactive`.
+
+```bash
+flint orb i <runtime> [prompt] [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<runtime>` | Harness runtime: `claude`, `codex`, `droid`, `gemini` |
+| `[prompt]` | Optional initial prompt |
+
+| Option | Description |
+|---|---|
+| `-c, --continue <id>` | Continue a previous Orbh session |
+| `--continues <id>` | Link as continuation (new session) |
+| `--model <model>` | Model override |
+| `--dev-channels` | Load development MCP channels (e.g., orbh) |
+| `--no-export` | Skip transcript export on exit |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb i claude
+flint orb i claude "help me debug this" --model opus
+flint orb i claude -c a7c3e8f1  # Continue previous session
+```
+
+## Observation
+
+### `flint orb list`
+
+List agent sessions.
+
+```bash
+flint orb list [options]
+```
+
+| Option | Description |
+|---|---|
+| `-a, --all` | Show all sessions (default: most recent 30) |
+| `-s, --stats` | Show token usage and turn counts |
+| `-i, --interactive` | Refresh the list live (2s interval) |
+| `-S, --status <status>` | Filter by status (e.g., `in-progress`, `finished`) |
+| `-r, --runtime <runtime>` | Filter by runtime (e.g., `claude`, `codex`) |
+| `-q, --search <text>` | Search title, description, and prompt |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb list                          # Most recent 30 sessions
+flint orb list --all                    # All sessions
+flint orb list --stats                  # With token counts
+flint orb list -i                       # Live refresh
+flint orb list -S in-progress           # Only running sessions
+flint orb list -q "auth"               # Search for "auth"
+```
+
+### `flint orb inspect`
+
+Show detailed information about a session: metadata, interface state, runs, and requests.
+
+```bash
+flint orb inspect <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--results` | Include run results in output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb inspect a7c3e8f1
+flint orb inspect a7c3e8f1 --results
+```
+
+### `flint orb watch`
+
+Stream a live session transcript to the terminal with a token counter.
+
+```bash
+flint orb watch <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `-v, --verbose` | Show full thinking blocks and tool output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb watch a7c3e8f1
+flint orb watch a7c3e8f1 -v    # Verbose mode
+```
+
+### `flint orb stats`
+
+Show detailed session statistics: turns, tokens, tools used, files touched.
+
+```bash
+flint orb stats <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--files` | Include full file paths in output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb stats a7c3e8f1
+flint orb stats a7c3e8f1 --files
+```
+
+### `flint orb export`
+
+Export a session transcript to `Mesh/Agents/<Runtime>/` as a markdown file.
+
+```bash
+flint orb export <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb export a7c3e8f1
+```
+
+### `flint orb requests`
+
+View request/response pairs for a session.
+
+```bash
+flint orb requests <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--pending` | Show only unanswered requests |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb requests a7c3e8f1
+flint orb requests a7c3e8f1 --pending
+```
+
+## Session Management
+
+### `flint orb register`
+
+Register a title and description for a session. Called by agents at session start.
+
+```bash
+flint orb register <id> <title> <description...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<title>` | Short title shown in list and watch views |
+| `<description...>` | Longer description of the work |
+
+```bash
+flint orb register a7c3e8f1 "Fix auth bug" "Investigating and fixing the authentication bypass in the login handler"
+```
+
+### `flint orb status`
+
+Get or set a session's lifecycle status.
+
+```bash
+flint orb status <id> [value]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `[value]` | New status (omit to read current status) |
+
+Valid statuses:
+
+| Status | Meaning |
+|---|---|
+| `queued` | Created, not started |
+| `in-progress` | Agent actively working |
+| `blocked` | Waiting for human input (process may be alive or exited) |
+| `deferred` | Posted deferred question and exited |
+| `finished` | Work complete (set automatically by `return`) |
+| `failed` | Unrecoverable error |
+| `cancelled` | Killed by human |
+
+```bash
+flint orb status a7c3e8f1                    # Read status
+flint orb status a7c3e8f1 in-progress        # Set status
+```
+
+### `flint orb return`
+
+Store the final result and mark the session as finished. This is the primary output delivery mechanism for headless agents.
+
+```bash
+flint orb return <id> <result...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<result...>` | Final result as markdown |
+
+The command:
+1. Stores the result on the current run (`run.result`)
+2. Sets run status to `completed`
+3. Sets session status to `finished`
+
+```bash
+flint orb return a7c3e8f1 "Completed auth fix. Changed login handler to validate tokens before session creation. All tests pass."
+```
+
+### `flint orb kill`
+
+Kill a running session's process (SIGTERM).
+
+```bash
+flint orb kill <id>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+
+```bash
+flint orb kill a7c3e8f1
+```
+
+### `flint orb heal`
+
+Fix sessions stuck in non-terminal states due to stale PIDs or orphaned runs.
+
+```bash
+flint orb heal [options]
+```
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Preview what would be healed without making changes |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orb heal
+flint orb heal --dry-run
+```
+
+## Interface Commands
+
+### `flint orb set`
+
+Write a key-value pair to the session's interface store.
+
+```bash
+flint orb set <id> <key> <value...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<key>` | Key name |
+| `<value...>` | Value (supports multi-word) |
+
+```bash
+flint orb set a7c3e8f1 phase "implementing"
+flint orb set a7c3e8f1 progress "3/7 requirements"
+```
+
+### `flint orb get`
+
+Read a value from the session's interface store. Outputs to stdout.
+
+```bash
+flint orb get <id> <key>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<key>` | Key name |
+
+```bash
+flint orb get a7c3e8f1 phase
+```
+
+### `flint orb artifact`
+
+Track an artifact produced by the agent session.
+
+```bash
+flint orb artifact <id> <path>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<path>` | Artifact path or name |
+
+```bash
+flint orb artifact a7c3e8f1 "(Report) 012 Auth Review"
+```
+
+## Request and Response
+
+### `flint orb ask`
+
+Ask a blocking question. The command blocks until a human responds via `flint orb respond`.
+
+```bash
+flint orb ask <id> <question...> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<question...>` | Question text |
+
+| Option | Description |
+|---|---|
+| `--timeout <seconds>` | Timeout in seconds (default: 3600) |
+
+The command:
+1. Creates a request with type `blocking`
+2. Sets session status to `blocked`
+3. Sends a macOS notification
+4. Polls until a response arrives
+5. Returns the response to stdout
+
+```bash
+response=$(flint orb ask a7c3e8f1 "Found 3 issues. Fix all or just criticals?")
+echo "Human said: $response"
+```
+
+### `flint orb request`
+
+Post a deferred question and exit immediately. The session is set to `blocked`. When the human responds, the session is automatically resumed.
+
+```bash
+flint orb request <id> <question...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<question...>` | Question text |
+
+```bash
+flint orb request a7c3e8f1 "What priority should this fix be?"
+```
+
+### `flint orb respond`
+
+Answer a pending question on a session.
+
+```bash
+flint orb respond <id> <response...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<response...>` | Response text |
+
+For blocking questions, this unblocks the waiting `ask` command. For deferred questions, this triggers an automatic session resume.
+
+```bash
+flint orb respond a7c3e8f1 "Fix all three issues"
+```
+
+## Common Patterns
+
+### Launching and Watching
+
+```bash
+# Launch a session and immediately watch it
+flint orb launch claude "implement feature X" --title "Feature X"
+flint orb watch <returned-id>
+```
+
+### Monitoring Active Sessions
+
+```bash
+# Live dashboard of running sessions
+flint orb list -i -S in-progress
+```
+
+### Session Continuation
+
+```bash
+# First session finishes, start a new one linked to it
+flint orb launch claude "add tests for the auth module" --continues a7c3e8f1
+```
+
+### Responding to Deferred Questions
+
+```bash
+# Check for pending questions
+flint orb requests a7c3e8f1 --pending
+
+# Respond (triggers automatic resume)
+flint orb respond a7c3e8f1 "Use the new API endpoint"
+```

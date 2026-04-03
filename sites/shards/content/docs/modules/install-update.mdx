@@ -1,0 +1,175 @@
+---
+title: "Install & Update"
+---
+
+The install and update system is how shards get into a workspace and stay current. It handles source resolution, dependency checking, version tracking, and the full lifecycle from first install through ongoing updates.
+
+## Overview
+
+Shard installation follows a pipeline: parse the source string, resolve it to a directory on disk (cloning from GitHub if needed), validate the manifest, check dependencies, copy shard files, process install entries, create workspace folders, record the version, and register in `flint.toml`. Updates use the same pipeline but add remote version checking so only changed shards are re-downloaded.
+
+There are three distinct operations:
+
+- **Install** -- full download and setup of a new shard
+- **Update** -- re-download remote shards when their version changes
+- **Pull** -- lightweight sync that re-applies manifest entries without re-downloading
+
+## Source Resolution
+
+Every shard has a source string that tells Flint where to find it. The `parseShardSource()` function recognizes two formats:
+
+| Format | Type | Example |
+|--------|------|---------|
+| `owner/repo` | GitHub | `NUU-Cognition/shard-reports` |
+| `github:owner/repo` | GitHub (explicit) | `github:NUU-Cognition/shard-reports` |
+| `path:./relative` | Local path | `path:./Shards/(Dev) Reports` |
+| `path:/absolute` | Local path | `path:/Users/me/my-shard` |
+
+GitHub sources are the primary format for distributed shards. Path sources are used for dev and custom shards that live inside the workspace.
+
+After parsing, `resolveShardSource()` turns a source into an absolute directory path:
+
+- **GitHub sources** are shallow-cloned (`--depth 1`) into a temp directory. If a version is specified, the clone targets the `v{version}` tag.
+- **Path sources** are resolved relative to the flint root directory. The directory must already exist with a valid `shard.yaml`.
+
+Both paths produce a `ResolvedSource` containing the absolute path, the parsed manifest, and a flag indicating whether the directory is temporary and should be cleaned up after install.
+
+## Install Flow
+
+When you run `flint shard install`, the full pipeline executes in this order:
+
+```bash
+flint shard install owner/repo
+flint shard install owner/repo@1.0.0
+flint shard install path:./local-shard
+flint shard install owner/repo --with-deps
+flint shard install owner/repo --force
+```
+
+The steps inside `installShardFromSource()`:
+
+1. **Parse source** -- the raw source string (with optional `@version`) is parsed into a typed `ShardSource`
+2. **Resolve** -- GitHub sources are cloned to a temp directory; path sources are resolved to an absolute path
+3. **Read manifest** -- `shard.yaml` is parsed and normalized (legacy `depends` and `repos` fields are handled)
+4. **Path validation** -- the destination path is checked to prevent path traversal outside the flint directory
+5. **Clean reinstall** -- any existing shard folder at the destination is removed
+6. **Copy shard files** -- the shard directory is copied recursively, skipping `shard.yaml`, `README.md`, `install/`, and `.git`. Then `shard.yaml` is copied individually
+7. **Apply manifest content** -- install entries are processed and folders are created (see below)
+8. **Create state file** -- if the manifest declares `state: true`, a state file is created at `Mesh/Shards/(Shard) Name.md`
+9. **Record version** -- the shard's version is written to the version state file
+10. **Register in config** -- the shard is added to `flint.toml` with its source string
+
+### Install Entries
+
+The manifest's `install` array declares files to copy from the shard's `install/` directory into the workspace:
+
+```yaml
+install:
+  - source: type-rpt-report.md
+    dest: Mesh/Types/Templates/type-rpt-report.md
+    mode: once
+```
+
+Each entry has:
+- `source` -- path relative to the shard's `install/` folder
+- `dest` -- destination path relative to the flint root
+- `mode` -- either `once` (skip if file exists, the default) or `force` (overwrite)
+
+Template placeholders `{{uuid}}` and `{{date}}` in install files are expanded at install time. If a file already exists and is being overwritten, the existing file's frontmatter `id` is preserved to avoid breaking references.
+
+### Manifest Folders
+
+The manifest's `folders` array declares directories the shard needs in the workspace:
+
+```yaml
+folders:
+  - Mesh/Types/Reports
+  - Workspace/Reports
+```
+
+These directories are created during install if they don't already exist. All paths are validated to stay within the flint directory.
+
+## Update
+
+`flint shard update` checks all remote shards for newer versions and re-downloads those that have changed.
+
+```bash
+flint shard update
+flint shard update --reinstall
+```
+
+The update process:
+
+1. **Identify updatable shards** -- dev and custom shards are skipped (they are locally managed)
+2. **Check pinned versions** -- shards pinned to a specific version are skipped if already at that version
+3. **Remote version check** -- for GitHub sources, the shard.yaml version is fetched via the GitHub API (`application/vnd.github.raw+json`) without cloning. If the remote version is not newer, the shard is skipped. The fetch retries once on server errors
+4. **Re-download** -- shards with newer remote versions are re-resolved and reinstalled through the same `installShardFromSource()` pipeline
+5. **Migration detection** -- after update, `detectMigrations()` scans for applicable migration files (see [Module - Migrations](/modules/migrations))
+6. **Record version** -- updated shard versions are recorded
+
+Updates run in parallel with a concurrency limit of 5. Each shard reports its result as `updated`, `skipped`, or `failed`.
+
+## Pull
+
+`flint shard pull` is a lightweight sync. It re-applies a shard's manifest install entries and creates any missing folders without re-downloading the shard itself.
+
+```bash
+flint shard pull           # all shards
+flint shard pull reports   # single shard
+```
+
+Pull is useful when:
+- A dev shard's manifest has been edited and you want the workspace to reflect new install entries or folders
+- A shard was updated outside of Flint (e.g., by pulling its git repo directly)
+- Install files with `mode: once` were deleted and need to be restored
+
+Pull also detects version changes. If the shard's `shard.yaml` version is newer than the recorded version, pull checks for available migrations and reports them.
+
+## Version Pinning
+
+Shards can be pinned to a specific version to prevent automatic updates.
+
+```bash
+flint shard pin reports 1.2.0
+flint shard unpin reports
+```
+
+Pin validates the version against remote tags before recording it. When a shard is pinned:
+- `flint shard update` skips it if already at the pinned version
+- `flint shard install source@version` records the pin automatically
+- Resolution uses `--branch v{version}` to clone the exact tag
+
+Unpinning re-adds the shard declaration without a version field, so the next update fetches the latest.
+
+## Version Tags
+
+Flint uses `v{version}` tags on GitHub repos to identify shard versions (e.g., `v1.0.0`, `v0.3.1`). The `listRemoteVersionTags()` function queries remote tags via `git ls-remote --tags` without cloning and filters for tags matching `v{major}.{minor}.{patch}`. Results are sorted by semver in descending order.
+
+```bash
+flint shard versions reports
+```
+
+## Uninstall
+
+`flint shard uninstall` removes a shard and cleans up after it.
+
+```bash
+flint shard uninstall reports
+```
+
+The uninstall process:
+
+1. **Find the shard** -- resolves the identifier by name, folder name, kebab-case name, or shorthand
+2. **Remove install files** -- files declared in the manifest's `install` entries are deleted from the workspace
+3. **Remove declared folders** -- folders from the manifest's `folders` array are removed if empty, processed deepest-first to allow parent cleanup
+4. **Remove shard folder** -- the entire `Shards/Name/` directory is deleted
+5. **Remove from config** -- the shard declaration is removed from `flint.toml`
+
+All path operations validate that targets are within the flint directory to prevent accidental deletions outside the workspace.
+
+## Related
+
+- [Module - Manifest](/modules/manifest) -- the `shard.yaml` fields that drive installation
+- [Module - Migrations](/modules/migrations) -- version-to-version migration files detected during update
+- [Module - Health & Heal](/modules/health-heal) -- diagnosing and fixing shard installation issues
+- [Module - Dev Lifecycle](/modules/dev-lifecycle) -- how dev shards use path sources and local editing
