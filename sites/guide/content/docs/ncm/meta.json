@@ -1,6 +1,7 @@
 {
   "title": "NUU Cognition Markdown",
   "root": true,
+  "icon": "ncm",
   "defaultOpen": false,
   "pages": [
     "index",

@@ -1,6 +1,7 @@
 {
   "title": "NUU Profiles",
   "root": true,
+  "icon": "profiles",
   "defaultOpen": false,
   "pages": [
     "index",

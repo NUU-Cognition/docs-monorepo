@@ -1,6 +1,7 @@
 {
   "title": "NUU Mesh",
   "root": true,
+  "icon": "mesh",
   "defaultOpen": false,
   "pages": [
     "index",

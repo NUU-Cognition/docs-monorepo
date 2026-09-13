@@ -315,11 +315,14 @@ function processContent(
 function createMetaJson(
   title: string,
   pages: string[],
-  root?: boolean
+  root?: boolean,
+  icon?: string
 ): string {
   const meta: Record<string, unknown> = { title };
   if (root) {
     meta.root = true;
+    // The site resolves this to the product mark in the tab switcher
+    if (icon) meta.icon = icon;
     // Collapsed on the site landing page; inside the tab the folder is the tree root
     meta.defaultOpen = false;
   }
@@ -528,7 +531,7 @@ export function portDocConfig(options: {
   // Product meta.json (root tab) or whole-site root meta.json
   fs.writeFileSync(
     path.join(targetPath, "meta.json"),
-    createMetaJson(config.title, sectionIds, Boolean(slug))
+    createMetaJson(config.title, sectionIds, Boolean(slug), slug)
   );
 
   if (slug) {

@@ -1,6 +1,7 @@
 {
   "title": "NUU Surf",
   "root": true,
+  "icon": "surf",
   "defaultOpen": false,
   "pages": [
     "index",

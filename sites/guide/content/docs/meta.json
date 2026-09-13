@@ -12,10 +12,6 @@
     "onyx",
     "ncm",
     "mesh",
-    "flint",
-    "flint-server",
-    "shards",
-    "orbh",
     "vessel"
   ]
 }

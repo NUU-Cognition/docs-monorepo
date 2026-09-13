@@ -1,6 +1,7 @@
 {
   "title": "NUU Organisations",
   "root": true,
+  "icon": "orgs",
   "defaultOpen": false,
   "pages": [
     "index",
