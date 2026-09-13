@@ -1,0 +1,9 @@
+{
+  "title": "NUU Profiles",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides"
+  ]
+}

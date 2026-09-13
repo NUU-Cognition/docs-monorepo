@@ -1,0 +1,10 @@
+{
+  "title": "NUU Docs",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}

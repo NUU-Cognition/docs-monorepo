@@ -1,0 +1,55 @@
+---
+title: "Keep a Description as a File"
+---
+
+This guide shows you how to keep a Description as a Markdown file. You edit the file on disk. You push it to the registry. You pull a Description back to a file. The file and the registry are the same record.
+
+## Prerequisites
+
+- You have a NUU account.
+- You have the command line tool for Citations.
+- You know the Markdown form. Read [Concept - About the Markdown Form](/citations/concepts/about-the-markdown-form).
+
+## Sign in on the command line
+
+Sign in with your NUU account. The tool uses that account for every push and pull. You can only write Descriptions that you own.
+
+Confirm that the tool knows who you are before you push.
+
+## Write or obtain a file
+
+You can write a new Markdown file. The file needs a permanent identity, a title, and the two required body sections. Those sections are the short summary and the longer summary.
+
+You can also start in the app. Create the Description there. Then pull it to disk. The pull writes a Markdown file for that identity.
+
+If you pull, you get a file that already matches the registry. If you write the file first, you mint the identity in the file. A later push creates the registry row.
+
+## Push the file
+
+Push one file or a folder of files. The tool reads each Markdown file. It skips a file that does not parse. It reports a warning when a file uses a deprecated key.
+
+A successful push creates the Description or updates it. The tool then writes a small record of the push back into the file. That record notes when the push happened.
+
+A push does not erase a field that the file does not include. You can edit some fields in the app and other fields in the file. The missing keys keep their stored values.
+
+If you include an empty share list or an empty private-field list, the push clears that list. Omit the list if you want the stored list to stay.
+
+You can ask the tool to report what it would push without writing to the registry.
+
+## Pull a Description
+
+Pull a Description by its permanent identity. The tool writes a Markdown file. You then edit that file and push again.
+
+## List records from the command line
+
+You can list Descriptions from the command line. You can list records you own, public records, or records shared with you. The list shows the title, how the work is reached, whether the record is public, and the identity.
+
+## What you get
+
+You have the same Description in two places. The registry is the shared copy. The file is the copy you edit with your own tools. Other people still cite the registry identity. They do not need your file.
+
+## Next steps
+
+- [Concept - About the Markdown Form](/citations/concepts/about-the-markdown-form)
+- [Guide - Describe a Source](/citations/guides/describe-a-source)
+- [Guide - Find and Reuse a Description](/citations/guides/find-and-reuse-a-description)

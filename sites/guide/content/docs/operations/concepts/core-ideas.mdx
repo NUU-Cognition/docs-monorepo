@@ -1,0 +1,64 @@
+---
+title: "Core Ideas"
+---
+
+NUU Operations is a delivery graph. You need a small set of nouns to use it. Each noun below is one thing. Do not treat two of them as the same thing.
+
+## The nouns
+
+**Workspace.** A workspace is the place you work. It is either personal, or it is an organisation you belong to. See [Concept - About Workspaces](/operations/concepts/about-workspaces).
+
+**Project.** A project is the top container in a workspace. It holds deliverables and a project backlog.
+
+**Deliverable.** A deliverable is a scoped chunk of work inside a project. Its state comes from its subsections, not from a manual status you type in. See [Concept - About Deliverables](/operations/concepts/about-deliverables).
+
+**Subsection.** A subsection is one node in the delivery graph. Tasks live in it. A subsection can depend on other subsections. A subsection is ready, in progress, blocked, or done.
+
+**Closer.** The closer is the last subsection of a deliverable. Every deliverable has exactly one. Completing the closer completes the deliverable.
+
+**Task.** A task is one unit of work. It can sit in the master backlog, in a project backlog, or in a subsection. It has a state of to do, doing, or done. See [Concept - About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs).
+
+**Backlog.** A backlog is a holding place for tasks that are not yet in a subsection. There is one master backlog for the workspace. Each project also has its own backlog.
+
+**Calendar.** The calendar is a time view of the active workspace. It shows open deadlines. It also holds day labels, which are banners across one or more days.
+
+**Map.** The map is a picture of the organisation delivery graph. It shows deliverables as blocks. It shows subsections and the links between them.
+
+**Plan.** A plan is a shared, left-to-right graph of steps. Many plans can exist at once. A plan answers what is workable now across projects.
+
+**Strike.** A strike is a personal target. Strikes are yours. They are not shared with a team. See [Guide - Run Your Day with Strikes](/operations/workflows/run-your-day-with-strikes).
+
+**Deadline.** A deadline owns a date. It can stand alone, or it can attach to one or more records. A record does not own its due date. The earliest attached deadline is that date.
+
+**Activity.** Activity is the feed of what changed in the active workspace. It names people and the records they touched.
+
+## How the nouns relate
+
+A workspace contains projects. A project contains deliverables. A deliverable contains subsections. One of those subsections is the closer.
+
+Tasks move between backlogs and subsections. When a task sits in a subsection, it is committed work. When it sits in a backlog, it is not yet committed.
+
+Deadlines attach to projects, deliverables, subsections, tasks, and plan steps. The calendar plots those dates. The personal deadline view shows dates from every organisation you belong to.
+
+Plans and the map both read the same delivery records. They do not replace the subsection graph. They are other views of work.
+
+Strikes sit beside this graph. You can use a strike to run your own day. You do not need a strike to deliver a project.
+
+Notifications and the changelog sit beside the graph too. Notifications tell you about assignments, moves, comments, and due dates. The changelog tells you what is new in the product.
+
+## Status that the service derives
+
+You do not set deliverable status by hand. The service derives it.
+
+- A subsection is done when every task in it is done.
+- A subsection is blocked when a subsection it depends on is not done.
+- A deliverable is completed when its closer is completed.
+
+This is why the closer matters. The closer is the gate. Work above it can be done. The deliverable is not delivered until the closer is done.
+
+## Further reading
+
+- [Concept - About Workspaces](/operations/concepts/about-workspaces)
+- [Concept - About Deliverables](/operations/concepts/about-deliverables)
+- [Concept - About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs)
+- [Guide - Introduction](/operations)

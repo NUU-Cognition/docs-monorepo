@@ -1,0 +1,59 @@
+---
+title: "How to Fix a Bad Parse"
+---
+
+This guide shows what to do when parsed content is wrong, incomplete, or missing. You can reparse the document, or you can report the problem on a parsed run.
+
+## Prerequisites
+
+- You are signed in.
+- You own the document. Only the owner can reparse.
+- For a report, the document has a parse run you can point to.
+
+## Decide which path to take
+
+Reparse when you want a new version from the same source. Use this when the text is garbled, pages are missing, or a later parse method should do better.
+
+Report a problem when reparse is not enough, or when you want the parse pipeline to see the failure. Use this when figures are wrong, pages are missing after a retry, or the result is not usable.
+
+You can do both. A report does not replace the current version. A reparse does not delete old versions.
+
+## Reparse the document
+
+Open the document. Start reparse. You cannot start reparse while a parse is already running.
+
+For a PDF, pick a parse method if more than one is available. For a video, article, or transcript, confirm the reparse. The service reuses the stored URL or the stored transcript text.
+
+The current version stays. When the run finishes, a new version appears. Open the parsed pane and pick the new version to check it. See [Concept - Core Ideas](/docs/concepts/core-ideas) for versions.
+
+If parse is in progress and you want to stop it, cancel. Then start reparse again when you are ready.
+
+If a PDF failed before any version exists, you can also start parse again from the failure state.
+
+## Report a problem
+
+Open the document. Start a problem report. You can report when the document has a parse run.
+
+Write a description of what went wrong. Say what you expected and what you see. You can attach images or a PDF. You can also paste a screenshot into the report.
+
+Submit the report. The document then shows a report state: reported, triaged, or resolved. That state is a mirror of the review on the parse run. It does not change the parsed content by itself.
+
+A shared reader can see the report state. They cannot reparse.
+
+## Check the result
+
+After reparse, read the new version next to the source. See [Guide - How to Read a Document](/docs/guides/how-to-read-a-document).
+
+If the new version is still wrong, keep the old version. Pick it in the parsed pane. Then report the problem, or reparse again.
+
+A warning on a successful parse is not a failure. Read the warning first. For a video, an empty transcript is a warning. Reparse will not invent a transcript that the source does not have.
+
+## What you get
+
+You either have a new version of parsed content, or a report on the run, or both. The source is unchanged. Earlier versions stay on the document.
+
+## Next Steps
+
+- [Guide - How to Read a Document](/docs/guides/how-to-read-a-document)
+- [Concept - About Source and Parsed Panes](/docs/concepts/about-source-and-parsed-panes)
+- [Guide - How to Share a Document](/docs/workflows/how-to-share-a-document)

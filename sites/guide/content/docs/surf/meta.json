@@ -1,0 +1,10 @@
+{
+  "title": "NUU Surf",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}

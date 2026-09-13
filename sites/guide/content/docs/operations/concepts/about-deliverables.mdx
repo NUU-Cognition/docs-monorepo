@@ -1,0 +1,59 @@
+---
+title: "About Deliverables"
+---
+
+A deliverable is a scoped chunk of work inside a project. It is not a task list. It is a graph. The graph decides what is ready next. Completing the closer is the delivery signal.
+
+## The subsection graph
+
+When you create a deliverable, the service creates one subsection for it. That subsection is the closer. The closer takes the deliverable name. It holds one task named Delivered.
+
+You then add more subsections. New subsections sit above the closer. The closer stays last.
+
+A subsection can depend on other subsections. Those links form a graph. The service rejects a cycle. Inside one deliverable, a subsection can only depend on a subsection that sits above it.
+
+A subsection can also depend on a subsection in another deliverable. The map shows those cross links. The closer of a deliverable also depends on its sibling subsections. You do not remove those closer links. They are structural.
+
+## Status of a subsection
+
+The service derives subsection status from tasks and from dependencies.
+
+- A subsection is done when it has tasks and every task is done.
+- A subsection is blocked when a subsection it depends on is not done.
+- A subsection is in progress when a task in it is doing, and it is not blocked.
+- Otherwise the subsection is ready.
+
+You can archive a done subsection. An archived subsection leaves the deliverable view. It still counts as done for dependents.
+
+## The closer gate
+
+The closer is the ship gate. Completing the closer completes the deliverable.
+
+The closer is locked last. You can add tasks to it, as you can to any other subsection. One count rule guards it. A closer must always keep at least one task. You cannot delete or move the last task out of the closer.
+
+The born Delivered task is a lifecycle signal. It is not personal work. Completing it, once the rest of the closer is done, is how you mark the deliverable delivered.
+
+If you rename the deliverable, the closer title follows the new name.
+
+## What a deliverable looks like in the rest of the product
+
+The project lists its deliverables. A workspace-wide list shows deliverables across projects.
+
+The map draws each deliverable as a block of subsections. You can hide completed work. You can hide blocks that have no cross links. You can mark a few subsections as highlights. The map then shows those subsections and the work that leads to them.
+
+A deadline can attach to a deliverable or to a subsection. The date lives on the deadline. The record shows the earliest attached date.
+
+A plan step can link to a deliverable or to a subsection. The step then follows that record.
+
+## Why this structure
+
+A flat task list cannot tell you what is ready. A graph can.
+
+The closer exists so delivery is one signal. Work above the closer can finish. The deliverable is still open until the closer is done. That keeps "we did the work" distinct from "we delivered it".
+
+## Further reading
+
+- [Concept - Core Ideas](/operations/concepts/core-ideas)
+- [Guide - Set Up a Project](/operations/guides/set-up-a-project)
+- [Guide - Plan Work with Subsections](/operations/guides/plan-work-with-subsections)
+- [Concept - About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs)

@@ -1,0 +1,56 @@
+---
+title: "About Source and Parsed Panes"
+---
+
+A document has two reading sides. The source pane shows what you added. The parsed pane shows what the service made from it. You open both in one view so you can check the original against the structured copy.
+
+This split is the main reading model in NUU Docs. See [Concept - Core Ideas](/docs/concepts/core-ideas) for the nouns.
+
+## Why two panes
+
+The source is the evidence. A PDF page, a video, an article, or pasted transcript text is what you started with. Parsed content is a reading copy. It is structured. It can be wrong in places.
+
+You need both at once. If a heading looks odd, you look at the source. If a page is dense, you read the parsed pane.
+
+Until parse finishes, you may only see the source pane. After parse succeeds, the parsed pane appears beside it.
+
+## What the source pane shows
+
+The source pane follows the source type of the document.
+
+- For a PDF, you see the pages of the file. If you parsed only a page range, the pane can limit itself to that range.
+- For a video, you see the video from the original URL.
+- For an article, you see the original page, or a way to open it if the host blocks the embedded view.
+- For a transcript, you see the pasted text.
+
+The source pane does not change when you pick another version. Versions live on the parsed side.
+
+## What the parsed pane shows
+
+The parsed pane shows one version of parsed content. By default it shows the latest version. You can pick an earlier version.
+
+You read the parsed pane as a rendered document. The owner can also switch to a raw view and save an edit as a new version. A shared reader can read. A shared reader cannot save an edit.
+
+The parsed pane is empty of content until a version exists. A failed parse does not create a usable version.
+
+## How the panes stay in step
+
+For a PDF, parse can mark where each source page starts in the parsed content. When those markers exist, scrolling one pane moves the other to the matching page. The lock works in both directions.
+
+You can turn the lock off. Then each pane scrolls on its own.
+
+Documents parsed before those page markers existed do not stay in step. They still open in two panes. You scroll each side yourself.
+
+Other source types do not use page lock. A video, an article, and a transcript keep their own source view. The parsed pane still shows the structured copy.
+
+## What this is not
+
+The two-pane view is the library reader in NUU Docs. It is not NUU Surf.
+
+NUU Surf is a separate reader. After a document is parsed, you can open it there. A public link also opens in NUU Surf. The two-pane view stays in NUU Docs so you can compare source and parse.
+
+## Related ideas
+
+Versions decide which parsed content you see. See [Concept - Core Ideas](/docs/concepts/core-ideas). Sharing decides who can open the view. See [Concept - About Sharing](/docs/concepts/about-sharing).
+
+To use the two panes in practice, follow [Guide - How to Read a Document](/docs/guides/how-to-read-a-document).

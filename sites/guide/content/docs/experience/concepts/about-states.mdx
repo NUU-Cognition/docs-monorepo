@@ -1,0 +1,61 @@
+---
+title: "About States"
+---
+
+A state is the public answer to "what happened to this?" You see it on every offer and every report. Staff change it. You do not.
+
+Offers and reports use different states. Do not mix the two lists.
+
+## Offer states
+
+An offer can be in one of these states.
+
+- **Pending.** You just sent it. Staff have not taken it into the working queue yet.
+- **Queued.** Staff consider it. A changelog change can link a queued offer.
+- **Accepted.** Staff took the idea. This state is final. A changelog change can also link an offer that is already accepted.
+- **On hold.** Staff paused it. From here, staff can only move it to expired.
+- **Expired.** Staff closed it without accepting it. This state is final.
+
+A new offer is pending. From pending, staff can move it to queued or to on hold. From queued, staff can move it to accepted or to on hold. From on hold, staff can move it to expired. There is no declined state.
+
+Accepted and expired are final. Staff cannot move an offer out of those states.
+
+## Report states
+
+A report can be in one of these states.
+
+- **Open.** You just sent it. Staff have not confirmed it yet.
+- **Confirmed.** Staff agree the bug is real.
+- **Fixed.** Staff resolved it. This state is final.
+- **Cannot reproduce.** Staff could not see the bug. This state is final.
+- **Duplicate.** Staff judged it to be the same as another report. This state is final. The row names the other report.
+
+A new report is open. From open, staff can move it to confirmed, cannot reproduce, or duplicate. From confirmed, staff can move it to fixed or to duplicate. Fixed, cannot reproduce, and duplicate are final.
+
+A changelog change can link a report that is open, confirmed, or fixed.
+
+## Why states are strict
+
+The service allows only the moves above. A pending offer cannot jump to accepted. An open report cannot jump to fixed. This keeps the queue readable. It also keeps the changelog honest, because publish uses those states.
+
+When staff publish a changelog update, the service moves some linked rows as part of that act.
+
+- A linked offer that is queued becomes accepted.
+- A linked report that is open or confirmed becomes fixed.
+
+Staff can also accept an offer or fix a report from the queue. That path can name the changelog change at the same time. The link then lives on both sides.
+
+Some holds are blocked while a draft update still links the row. Staff must unlink the row first. Then they can move an offer to on hold, or a report to cannot reproduce or duplicate.
+
+## What you see
+
+On your own lists, the state is the main signal. Open the row for the rest of the story. An accepted offer can show which update took it. A fixed report can show which change repaired it. Comments on the row add the human notes around those states.
+
+Read [Guide - Follow Your Submission](/experience/guides/follow-your-submission) when you want the steps.
+
+## Further Reading
+
+- [Concept - Core Ideas](/experience/concepts/core-ideas)
+- [Concept - About Offers and Reports](/experience/concepts/about-offers-and-reports)
+- [Concept - About Changelog Updates](/experience/concepts/about-changelog-updates)
+- [Guide - Follow Your Submission](/experience/guides/follow-your-submission)

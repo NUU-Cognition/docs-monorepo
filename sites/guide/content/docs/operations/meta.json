@@ -1,0 +1,10 @@
+{
+  "title": "NUU Operations",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}

@@ -1,0 +1,59 @@
+---
+title: "Core Ideas"
+---
+
+Surf has a small set of nouns. If you know them, the reader makes sense. If you mix them, the flows feel random. This page defines each noun. Then it shows how the nouns relate.
+
+## Surf
+
+A surf is one pipeline run over one document version. The document comes from your library after NUU Docs has parsed it. The run has a status. It can be queued, running, completed, or failed. When the run is completed, the reader can open it.
+
+A document can have more than one surf. Each surf is a separate run. You can open a later run if one exists. The latest completed surf is what a shared link usually shows.
+
+## Layer
+
+A layer is one depth of summary. The top layer is the document abstract. Lower layers cover smaller sections. The deepest layer is the original text. Each layer is made of cards. A card stands for one section at that depth.
+
+## Span
+
+A span is a selected stretch of text inside a card. It can be a word, a phrase, a sentence, or several sentences. Every highlight, note, and question is anchored to a span. The reader can paint that span again later so you can find it.
+
+## Question and answer
+
+A question is a request you send about a span. The answer is the reply the reader returns for that span. The pair stays tied to the span. You can open it again from the side panel or from a mark on the sentence. You can also keep a longer conversation about the document. That conversation is still yours. It is not part of a wave or a public reading link.
+
+## Note
+
+A note is a saved thought tied to one or more spans. A note can be a highlight only, with no title or body. A note can be text you write. A note can also be text the reader drafts from the span, with extra related spans attached. You can edit a note later. You can restore a past version of a note.
+
+## Highlight
+
+A highlight is the simplest note. It marks a span and does not add a title or a body. It is a bookmark in the text. Highlights and notes use different marks so you can tell them apart.
+
+## Outline
+
+An outline is a tree of the document beside the reader. One tree follows the original headings. One tree follows the summary cards. You use the outline to jump. You can expand or collapse a section from the outline without losing the canvas.
+
+## Firehose
+
+Firehose is a playback mode for one card. It streams the words of that card in chunks. You set the speed. You can pause on punctuation. You can also hear the words read aloud. As it plays, the matching words light up on the card.
+
+## Wave
+
+A wave is a shared collection of documents. It has a title. It can have a description. A person opens the wave from a link. The wave can ask for a password. A guest can open a member document only when that document is itself shared for public reading.
+
+## Public reading link
+
+A public reading link opens one surfed document without an account. The owner can require a password. A guest can zoom, use the outline, and use firehose. A guest cannot save notes or questions to an account. If you sign in, you read with your own notes on that same document.
+
+## How the nouns relate
+
+The library holds documents. You run a surf on one version. The surf produces layers of cards. You read by zooming through those layers. When you need a passage, you select a span. On that span you highlight, write a note, ask a question, or start firehose. The outline is the map of the same tree. A wave packages several documents for other people. A public reading link shares one document the same way.
+
+See [Concept - Layers and Zoom](/surf/concepts/layers-and-zoom) for the zoom model. See [Concept - Spans Notes and Questions](/surf/concepts/spans-notes-and-questions) for work on a span. See [Concept - Waves and Public Reading](/surf/concepts/waves-and-public-reading) for sharing.
+
+## Further Reading
+
+- [Guide - Introduction](/surf)
+- [Guide - Read by Zooming Through Layers](/surf/guides/read-by-zooming-through-layers)
+- [Guide - Ask Questions and Take Notes](/surf/guides/ask-questions-and-take-notes)

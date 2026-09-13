@@ -1,0 +1,51 @@
+---
+title: "Layers and Zoom"
+---
+
+The reader is not a single long page. It is a stack of summaries. You choose the depth for each section. This is the main idea of Surf. The rest of the reader is built on it.
+
+## Why layers exist
+
+A full document is too wide to hold in view. A single summary is too thin to trust. Layers sit between those two extremes. The top layer is short. Each step down adds more of the original structure. The last step is the original text.
+
+You do not have to open every section. You keep most of the document at a glance. You zoom only where the argument matters.
+
+## Cards
+
+A card is one section at one layer. The title is the section heading. The body is the summary for that section. A card also shows how deep you are, and how much of the section the summary covers.
+
+A card can show a small map of the sections under it. That map is a shape, not a second document. It tells you if the section is flat or nested.
+
+The card body is for reading and for selecting text. Zoom does not live on the body. Zoom lives in the empty space around the card. That split keeps selection and zoom from fighting each other.
+
+## Independent zoom
+
+Each summary card zooms on its own. When you zoom in, that card is replaced by the cards under it. The rest of the document stays at the depth you left it. One section can sit at the original text. The next section can stay as a short summary.
+
+Zoom out works the same way. You collapse one level of the section you are in. You do not reset the whole document.
+
+This is why Surf feels like a map. Position in the document and depth in the document are separate. You move along the page to change position. You zoom to change depth.
+
+## Depth marks
+
+Each card shows its layer. The top abstract is the first layer. Each nested summary is a deeper layer. Original text is the deepest layer. The mark on the card matches the mark in the small map, so depth stays visible.
+
+The card also shows a word ratio. That ratio compares the summary length to the section length. A small ratio means the card is a tight compress. A large ratio means you are close to the original wording. Use it to decide if you should zoom or trust the summary.
+
+## The outline
+
+The side panel holds two trees of the same document. One tree is the original headings. One tree is the summary cards. Both trees follow reading order. You jump from a row to the matching card. You can expand or collapse from the outline. You can expand all or collapse all when you want a reset.
+
+The outline follows the same zoom state as the canvas. If a section is open on the page, it is open in the tree.
+
+## Reading aids on the canvas
+
+The canvas can indent cards by layer, or lay them out at full width. You can change text size. You can turn on reading aids that bold word stems, change the typeface, or paint a line gradient. These aids do not change the layers. They only change how the same cards look.
+
+See [Concept - Core Ideas](/surf/concepts/core-ideas) for the noun list. See [Guide - Read by Zooming Through Layers](/surf/guides/read-by-zooming-through-layers) for the reading flow.
+
+## Further Reading
+
+- [Concept - Core Ideas](/surf/concepts/core-ideas)
+- [Guide - Read by Zooming Through Layers](/surf/guides/read-by-zooming-through-layers)
+- [Guide - Read with Keyboard Shortcuts](/surf/workflows/read-with-keyboard-shortcuts)
