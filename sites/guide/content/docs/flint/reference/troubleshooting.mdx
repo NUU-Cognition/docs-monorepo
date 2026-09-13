@@ -1,0 +1,182 @@
+---
+title: "Troubleshooting"
+---
+
+Common current issues and the fastest reliable ways to recover from them.
+
+## “Not inside a Flint workspace.”
+
+Many commands auto-detect the active workspace from the current directory.
+
+Fix:
+
+- `cd` into the Flint root
+- or pass `--path <dir>` where the command supports it
+
+The canonical CLI suggestion is: `cd into a Flint, or pass --path <dir> where supported.`
+
+## “Unknown command”
+
+Check the current command surface:
+
+```bash
+flint --help
+```
+
+Common removed or replaced commands:
+
+- `flint iam` -> use `flint config name` or `flint setup`
+- top-level `flint heal` / `flint repair` -> use the specific current command for the subsystem, such as `flint obsidian reset --force`, `flint shard reinstall`, or `flint tinderbox heal`
+- `flint agent` / `flint code` -> use `flint orbh`
+
+## A Flint Does Not Appear in `flint list`
+
+Register it:
+
+```bash
+flint register /path/to/flint
+```
+
+If the registry entry is stale, re-register it and then inspect status:
+
+```bash
+flint register /path/to/flint --force
+flint list --status
+```
+
+## A Declared Codebase Reference Is Still Unfulfilled
+
+Declare it with a path, or fulfill an existing declaration:
+
+```bash
+flint reference codebase "Flint" /path/to/flint
+```
+
+```bash
+flint fulfill codebase "Flint" /path/to/flint
+flint reference list
+```
+
+`flint fulfill` currently supports `codebase` resources only. Flint references are fulfilled through the registry and sync flow.
+
+## A Flint Reference Will Not Resolve
+
+Make sure the target Flint is registered locally:
+
+```bash
+flint list
+flint register /path/to/target-flint
+```
+
+Then run:
+
+```bash
+flint sync
+```
+
+## `flint source meshexport add` Cannot Find the Source Flint
+
+Source bundle exports resolve through the local registry. Register the source Flint first, then try again.
+
+## Shards Are Installed but the Workspace Still Feels Broken
+
+This usually means the workspace declaration and the local shard state have drifted apart.
+
+Run:
+
+```bash
+flint shard list --sources
+flint shard status <name>
+flint shard reinstall <name>
+flint sync
+```
+
+This is especially relevant because shards are the cognitive programs the environment depends on. If shards are broken, the agent-facing behavior of the workspace is broken too.
+
+For all installed shards, use:
+
+```bash
+flint shard update
+flint sync
+```
+
+## A Workspace Repository Is Declared but Missing on Disk
+
+Check status and then restore it:
+
+```bash
+flint workspace list
+flint workspace update "<name>"
+```
+
+## A Source Repository Is Declared but Missing on Disk
+
+Check status and refresh it:
+
+```bash
+flint source repo list
+flint source repo update "<name>"
+```
+
+## Export Build Says Nothing Is Declared
+
+Make sure the source file exists in `Mesh/` and has the `#export` tag, then declare and build:
+
+```bash
+flint export scan
+flint export add <file> <name>
+flint export build <name>
+```
+
+## The Server or Runtime Is Not Available
+
+Start the server first:
+
+```bash
+flint server start
+flint server status
+```
+
+If `flint runtime` is unavailable, remember that the top-level `runtime` command group is dev-gated in the current CLI.
+
+## Headless or Interactive Agent Commands Fail
+
+Use the current Orbh command family:
+
+```bash
+flint orbh profiles
+flint orbh runtimes
+flint orbh i <runtime/profile>
+flint orbh launch <runtime/profile> "prompt"
+```
+
+Make sure the target runtime is installed and visible to Orbh. For example, Claude sessions need Claude Code installed; Codex sessions need Codex installed. For any agent workflow, also check that the workspace has the shards and references the agent expects.
+
+## `.obsidian` Is Broken
+
+Use the built-in recovery commands:
+
+```bash
+flint obsidian update
+flint obsidian reset --force
+```
+
+## `flint git sync` Stops on a Rebase Conflict
+
+Resolve the conflict markers in the affected files, then rerun:
+
+```bash
+flint git sync
+```
+
+The current implementation detects an in-progress rebase and continues the sync flow when rerun.
+
+## API Errors Have Codes
+
+Server routes use the current coded error envelope:
+
+```json
+{ "error": "<code>", "message": "<human text>" }
+```
+
+Extra fields may appear beside `error` and `message`. The code comes from the Flint error vocabulary, such as `not_a_flint`, `artifact_not_found`, `already_exists`, `conflict`, `validation_error`, `tool_timeout`, or `internal_error`. The CLI prints the human message; server responses keep the code for programmatic handling.

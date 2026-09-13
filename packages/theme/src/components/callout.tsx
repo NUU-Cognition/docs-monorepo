@@ -1,47 +1,103 @@
 import * as React from "react";
-import { Info, AlertTriangle, Lightbulb, AlertCircle } from "lucide-react";
+import { Info, AlertTriangle, Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
 
-type CalloutType = "info" | "warning" | "tip" | "danger";
+/* The theme Callout accepts its own types and the Fumadocs types.
+   "warn" is "warning". "danger" and "error" share one look. */
+export type CalloutType =
+  | "info"
+  | "tip"
+  | "warning"
+  | "warn"
+  | "danger"
+  | "error"
+  | "success";
 
-interface CalloutProps {
+type Tone = "info" | "tip" | "warning" | "danger" | "success";
+
+export interface CalloutProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   type?: CalloutType;
-  title?: string;
-  children: React.ReactNode;
+  title?: React.ReactNode;
+  /** Replace the default icon. */
+  icon?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const icons: Record<CalloutType, React.ReactNode> = {
-  info: <Info className="h-5 w-5" />,
-  warning: <AlertTriangle className="h-5 w-5" />,
-  tip: <Lightbulb className="h-5 w-5" />,
-  danger: <AlertCircle className="h-5 w-5" />,
+function toTone(type: CalloutType): Tone {
+  if (type === "warn") return "warning";
+  if (type === "error") return "danger";
+  return type;
+}
+
+const icons: Record<Tone, React.ReactNode> = {
+  info: <Info className="size-4" />,
+  tip: <Lightbulb className="size-4" />,
+  warning: <AlertTriangle className="size-4" />,
+  danger: <AlertCircle className="size-4" />,
+  success: <CheckCircle2 className="size-4" />,
 };
 
-const styles: Record<CalloutType, string> = {
-  info: "border-blue-500/50 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  warning: "border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
-  tip: "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-300",
-  danger: "border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-300",
+/* The colored rule and the icon read the Fumadocs status tokens.
+   guide.css maps these to the NUU Four Elements. */
+const colors: Record<Tone, string> = {
+  info: "var(--color-fd-info)",
+  tip: "var(--color-fd-success)",
+  warning: "var(--color-fd-warning)",
+  danger: "var(--color-fd-error)",
+  success: "var(--color-fd-success)",
 };
 
-const titles: Record<CalloutType, string> = {
-  info: "Info",
-  warning: "Warning",
+const titles: Record<Tone, string> = {
+  info: "Note",
   tip: "Tip",
+  warning: "Warning",
   danger: "Danger",
+  success: "Done",
 };
 
 /**
- * Callout component for highlighting important information
+ * Callout. A hairline box with a thin colored rule on the left.
+ * No fill, no shadow. The title is T1. The body is T3.
  */
-export function Callout({ type = "info", title, children }: CalloutProps) {
+export function Callout({
+  type = "info",
+  title,
+  icon,
+  children,
+  className,
+  style,
+  ...props
+}: CalloutProps) {
+  const tone = toTone(type);
+  const heading = title ?? titles[tone];
   return (
-    <div className={`my-4 flex gap-3 rounded-lg border-l-4 p-4 ${styles[type]}`}>
-      <div className="flex-shrink-0 mt-0.5">{icons[type]}</div>
-      <div>
-        {(title || titles[type]) && (
-          <p className="font-semibold mb-1">{title || titles[type]}</p>
-        )}
-        <div className="text-sm [&>p]:m-0">{children}</div>
+    <div
+      data-callout={tone}
+      className={[
+        "not-prose my-5 flex gap-3 rounded-lg border border-fd-border p-3 ps-2 text-sm",
+        className ?? "",
+      ].join(" ")}
+      style={{ "--callout-color": colors[tone], ...style } as React.CSSProperties}
+      {...props}
+    >
+      <div
+        role="none"
+        className="w-0.5 shrink-0 self-stretch rounded-sm opacity-60"
+        style={{ backgroundColor: "var(--callout-color)" }}
+      />
+      <div
+        className="mt-0.5 shrink-0"
+        style={{ color: "var(--callout-color)" }}
+      >
+        {icon ?? icons[tone]}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {heading ? (
+          <p className="m-0 font-medium text-fd-foreground">{heading}</p>
+        ) : null}
+        <div className="prose prose-no-margin text-sm text-fd-muted-foreground [&>p]:my-0 [&>p+p]:mt-2">
+          {children}
+        </div>
       </div>
     </div>
   );

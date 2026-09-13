@@ -1,0 +1,492 @@
+---
+title: "CLI Commands"
+---
+
+Complete reference for all `flint orbh` subcommands. These commands manage the full lifecycle of headless agent sessions — launching, observing, interacting, and completing.
+
+## Launch and Resume
+
+### `flint orbh launch`
+
+Launch a new headless agent session.
+
+```bash
+flint orbh launch <runtime> <prompt> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<runtime>` | Harness runtime: `claude`, `codex`, `droid`, `gemini` |
+| `<prompt>` | Task prompt for the agent |
+
+| Option | Description |
+|---|---|
+| `--continues <id>` | Link as continuation of a previous session |
+| `--max-turns <n>` | Maximum number of agent turns |
+| `--model <model>` | Model override (e.g., `opus`, `sonnet`) |
+| `--title <title>` | Pre-set session title (skips agent self-registration) |
+| `--description <desc>` | Pre-set session description |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+# Basic launch
+flint orbh launch claude "implement the auth module"
+
+# Launch with model override and turn limit
+flint orbh launch claude "review this PR" --model opus --max-turns 20
+
+# Launch as continuation of a previous session
+flint orbh launch claude "continue the refactor" --continues a7c3e8f1
+
+# Launch with pre-set title
+flint orbh launch claude "fix the bug" --title "Fix auth bug"
+```
+
+### `flint orbh resume`
+
+Resume an existing session by adding a new run.
+
+```bash
+flint orbh resume <id> [prompt] [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or shortest unambiguous prefix) |
+| `[prompt]` | Optional prompt for the resumed session (default: "Continue working") |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh resume a7c3e8f1
+flint orbh resume a7c3e8f1 "now add tests for the auth module"
+```
+
+### `flint orbh i`
+
+Launch an interactive agent session with Orbh tracking. Alias: `interactive`.
+
+```bash
+flint orbh i <runtime> [prompt] [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<runtime>` | Harness runtime: `claude`, `codex`, `droid`, `gemini` |
+| `[prompt]` | Optional initial prompt |
+
+| Option | Description |
+|---|---|
+| `-c, --continue <id>` | Continue a previous Orbh session |
+| `--continues <id>` | Link as continuation (new session) |
+| `--model <model>` | Model override |
+| `--dev-channels` | Load development MCP channels (e.g., orbh) |
+| `--no-export` | Skip transcript export on exit |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh i claude
+flint orbh i claude "help me debug this" --model opus
+flint orbh i claude -c a7c3e8f1  # Continue previous session
+```
+
+## Observation
+
+### `flint orbh list`
+
+List agent sessions.
+
+```bash
+flint orbh list [options]
+```
+
+| Option | Description |
+|---|---|
+| `-a, --all` | Show all sessions (default: most recent 30) |
+| `-s, --stats` | Show token usage and turn counts |
+| `-i, --interactive` | Refresh the list live (2s interval) |
+| `-S, --status <status>` | Filter by status (e.g., `in-progress`, `finished`) |
+| `-r, --runtime <runtime>` | Filter by runtime (e.g., `claude`, `codex`) |
+| `-q, --search <text>` | Search title, description, and prompt |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh list                          # Most recent 30 sessions
+flint orbh list --all                    # All sessions
+flint orbh list --stats                  # With token counts
+flint orbh list -i                       # Live refresh
+flint orbh list -S in-progress           # Only running sessions
+flint orbh list -q "auth"               # Search for "auth"
+```
+
+### `flint orbh inspect`
+
+Show detailed information about a session: metadata, interface state, runs, and requests.
+
+```bash
+flint orbh inspect <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--results` | Include run results in output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh inspect a7c3e8f1
+flint orbh inspect a7c3e8f1 --results
+```
+
+### `flint orbh watch`
+
+Stream a live session transcript to the terminal with a token counter.
+
+```bash
+flint orbh watch <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `-v, --verbose` | Show full thinking blocks and tool output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh watch a7c3e8f1
+flint orbh watch a7c3e8f1 -v    # Verbose mode
+```
+
+### `flint orbh stats`
+
+Show detailed session statistics: turns, tokens, tools used, files touched.
+
+```bash
+flint orbh stats <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--files` | Include full file paths in output |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh stats a7c3e8f1
+flint orbh stats a7c3e8f1 --files
+```
+
+### `flint orbh export`
+
+Export a session transcript to `Mesh/Agents/<Runtime>/` as a markdown file.
+
+```bash
+flint orbh export <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh export a7c3e8f1
+```
+
+### `flint orbh requests`
+
+View request/response pairs for a session.
+
+```bash
+flint orbh requests <id> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID (full or prefix) |
+
+| Option | Description |
+|---|---|
+| `--pending` | Show only unanswered requests |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh requests a7c3e8f1
+flint orbh requests a7c3e8f1 --pending
+```
+
+## Session Management
+
+### `flint orbh register`
+
+Register a title and description for a session. Called by agents at session start.
+
+```bash
+flint orbh register <id> <title> <description...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<title>` | Short title shown in list and watch views |
+| `<description...>` | Longer description of the work |
+
+```bash
+flint orbh register a7c3e8f1 "Fix auth bug" "Investigating and fixing the authentication bypass in the login handler"
+```
+
+### `flint orbh status`
+
+Get or set a session's lifecycle status.
+
+```bash
+flint orbh status <id> [value]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `[value]` | New status (omit to read current status) |
+
+Valid statuses:
+
+| Status | Meaning |
+|---|---|
+| `queued` | Created, not started |
+| `in-progress` | Agent actively working |
+| `blocked` | Waiting for human input (process may be alive or exited) |
+| `deferred` | Posted deferred question and exited |
+| `finished` | Work complete (set automatically by `return`) |
+| `failed` | Unrecoverable error |
+| `cancelled` | Killed by human |
+
+```bash
+flint orbh status a7c3e8f1                    # Read status
+flint orbh status a7c3e8f1 in-progress        # Set status
+```
+
+### `flint orbh return`
+
+Store the final result and mark the session as finished. This is the primary output delivery mechanism for headless agents.
+
+```bash
+flint orbh return <id> <result...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<result...>` | Final result as markdown |
+
+The command:
+1. Stores the result on the current run (`run.result`)
+2. Sets run status to `completed`
+3. Sets session status to `finished`
+
+```bash
+flint orbh return a7c3e8f1 "Completed auth fix. Changed login handler to validate tokens before session creation. All tests pass."
+```
+
+### `flint orbh kill`
+
+Kill a running session's process (SIGTERM).
+
+```bash
+flint orbh kill <id>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+
+```bash
+flint orbh kill a7c3e8f1
+```
+
+### `flint orbh heal`
+
+Fix sessions stuck in non-terminal states due to stale PIDs or orphaned runs.
+
+```bash
+flint orbh heal [options]
+```
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Preview what would be healed without making changes |
+| `-p, --path <dir>` | Path to Flint directory (default: auto-detect) |
+
+```bash
+flint orbh heal
+flint orbh heal --dry-run
+```
+
+## Interface Commands
+
+### `flint orbh set`
+
+Write a key-value pair to the session's interface store.
+
+```bash
+flint orbh set <id> <key> <value...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<key>` | Key name |
+| `<value...>` | Value (supports multi-word) |
+
+```bash
+flint orbh set a7c3e8f1 phase "implementing"
+flint orbh set a7c3e8f1 progress "3/7 requirements"
+```
+
+### `flint orbh get`
+
+Read a value from the session's interface store. Outputs to stdout.
+
+```bash
+flint orbh get <id> <key>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<key>` | Key name |
+
+```bash
+flint orbh get a7c3e8f1 phase
+```
+
+### `flint orbh artifact`
+
+Track an artifact produced by the agent session.
+
+```bash
+flint orbh artifact <id> <path>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<path>` | Artifact path or name |
+
+```bash
+flint orbh artifact a7c3e8f1 "(Report) 001 Auth Review"
+```
+
+## Request and Response
+
+### `flint orbh ask`
+
+Ask a blocking question. The command blocks until a human responds via `flint orbh respond`.
+
+```bash
+flint orbh ask <id> <question...> [options]
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<question...>` | Question text |
+
+| Option | Description |
+|---|---|
+| `--timeout <seconds>` | Timeout in seconds (default: 3600) |
+
+The command:
+1. Creates a request with type `blocking`
+2. Sets session status to `blocked`
+3. Sends a macOS notification
+4. Polls until a response arrives
+5. Returns the response to stdout
+
+```bash
+response=$(flint orbh ask a7c3e8f1 "Found 3 issues. Fix all or just criticals?")
+echo "Human said: $response"
+```
+
+### `flint orbh request`
+
+Post a deferred question and exit immediately. The session is set to `blocked`. When the human responds, the session is automatically resumed.
+
+```bash
+flint orbh request <id> <question...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<question...>` | Question text |
+
+```bash
+flint orbh request a7c3e8f1 "What priority should this fix be?"
+```
+
+### `flint orbh respond`
+
+Answer a pending question on a session.
+
+```bash
+flint orbh respond <id> <response...>
+```
+
+| Argument | Description |
+|---|---|
+| `<id>` | Session ID |
+| `<response...>` | Response text |
+
+For blocking questions, this unblocks the waiting `ask` command. For deferred questions, this triggers an automatic session resume.
+
+```bash
+flint orbh respond a7c3e8f1 "Fix all three issues"
+```
+
+## Common Patterns
+
+### Launching and Watching
+
+```bash
+# Launch a session and immediately watch it
+flint orbh launch claude "implement feature X" --title "Feature X"
+flint orbh watch <returned-id>
+```
+
+### Monitoring Active Sessions
+
+```bash
+# Live dashboard of running sessions
+flint orbh list -i -S in-progress
+```
+
+### Session Continuation
+
+```bash
+# First session finishes, start a new one linked to it
+flint orbh launch claude "add tests for the auth module" --continues a7c3e8f1
+```
+
+### Responding to Deferred Questions
+
+```bash
+# Check for pending questions
+flint orbh requests a7c3e8f1 --pending
+
+# Respond (triggers automatic resume)
+flint orbh respond a7c3e8f1 "Use the new API endpoint"
+```

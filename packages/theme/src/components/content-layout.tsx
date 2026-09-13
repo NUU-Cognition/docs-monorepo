@@ -2,7 +2,12 @@ import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { ReactNode } from "react";
 import type { PageTree } from "fumadocs-core/server";
 import type { SiteConfig } from "../config";
+import { createDocsLayoutOptions } from "../layout/docs-layout";
 
+/**
+ * The docs shell: sidebar, product switcher, theme toggle, page column.
+ * All options come from createDocsLayoutOptions(config).
+ */
 export function DocsContentLayout({
   config,
   tree,
@@ -13,23 +18,7 @@ export function DocsContentLayout({
   children: ReactNode;
 }) {
   return (
-    <DocsLayout
-      tree={tree}
-      nav={{
-        title: (
-          <div className="flex items-center gap-2">
-            {config.logo}
-            <span>{config.name}</span>
-          </div>
-        ),
-      }}
-      sidebar={{
-        defaultOpenLevel: 2,
-        collapsible: true,
-      }}
-      themeSwitch={{ enabled: false }}
-      githubUrl={config.github}
-    >
+    <DocsLayout tree={tree} {...createDocsLayoutOptions(config)}>
       {children}
     </DocsLayout>
   );

@@ -1,0 +1,88 @@
+---
+title: "Add Metadata with Frontmatter"
+---
+
+This guide shows how to put metadata at the start of an NCM document. Frontmatter is YAML. The parser reads it first. Products then use the title, tags, and other fields without scanning the body.
+
+## Prerequisites
+
+- You can write a basic NCM document. See [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document).
+- You know that frontmatter is optional in the default NCM preset. The strict preset requires it. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
+
+## Place the block
+
+Put frontmatter at the very start of the file. The first line must open with three dashes. A later line of three dashes closes the block. Nothing may sit above it.
+
+```md
+---
+title: Specification example
+tags:
+  - spec
+  - example
+---
+# Specification example
+```
+
+If the YAML does not close, the default parse still continues. The strict parse does not.
+
+There is at most one frontmatter block. It is always first. Its identity is the fixed value `frontmatter`. It does not take a positional `b1` slot. See [Block Identity](/ncm/concepts/block-identity).
+
+## Set the reserved fields
+
+Use these fields when you need them.
+
+- `id` is the document identity. A string is required.
+- `title` is the document title.
+- `tags` is a list of strings. A tag without a hash gets a hash.
+- `created` is a creation timestamp as a string.
+- `modified` is a last-change timestamp as a string.
+
+If you omit `title`, the first level-one heading can supply it.
+
+```md
+---
+id: example-001
+title: My document
+tags:
+  - draft
+created: 2026-09-13
+modified: 2026-09-13
+---
+```
+
+An older `author` field is still copied. Prefer a field your host documents if you need an author.
+
+## Keep custom fields flat
+
+You may add your own fields. Each custom field must be a scalar, or a list of scalars. A nested object is not allowed. A list of objects is not allowed.
+
+Good:
+
+```md
+---
+title: Lab note
+status: draft
+reviewers:
+  - Alex
+  - Sam
+---
+```
+
+Bad: a field whose value is another map. Flatten that field, or drop it.
+
+Tags are the list exception that the parser already knows. Write them as a list of strings.
+
+## What you get after parse
+
+The document carries metadata derived from the YAML. The raw YAML is also kept so a host can read custom fields.
+
+The body starts after the closing dashes. Headings, paragraphs, and other blocks follow as usual.
+
+A renderer may hide frontmatter, or show it as a metadata panel. The body is what the reader sees.
+
+## Next Steps
+
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document)
+- [Parse and Render a Document](/ncm/guides/parse-and-render-a-document)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

@@ -1,0 +1,10 @@
+{
+  "title": "NUU Vessel",
+  "root": true,
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "guide",
+    "templates"
+  ]
+}

@@ -3,8 +3,9 @@ import type { Config } from "tailwindcss";
 /**
  * NUU Docs Tailwind Preset
  *
- * Provides consistent colors, fonts, and spacing across all doc sites.
- * Based on NUU brand guidelines.
+ * @deprecated Tailwind v3 only. No site imports this preset.
+ * Sites on Tailwind v4 import "@nuucognition/docs-theme/styles/guide.css".
+ * Kept for backwards compatibility. Do not extend it.
  */
 export const tailwindPreset: Partial<Config> = {
   theme: {
@@ -54,7 +55,10 @@ export const tailwindPreset: Partial<Config> = {
 
 /**
  * CSS custom properties for NUU theme
- * Include in your globals.css
+ *
+ * @deprecated Tailwind v3 only. No site imports this string.
+ * The tokens now live in "@nuucognition/docs-theme/styles/guide.css".
+ * Kept for backwards compatibility. Do not extend it.
  */
 export const cssVariables = `
 :root {

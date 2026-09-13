@@ -1,0 +1,165 @@
+---
+title: "Tutorial: Agent Collaboration"
+---
+
+Flint works well with AI agents because it gives them a bounded workspace, a clear entrypoint, and a durable place to put results. Just as important, it gives them shards: cognitive programs they can execute inside that workspace. This tutorial shows a practical way to use the agent features without turning the workspace into a transcript graveyard.
+
+## The Goal
+
+By the end of this guide, you should have a workflow where:
+
+- the agent starts with enough context to be useful
+- the work stays grounded in real source material
+- session state is inspectable
+- durable outcomes end up back in `Mesh/`
+
+The deeper goal is to let the agent run structured shard-based workflows inside Flint instead of improvising everything ad hoc.
+
+## Step 1: Prepare the Workspace Before Starting the Agent
+
+The quality of agent collaboration is usually decided before the session starts.
+
+Make sure the workspace has:
+
+- a useful `Mesh/(System) Flint Init.md`
+- the relevant shards declared and synced
+- fulfilled codebase references if the work touches actual software
+- a reasonably clear place for the result to land in `Mesh/`
+
+Agents do much better when the workspace already has structure. Flint gives them a map, and shards give them the cognitive programs to run against that map.
+
+## Step 2: Start an Orbh Session
+
+For a background Claude session:
+
+```bash
+flint orbh launch claude "Audit the reference codebase and update the architecture notes."
+```
+
+Useful options:
+
+```bash
+flint orbh launch claude "..." --title "Architecture audit"
+flint orbh launch claude "..." --description "Review API architecture"
+flint orbh launch claude "..." --continues <session-id>
+flint orbh launch claude "..." --max-turns 20
+flint orbh launch claude "..." --model <model>
+```
+
+The CLI creates an Orbh session spool, adds a run, and launches the selected runtime in the background.
+
+If you want to launch a task and wait for the returned result in the terminal, use `request`:
+
+```bash
+flint orbh request claude "Summarize the current planning notes."
+```
+
+## Step 3: Watch What the Agent Is Doing
+
+To see the session list:
+
+```bash
+flint orbh list
+flint orbh list --all
+flint orbh list --runtime claude
+```
+
+To stream one transcript:
+
+```bash
+flint orbh watch <session-id>
+```
+
+This is useful because Flint does not treat agent work as magical background behavior. It treats it as inspectable workspace state.
+
+Session files live in:
+
+```text
+.orb/
+```
+
+That `.orb/` store is event-sourced. It holds the session spools, runs, messages, request records, and indexes that Orbh uses for inspection and continuation.
+
+## Step 4: Inspect and Control One Session
+
+To inspect a session in detail:
+
+```bash
+flint orbh inspect <session-id>
+flint orbh stats <session-id>
+```
+
+Useful control and result commands include:
+
+- `flint orbh resume <session-id> "Continue from the review notes."`
+- `flint orbh result <session-id>`
+- `flint orbh wait <session-id>`
+- `flint orbh artifact <session-id> Mesh/Notes/Architecture.md`
+
+That makes it the main control surface once a session is in motion.
+
+## Step 5: Handle Questions Cleanly
+
+The Orbh session interface supports structured state and human input.
+
+Examples:
+
+```bash
+flint orbh session <id> set phase "reading-code"
+flint orbh session <id> set repo "payments-api"
+flint orbh session <id> get repo
+flint orbh request <id> "Which branch should the agent analyze?"
+```
+
+For an agent running inside the session, `flint orbh session ask` is the blocking form and `flint orbh request "$ORBH_SESSION_ID" ...` is the deferred form. From outside the session, `flint orbh request <id> ...` posts a deferred question and `flint orbh respond` answers it.
+
+This is much cleaner than treating every interruption as an ad hoc chat exchange.
+
+## Step 6: Keep the Agent Grounded in Source
+
+A good Flint-agent loop usually looks like this:
+
+1. declare or fulfill the needed codebase references
+2. point the agent at the init note and relevant shard init files
+3. have it inspect the actual code or source materials
+4. direct the durable result back into `Mesh/`
+
+That last step is critical. The transcript is not the product. The updated note, plan, report, or guide is the product. Flint is where the cognitive program runs; Mesh is where its durable output lands.
+
+## Step 7: Use the Agent for Bounded Tasks
+
+Flint works best when agent tasks are concrete and scoped.
+
+Good examples:
+
+- update docs from source
+- summarize a subsystem
+- draft a note from a code audit
+- continue a prior investigation
+- answer a targeted research question
+
+Less effective tasks are the vague ones that ask the agent to “figure out everything” with no clear workspace landing zone.
+
+## Step 8: Optional Server, TUI, and MCP Layers
+
+If you want richer inspection or integration surfaces, start them explicitly:
+
+```bash
+flint orbh interactive claude
+flint server start
+flint mcp serve
+```
+
+That is optional. The `orbh` command group itself is already a usable workflow without the server, interactive, or MCP layer.
+
+## A Strong Collaboration Pattern
+
+The best Flint-agent collaboration pattern is simple:
+
+1. prepare the workspace
+2. run the agent on a bounded task
+3. inspect the session
+4. review the result
+5. keep the durable outcome in `Mesh/`
+
+When you do that consistently, the workspace stays clean and the agent becomes much more useful over time.

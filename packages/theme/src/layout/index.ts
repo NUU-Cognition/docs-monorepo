@@ -4,5 +4,5 @@
  * Sites should use createDocsLayoutOptions(config) with their site config.
  */
 
-export { createBaseOptions, baseOptions } from "./base-options";
+export { createBaseOptions, baseOptions, BrandTitle } from "./base-options";
 export { createDocsLayoutOptions, docsLayoutOptions } from "./docs-layout";

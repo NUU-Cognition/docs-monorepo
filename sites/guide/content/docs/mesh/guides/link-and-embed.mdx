@@ -1,0 +1,61 @@
+---
+title: "Link and Embed"
+---
+
+This guide shows how you connect documents and media. You write a wikilink to open another title. You write an embed to show a media file in the body.
+
+The mesh stores the connections. Backlinks and media lists update when the save applies.
+
+## Prerequisites
+
+- You can edit the mesh.
+- You have at least one document open.
+- You know the difference between a wikilink and an embed. See [Links Embeds and Indexes](/mesh/concepts/links-embeds-and-indexes).
+
+## Link to another document
+
+Open the document that should point at another title. In the body, write a wikilink with double square brackets around the target title.
+
+Use the exact title. The title is the address. A typed title includes the parentheses. A nested title includes the parent chain.
+
+You can add a heading after the title if you want to land on a section. You can add display text if you want the visible words to differ from the title.
+
+Save the document. The link is now part of the mesh. Open the target. The context rail lists this document as a backlink.
+
+## Link before the target exists
+
+You can write a wikilink to a title that is not in the mesh yet. The link stays in the body. It does not resolve until a document with that title exists.
+
+Create the missing document with that exact title. The old links then open it. You do not need to edit the old documents.
+
+## Rename without breaking links
+
+Rename the target document. Confirm the rename.
+
+The mesh updates every wikilink that named the old title. Those updates sit in the same batch as the rename. After the batch applies, the old name is gone and the links point at the new name.
+
+If the rename is rejected, nothing changes. See [Understand Versions and Conflicts](/mesh/workflows/understand-versions-and-conflicts).
+
+## Embed a media file
+
+Open a document. Add an image or another allowed media file into the body. You can paste it. You can drop it on the document. You can pick it from the file chooser.
+
+The service stores the bytes first. Then a batch records the file in the mesh. The document gets an embed that names the file.
+
+Save the document so the embed text is stored. The file can exist in the mesh even if you do not save the embed. The context rail still lists it.
+
+## See the media in context
+
+Open the context rail. The media list can show files in the current document. It can show every media file in the mesh.
+
+Open a file from that list. If a document embeds it, that document opens first. If nothing embeds it, the file opens on its own.
+
+## When a media name is taken
+
+If the mesh already has a file with that name, the add is rejected. Nothing is written. Take the existing name. Then add your file again. The workspace will store it under a new numbered name.
+
+## Next steps
+
+- [See How a Document Connects](/mesh/guides/see-how-a-document-connects)
+- [Organise a Mesh](/mesh/guides/organise-a-mesh)
+- [Links Embeds and Indexes](/mesh/concepts/links-embeds-and-indexes)

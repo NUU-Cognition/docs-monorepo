@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && pnpm build --filter=@nuucognition/guide",
+  "installCommand": "cd ../.. && pnpm install",
+  "git": {
+    "deploymentEnabled": false
+  }
+}

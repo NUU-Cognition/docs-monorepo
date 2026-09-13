@@ -16,6 +16,12 @@ export interface SiteConfig {
   /** Site description for meta tags */
   description?: string;
 
+  /**
+   * Canonical site URL, for example "https://guide.nuucognition.com".
+   * When set, createMetadata uses it for metadataBase and Open Graph.
+   */
+  url?: string;
+
   /** Logo component or element to display in nav */
   logo?: ReactNode;
 

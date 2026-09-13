@@ -1,0 +1,70 @@
+---
+title: "Presets and Extensions"
+---
+
+A preset is a named set of parse choices. An extension is one promotion you can switch on or off. Together they decide what your Markdown becomes after parse.
+
+You do not change the file to pick a preset. The host that parses the document chooses the preset. Writers still need to know which patterns the default NCM parse will accept. See [Promotion](/ncm/concepts/promotion).
+
+## The main presets
+
+NCM ships five presets.
+
+CommonMark is strict base Markdown. It keeps indented code and raw HTML. It does not parse tables, strikethrough, or task lists. It does not run NCM promotions.
+
+GFM is GitHub Flavored Markdown. It adds tables, strikethrough, and task lists. It does not run NCM promotions. A callout stays a blockquote. A mermaid fence stays a code block. An embed with a caption stays two separate blocks.
+
+NCM default is the balanced NCM parse. It includes GFM tables, strikethrough, and task lists. It turns on figures, admonitions, footnotes, and author anchors. It leaves definition lists, spoilers, and asides off.
+
+NCM full turns every NCM extension on. Use it when the document needs definition lists, spoilers, or asides as well as the default promotions.
+
+NCM strict is like the default, with tighter checks. It requires frontmatter. It treats warnings as errors. Use it for documents that must not pass with a problem.
+
+## What an extension is
+
+An extension is a promotion with a switch. The switch is on or off for that parse.
+
+On by default in NCM:
+
+- figures
+- admonitions
+- footnotes
+- author anchors
+- task lists
+- mermaid diagrams
+- math fences
+- link blocks
+- quote attribution
+
+Off by default:
+
+- definition lists
+- spoilers
+- asides
+
+The CommonMark and GFM presets keep the NCM extensions off. The same source then parses as ordinary Markdown.
+
+## Why presets exist
+
+Hosts need more than one contract.
+
+A host that must match CommonMark should not invent figures. A host that must match GitHub should parse tables and task lists, and nothing more. A NUU product that wants callouts and diagrams should use NCM default.
+
+The same file can parse two ways. That is a host choice. If you write NCM callouts, parse with an NCM preset or the callouts stay quotes.
+
+## What writers should assume
+
+Unless a host says otherwise, assume the default NCM preset.
+
+Write callouts, figures, mermaid diagrams, footnotes, task lists, and author anchors as documented. Those patterns promote. See [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
+
+Do not depend on definition lists, spoilers, or asides unless the host turns those extensions on.
+
+Frontmatter is optional in the default preset. It is required in the strict preset. See [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+
+## Further Reading
+
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Promotion](/ncm/concepts/promotion)
+- [Parse and Render a Document](/ncm/guides/parse-and-render-a-document)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

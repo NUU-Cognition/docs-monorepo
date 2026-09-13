@@ -1,0 +1,55 @@
+---
+title: "Published Versions"
+---
+
+A published version is a frozen copy of a whole mesh. It is not a named point in one document. It is not a share invite. It is a new mesh that nobody can edit.
+
+You publish when you want readers to open a stable snapshot. The live mesh stays yours to change.
+
+## Live mesh and frozen copy
+
+The mesh you edit is live. Saves, renames, and media adds still apply there.
+
+A publish clones that live mesh at one moment. The clone is frozen. You cannot edit it. Collaborators cannot edit it. The service rejects writes to it.
+
+The clone is a real mesh. It has the same titles, the same bodies, and the same media. It does not copy the change log of the live mesh. Readers see the documents. They do not see your later edits until you publish again.
+
+Each publish is a new copy. You give it a version number. The first number is often `v1.0.0`. The next number is yours to choose. If you use a three-part number, Onyx can suggest the next patch.
+
+## What readers see
+
+Readers find published meshes in the public list. They can search by name, tags, and owner label. A published version can include a short description.
+
+A reader opens a published version in Onyx in read-only mode. The title tree still works. Wikilinks still work. Backlinks still work. The reader cannot save.
+
+A signed-out visitor can also open a published version. That visitor is a guest. A guest cannot edit.
+
+If a source mesh has several published versions, the reader can switch among the ones that are still available. A withdrawn version stays in the list as unpublished. It does not open.
+
+## The stable link
+
+Each published copy has its own address. There is also a stable link for the source mesh. The stable link always opens the latest published version that is ready.
+
+When you share a link, share the stable link. A later publish then becomes what a new reader opens. An old copy stays reachable at its own address if you still want to point at that exact number.
+
+## Why publish is not share
+
+Share invites a NUU account to the live mesh. That person can be an admin, an editor, or read-only. Share is about people and roles. See the workspace sharing flow in Onyx.
+
+Publish makes a public, frozen copy. A reader does not join the live mesh. A reader does not get your later drafts.
+
+You can do both. You share the live mesh with your team. You publish a version for everyone else.
+
+## What can go wrong
+
+A publish copies the mesh. A large mesh, or a mesh that you edit during the copy, can take time. If you edit the live mesh while the copy runs, the copy can start again. That is how the copy stays a real snapshot, not a mix of two moments.
+
+A copy can fail. A failed publish never became a version. Nobody read it. You can publish again. You can also remove the failed row.
+
+You can withdraw a published version. Readers then see that it existed and that it is gone. The live mesh is not deleted.
+
+## Further reading
+
+- [Publish a Version](/mesh/workflows/publish-a-version)
+- [Core Ideas](/mesh/concepts/core-ideas)
+- [Understand Versions and Conflicts](/mesh/workflows/understand-versions-and-conflicts)
