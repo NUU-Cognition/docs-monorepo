@@ -1,4 +1,5 @@
 import type { SiteConfig } from "@nuucognition/docs-theme";
+import { GuideLogo } from "@/lib/product-icons";
 
 /**
  * NUU Guide Site Configuration
@@ -12,15 +13,7 @@ export const siteConfig: SiteConfig = {
   description: "User guides for every NUU Cognition product",
   url: "https://guide.nuucognition.com",
   basePath: "",
-  logo: (
-    <img
-      src="/logo.png"
-      alt="NUU Guide"
-      width={24}
-      height={24}
-      className="mb-0.5"
-    />
-  ),
+  logo: <GuideLogo size={18} className="text-fd-foreground" />,
   github: "https://github.com/NUU-Cognition",
   links: [
     {

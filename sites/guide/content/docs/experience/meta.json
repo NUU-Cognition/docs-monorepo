@@ -1,6 +1,7 @@
 {
   "title": "NUU Experience",
   "root": true,
+  "icon": "experience",
   "defaultOpen": false,
   "pages": [
     "index",

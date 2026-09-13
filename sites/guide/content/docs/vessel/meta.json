@@ -2,6 +2,7 @@
   "title": "NUU Vessel",
   "root": true,
   "defaultOpen": false,
+  "icon": "vessel",
   "pages": [
     "index",
     "guide",
