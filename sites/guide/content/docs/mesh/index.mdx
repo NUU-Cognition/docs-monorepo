@@ -1,0 +1,58 @@
+---
+title: "Introduction"
+---
+
+NUU Mesh is a collection of markdown documents and media files. A mesh can be one file. A mesh can also be a whole knowledge base.
+
+You meet Mesh inside NUU Onyx. Onyx is the workspace where you read and edit a mesh. Mesh is the data model under Onyx and other NUU apps. This guide explains Mesh as you see it in Onyx.
+
+## What a mesh is
+
+Each document has a title. The title is the identity of the document. Documents point at each other with wikilinks. Documents show media with embeds.
+
+The mesh stores this collection as a flat list of titles. It also keeps indexes. The indexes include backlinks, tags, types, and a title hierarchy. You do not search the whole mesh to find what links here. The backlink index already knows.
+
+Onyx does not show a graph of nodes and edges. Onyx shows a title tree. The tree is a view of the titles. It is not a folder system.
+
+## Who it is for
+
+This guide is for people who keep notes, plans, and reference material in Onyx.
+
+You use Mesh when titles must stay stable, and when links must still work after a rename. You use Mesh when media sits next to the documents that embed it, and when more than one person edits the same collection.
+
+You need a NUU account to edit a mesh. You can read a published version without an account. See [Concept - Published Versions](/mesh/concepts/published-versions).
+
+## The problem it solves
+
+Many note systems mix folders, files, and links. A move can break a link. A rename can leave a dead pointer.
+
+Mesh treats the title as the address. A wikilink names a title, not a path. When you rename a document, the mesh updates the links that pointed at the old title. The change lands as one batch, or it does not land at all.
+
+The hierarchy lives in the title. A child title contains the parent title, then a space, a dot, a space, then the child name. Onyx draws that chain as a tree. You organise by naming, not by putting files in folders.
+
+## Where Mesh fits
+
+NUU Mesh is the shared data model. NUU Onyx is the workspace that mounts a mesh so you can edit it.
+
+A NUU account is how you sign in. The account owns the meshes you create. You can invite other NUU accounts. An admin can manage sharing. An editor can change documents. A read-only member can only read them.
+
+Flint is a local NUU workspace. Flint also stores thinking as markdown documents that link with wikilinks. Mesh is the same idea in a form that apps can host, share, and publish.
+
+You publish a version when you want a frozen copy that anyone can open. The live mesh stays editable. The published version does not. See [Guide - Publish a Version](/mesh/workflows/publish-a-version).
+
+## What you do in Onyx
+
+You start at the list of meshes you can open. You create a mesh, or you open one you already have.
+
+The workspace has a title tree, the open document, and a context rail with backlinks and media. You create documents and nest them by title. You write wikilinks and embeds. You import files you already have.
+
+Edits go to the service as batches. If the document changed elsewhere, the batch does not apply. You choose which copy to keep. See [Guide - Understand Versions and Conflicts](/mesh/workflows/understand-versions-and-conflicts).
+
+## Next steps
+
+Read the model first. Then follow one flow.
+
+- [Concept - Core Ideas](/mesh/concepts/core-ideas)
+- [Guide - Organise a Mesh](/mesh/guides/organise-a-mesh)
+- [Guide - Link and Embed](/mesh/guides/link-and-embed)
+- [Guide - See How a Document Connects](/mesh/guides/see-how-a-document-connects)

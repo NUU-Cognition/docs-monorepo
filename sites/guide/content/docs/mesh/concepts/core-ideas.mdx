@@ -1,0 +1,50 @@
+---
+title: "Core Ideas"
+---
+
+Mesh is a flat, title-addressed collection. You keep documents and media in one mesh. The mesh computes indexes from those items. Onyx shows the result as a workspace.
+
+This page defines the nouns you need. Later pages explain how the nouns show up in Onyx.
+
+## The collection
+
+**Mesh.** A mesh is one named collection of markdown documents and media files. You open one mesh at a time in Onyx. You can own many meshes. Other people can share a mesh with you.
+
+**Document.** A document is one markdown note in the mesh. It has a title, a body, and optional properties at the top of the file. The body holds the prose, the wikilinks, and the embeds.
+
+**Title.** The title is the identity of the document. No two documents in one mesh share a title. A wikilink names a title. Onyx opens a document by title. A rename changes the identity, and it also rewrites inbound links.
+
+**Blob.** A blob is a media file in the mesh. Images, video, audio, and other files are blobs. Onyx shows blobs as media. An embed names a blob. The mesh stores the file once. Many documents can embed the same file.
+
+## Links and structure
+
+**Wikilink.** A wikilink is a pointer from one document body to a title. You write it with double square brackets around the title. The link can also name a heading inside that document. The link can show different display text.
+
+**Embed.** An embed shows another item inline. You write it with an exclamation mark and then double square brackets around the target. The usual target is a media file. A document can also embed another document.
+
+**Hierarchy.** Hierarchy is containment in the title, not a folder. A child title starts with the parent title, then a space, a dot, a space, then the child name. Onyx draws this as a tree. Missing parents do not break the tree. The child sits under the nearest parent that exists.
+
+## Indexes and change
+
+**Index.** An index is a list the mesh keeps up to date. The mesh does not wait for a search. It already knows backlinks, tags, types, and the title tree. Onyx reads these indexes to fill the rails.
+
+**Backlink.** A backlink is a document that links to the open title. The context rail lists them. When you add a wikilink, the backlink appears on the target. When you rename a title, the backlinks follow the new title.
+
+**Batch.** A batch is a group of changes that apply together. A save, a rename, a create, and a media add each become a batch. The whole batch applies, or none of it applies. If the document moved since you last read it, the batch is rejected.
+
+**Version.** A version is a point in a document's history. Onyx records editing sessions as you work. You can name a version so it stays easy to find. You can restore a named version. Restore adds a new change. It does not delete the later history.
+
+**Published version.** A published version is a frozen copy of a whole mesh. Nobody can edit that copy. Readers open it from a stable link. The live mesh stays separate. Each publish creates a new published version with its own version number.
+
+## How the nouns relate
+
+You own or join a mesh. The mesh holds documents and blobs. Each document has one title. Titles form a hierarchy when they use the dot chain. Wikilinks and embeds connect documents and blobs. Indexes turn those connections into lists you can open. Batches write changes. Versions let you look back. A published version freezes the whole mesh for readers.
+
+Onyx shows the hierarchy as a title tree on the left. It shows the document in the centre. It shows backlinks and media on the right. It does not show a graph.
+
+## Further reading
+
+- [Concept - Titles and Hierarchy](/mesh/concepts/titles-and-hierarchy)
+- [Concept - Links Embeds and Indexes](/mesh/concepts/links-embeds-and-indexes)
+- [Concept - Published Versions](/mesh/concepts/published-versions)
+- [Guide - Introduction](/mesh)

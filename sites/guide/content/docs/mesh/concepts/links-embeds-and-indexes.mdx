@@ -1,0 +1,66 @@
+---
+title: "Links, Embeds, and Indexes"
+---
+
+A mesh is useful because documents point at each other. The pointer is a wikilink or an embed. The mesh keeps indexes of those pointers. Onyx reads the indexes. You do not crawl the files yourself.
+
+## Wikilinks
+
+A wikilink names a title. You write it in the document body with double square brackets around that title. The mesh resolves the target against the flat title list.
+
+A link can also name a heading inside the target. A link can show display text that is different from the title.
+
+A link can fail. The title might not exist yet. Onyx still stores the link. The context rail on the missing title will stay empty until a document with that title exists. You can create the missing document later. The old links then resolve.
+
+A link is not a folder path. If the text looks like a path, the mesh still takes the final name as the title.
+
+When you rename a document, the mesh rewrites inbound wikilinks in the same batch as the rename. Other documents keep working. You do not hunt for old names.
+
+Wikilinks inside code are not links. The mesh ignores them.
+
+## Embeds and media
+
+An embed shows a target inside the body. You write it with an exclamation mark and then double square brackets around the target.
+
+The usual embed is a media file. The mesh stores that file as a blob. The embed names the file. Onyx shows the image, the video, or the file in the document.
+
+You add a media file in two steps. First the bytes go to storage. Then a batch records the file in the mesh. The embed text lands when you save the document. If you add a file and never embed it, the mesh still holds the file.
+
+Two documents can embed the same file. The file is stored once.
+
+If a media name is already taken, the add is rejected. Nothing is written. You take the name that already exists. Then you add the file again under a new name.
+
+## What an index is
+
+An index is a derived list. The mesh rebuilds it from documents and blobs. You never write an index by hand.
+
+The mesh keeps several indexes:
+
+- Backlinks: which documents link to a title.
+- Tags: which documents carry a tag.
+- Types: which titles declare a type.
+- Title hierarchy: which titles nest under which parent.
+- Media names: which files exist, and how to find them.
+
+Onyx uses these indexes in the workspace. The left rail is the hierarchy. The context rail is backlinks and media. Search uses titles. Autocomplete for embeds uses the media index.
+
+Indexes are cheap to read. That is why a backlink appears as soon as the link batch applies. You do not wait for a crawl.
+
+## Backlinks in the workspace
+
+Open a document. The context rail lists every document that links to it. The list is sorted by title.
+
+Rename the open document. The inbound links rewrite. The backlink list follows in the same moment the batch applies.
+
+The context rail also lists media. You can list media in the open document. You can list every media file in the mesh. A click opens the document that embeds the file. If nothing embeds the file, the click opens the file itself.
+
+## Why this shape
+
+Folders make links fragile. A graph view makes order hard to scan. Mesh keeps links as title names and keeps order as a title tree. The indexes are the bridge. They turn a flat list into backlinks and a tree without a second store of membership.
+
+## Further reading
+
+- [Concept - Core Ideas](/mesh/concepts/core-ideas)
+- [Guide - Link and Embed](/mesh/guides/link-and-embed)
+- [Guide - See How a Document Connects](/mesh/guides/see-how-a-document-connects)
+- [Concept - Titles and Hierarchy](/mesh/concepts/titles-and-hierarchy)

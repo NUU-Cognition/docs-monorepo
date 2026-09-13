@@ -1,0 +1,55 @@
+---
+title: "Titles and Hierarchy"
+---
+
+The mesh has no folders. Every document lives in one flat list. The title is the only address. Hierarchy is a reading of the titles, not a place on disk.
+
+Onyx shows that reading as a tree. The tree is a view. If you change a title, the tree changes.
+
+## Title as identity
+
+A title must be unique inside one mesh. The workspace opens, saves, and links by title. An internal id exists for the service. You do not use that id. You use the title.
+
+A plain title is valid. `Scratch Ideas` is a complete title. You do not need a type. You do not need a parent.
+
+A title can start with a type in parentheses. `(Note) Mesh Theory Primer` is a typed title. `(Task) 001 Polish Landing Page` is also a typed title. The type is part of the title. It is not a separate folder.
+
+A title must not contain a slash. The mesh is flat. A slash would look like a path, and the mesh does not use paths as identity.
+
+## How containment works
+
+A child title names its parent, then a space, a dot, a space, then the child. `(Meeting) Kickoff . Follow-ups` is a child of `(Meeting) Kickoff`.
+
+You can nest more than one level. Each extra ` . ` adds one level.
+
+The parent document does not have to exist. If `A . B . C` exists and `A . B` does not, Onyx still shows `C` in the tree. It sits under the nearest parent that does exist. If only `A` exists, `C` sits under `A`. The full title stays `A . B . C`. The tree only changes how the row is indented.
+
+Onyx sorts the tree by title. It does not sort by the time you created the document. Two roots with similar names sit next to each other.
+
+## What you see in the tree
+
+The left rail is one name-ordered tree of every document. A root row shows the full title. A nested row shows only the part below the parent on screen. The full title is still the address. A tooltip and a link still use the full title.
+
+The tree is not a graph. Links do not move a row. Only the title chain places a row.
+
+You can search titles from the rail when you do not remember the place in the tree.
+
+## Why rename is structural
+
+A rename changes identity. Every wikilink that pointed at the old title must change too. The mesh writes the rename and those link updates in one batch. Either all of them apply, or none of them apply.
+
+A rename of a parent can carry its visible children. If you rename `(Meeting) Kickoff` to `(Meeting) Kickoff 2`, the child `(Meeting) Kickoff . Follow-ups` becomes `(Meeting) Kickoff 2 . Follow-ups`. Onyx tells you how many child rows will move before you confirm.
+
+You can also move a document under a new parent. That move is a rename of the title chain. The body of the document does not need to change.
+
+## Types and untyped titles
+
+Types are optional. They help you scan the tree. They also feed the type index. They do not create a second tree. Onyx still shows one tree.
+
+When you create a document, you can set a type on the new title. You can also set a parent on the new title. Both edits change the one title string. There is no separate membership field for the tree.
+
+## Further reading
+
+- [Concept - Core Ideas](/mesh/concepts/core-ideas)
+- [Guide - Organise a Mesh](/mesh/guides/organise-a-mesh)
+- [Concept - Links Embeds and Indexes](/mesh/concepts/links-embeds-and-indexes)

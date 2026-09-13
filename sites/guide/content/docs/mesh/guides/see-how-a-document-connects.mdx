@@ -1,0 +1,67 @@
+---
+title: "See How a Document Connects"
+---
+
+This guide shows how you read the connections around one document. You use the title tree for place. You use the context rail for backlinks and media.
+
+Onyx does not show a graph. The tree and the rail are the map.
+
+## Prerequisites
+
+- You have a mesh open in Onyx.
+- The mesh has more than one document, or you can create them.
+- You know what a backlink is. See [Concept - Links Embeds and Indexes](/mesh/concepts/links-embeds-and-indexes).
+
+## Open the document
+
+Open the mesh. Find the document in the title tree. Open it.
+
+The centre shows the body. Wikilinks in the body are outbound links. They go from this document to other titles.
+
+If the tree is long, search by title in the rail. Then open the match.
+
+## Read the title tree
+
+Look at the left rail. The indent shows hierarchy. A nested row is a child title, not a folder.
+
+The tree answers "where does this title sit". It does not answer "what links here". A document can sit at the root and still have many backlinks. A nested document can have none.
+
+## Show the context rail
+
+Show the context rail if it is hidden. The top of that rail is backlinks. The bottom is media.
+
+If no document is open, the rail tells you to open one.
+
+## Read backlinks
+
+The backlink list is every document that links to the open title. The list is sorted by title.
+
+Open a backlink. That document becomes the centre. Its own backlinks then fill the rail.
+
+If the list is empty, nothing in this mesh links here yet. Add a wikilink from another document. Save that document. The backlink appears on this title.
+
+## Follow a rename
+
+Rename the open document. After the batch applies, open a document that used to link here. The wikilink now names the new title. The backlink list on the new title includes that document.
+
+The old title is gone. There is no second row to clean up.
+
+## Read media around the document
+
+In the media list, choose the current document. You see the files this body embeds, in document order.
+
+Choose all media. You see every file in the mesh.
+
+Open a file from the list. If this document embeds it, the file opens as a tab. If another document embeds it, that document opens first. If nothing embeds it, the file opens on its own.
+
+You can remove a media file you no longer need. Confirm the removal. Embeds that named it will no longer resolve.
+
+## What the rails do not show
+
+The rails do not group documents by tag. They do not draw a network of nodes. Tags still exist on documents. You can use them in the body and in properties. The everyday map in Onyx is the title tree plus backlinks.
+
+## Next steps
+
+- [Guide - Link and Embed](/mesh/guides/link-and-embed)
+- [Concept - Titles and Hierarchy](/mesh/concepts/titles-and-hierarchy)
+- [Guide - Understand Versions and Conflicts](/mesh/workflows/understand-versions-and-conflicts)
