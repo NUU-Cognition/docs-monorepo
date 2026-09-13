@@ -32,12 +32,24 @@ export function createBaseOptions(config: SiteConfig): BaseLayoutProps {
       enabled: true,
       mode: "light-dark",
     },
-    githubUrl: config.github ?? nuuDefaults.github,
-    links: (config.links ?? nuuDefaults.links).map((link) => ({
-      text: link.text,
-      url: link.url,
-      external: link.external,
-    })),
+    // null hides the GitHub button; undefined falls back to the NUU org
+    githubUrl: config.github === null ? undefined : (config.github ?? nuuDefaults.github),
+    links: (config.links ?? nuuDefaults.links).map((link) =>
+      link.icon
+        ? {
+            type: "icon" as const,
+            icon: link.icon,
+            text: link.text,
+            label: link.text,
+            url: link.url,
+            external: link.external,
+          }
+        : {
+            text: link.text,
+            url: link.url,
+            external: link.external,
+          }
+    ),
   };
 }
 

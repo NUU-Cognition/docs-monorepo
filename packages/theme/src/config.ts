@@ -28,21 +28,31 @@ export interface SiteConfig {
   /** Base path for docs (e.g., "/" or "/docs") */
   basePath: string;
 
-  /** GitHub repository URL (optional) */
-  github?: string;
+  /**
+   * GitHub repository URL. Omit it to fall back to the NUU organisation.
+   * Set it to null to show no GitHub link at all.
+   */
+  github?: string | null;
 
-  /** Navigation links */
+  /**
+   * Navigation links. A link with an `icon` renders as an icon button in
+   * the sidebar footer (next to the theme toggle) instead of a text tab.
+   */
   links?: {
     text: string;
     url: string;
     external?: boolean;
+    icon?: ReactNode;
   }[];
 }
 
 /**
  * Default NUU branding values (sites can override)
  */
-export const nuuDefaults = {
+export const nuuDefaults: {
+  github: string;
+  links: NonNullable<SiteConfig["links"]>;
+} = {
   github: "https://github.com/NUU-Cognition",
   links: [
     {
