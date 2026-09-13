@@ -1,0 +1,308 @@
+---
+title: "Configuration Reference"
+---
+
+This page reflects the current zod-first workspace and local-state model implemented in `packages/flint/src/shared/schemas.ts`, the state readers/writers, and the global config modules.
+
+## The Big Picture
+
+Flint configuration is easier to understand if you separate it into three layers:
+
+- committed human-edited declaration
+- committed machine-managed workspace identity
+- local machine fulfillment and runtime state
+
+That split is one of the reasons a Flint can be portable without becoming vague. The workspace can declare what it is and what it needs, while each machine fills in its own paths and live state.
+
+## Main Files
+
+| File | Location | Purpose | Edit |
+|------|----------|---------|------|
+| `flint.toml` | Flint root | Human-edited workspace declaration | yes |
+| `flint.json` | Flint root | Machine-managed workspace state tracked in git | usually no |
+| `.flint/references.json` | `.flint/` | Local fulfillment for reference-style resources | no |
+| `.flint/lattices.json` | `.flint/` | Local lattice fulfillment used by `flint lattice` | no |
+| `.flint/sync.json` | `.flint/` | Last sync timestamp | no |
+| `.orb/` | Flint root | Orbh spools, spaces, and session/event state | no |
+| `.steel/` | Flint root | Steel UI preferences and plate state | no |
+| `flint-hooks.toml` | Flint root | Runtime hook configuration | yes, if using runtime |
+| `~/.nuucognition/config.toml` | global | Shared NUU operator name and machine-name | yes |
+| `~/.nuucognition/flint/config.toml` | global | Global Flint configuration | yes |
+| `~/.nuucognition/flint/registry.json` | global | Local Flint registry | usually no |
+
+## `flint.toml`
+
+`flint.toml` is the main declaration file for a workspace. It describes the environment Flint should materialize.
+
+Current high-level shape:
+
+```toml
+[flint]
+name = "My Project"
+type = "flint"
+tags = ["research"]
+description = "Example workspace"
+org = "nuu-cognition"
+
+[shards]
+installed = [
+  { name = "projects", remote = "NUU-Cognition/shard-projects", version = "1.2.0" },
+  { name = "local-pack", source = "path:../shards/local-pack" },
+]
+dev-remote = [
+  { name = "knap", remote = "NUU-Cognition/shard-knap" },
+]
+dev-local = [
+  { name = "scratch", source = "path:./Shards/(Dev Local) Scratch" },
+]
+
+[exports]
+bundles = [
+  { name = "Guide", file = "Guide.md", mode = "mesh" },
+]
+
+[sources]
+repositories = [
+  { name = "Design System", url = "https://github.com/org/design-system" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+
+[workspace]
+repositories = [
+  { name = "App", url = "git@github.com:me/app.git" },
+]
+
+[plates]
+tasks = { source = "NUU-Cognition/plate-tasks", version = "1.0.0" }
+
+[references]
+codebases = [
+  { name = "Flint" },
+]
+flints = [
+  { name = "Research Hub" },
+]
+lattices = [
+  { name = "customer_data" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+
+[server]
+port = 7433
+```
+
+### `[flint]`
+
+Workspace identity fields:
+
+- `name`
+- `type`
+- `tags`
+- `description`
+- `org`
+
+The `[flint]` frame is the only section validated strictly at whole-file parse time. Feature-owned sections are tolerant: malformed entries are preserved for drift reporting/healing instead of rejecting the whole file, and unknown sections/keys pass through.
+
+### `[shards]`
+
+This is where the workspace declares the cognitive programs available to agents.
+
+Current managed fields:
+
+- `installed`
+- `dev-remote`
+- `dev-local`
+
+Installed entries support:
+
+- `name`
+- `source`
+- `remote`
+- `version`
+
+`remote` is an `owner/repo` source and may be paired with `version`. `source` is a local path source. A bare installed entry with only `name` means the conventional `Shards/<name>` path.
+
+`dev-remote` entries use `name` and `remote`; `dev-local` entries use `name` and `source`.
+
+### `[exports]`
+
+Stores bundle export declarations under `bundles`.
+
+Each export includes:
+
+- `name`
+- `file`
+- `mode`
+- optional `depth`
+
+The only current export mode is `mesh`.
+
+### `[sources]`
+
+Current source fields:
+
+- `repositories`
+- `bundles`
+
+Repository entries use `name` and `url`.
+
+Bundle source entries use:
+
+- `source = "flint"`
+- `name = "Flint Name/Bundle Name"`
+
+### `[workspace]`
+
+Current workspace field:
+
+- `repositories`
+
+Repository entries use `name` and `url`.
+
+### `[plates]`
+
+Plate declarations are keyed by plate name. Each declaration may include:
+
+- `title`
+- `source`
+- `version`
+- `path`
+- `repo`
+
+### `[references]`
+
+Current reference fields:
+
+- `codebases`
+- `flints`
+- `lattices`
+- `bundles`
+
+`codebases`, `flints`, and `lattices` entries use `name`. `bundles` entries use the same shape as source bundles: `source = "flint"` and slash-form `name`.
+
+### `[lattices]`
+
+Legacy lattice declarations may still be read from:
+
+- `references`
+
+The current managed shape writes lattice declarations under `[references].lattices`. Lattice fulfillments used by `flint lattice` live in `.flint/lattices.json`.
+
+### `[server]`
+
+Current public field:
+
+- `port`
+
+## `flint.json`
+
+`flint.json` is tracked in git and stores machine-managed state that should travel with the workspace.
+
+Current fields include:
+
+- `version`
+- `id`
+- `type`
+- `created`
+- `migrations`
+- `pending`
+- `shards`
+- `repos`
+- `org`
+- `features`
+
+Unlike `.flint/`, this file is intended to remain portable.
+
+## Local Fulfillment and Runtime State
+
+### `.flint/references.json`
+
+Stores local fulfillment for reference-style resources.
+
+Current shape:
+
+```json
+{
+  "version": 2,
+  "codebases": [],
+  "flints": [],
+  "bundles": [],
+  "lattices": []
+}
+```
+
+Each fulfillment records:
+
+- `name`
+- `path`
+- optional `fulfilled`
+
+### `.flint/lattices.json`
+
+Stores local lattice connections with:
+
+- `name`
+- `path`
+- `lang`
+- `fulfilled`
+
+### `.flint/sessions/*.json`
+
+This path is no longer the current session store. Orbh session state is stored in `.orb/` spools and spaces.
+
+### `.flint/sync.json`
+
+Stores the last sync timestamp:
+
+```json
+{
+  "synced": "2026-07-07T00:00:00.000Z"
+}
+```
+
+## Global Config
+
+There are two global config files in current code.
+
+### Shared NUU Config
+
+`~/.nuucognition/config.toml` is owned by the shared NUU CLI layer and used by every NUU CLI. Flint reads and writes:
+
+- `name`
+- `machine-name`
+
+`flint config name` and `flint config machine-name` route to this shared config.
+
+### Flint Global Config
+
+`~/.nuucognition/flint/config.toml` is the Flint-specific global config. It currently supports:
+
+- `mode`
+- `[open].apps`
+
+Example:
+
+```toml
+mode = "production"
+
+[open]
+apps = ["obsidian"]
+```
+
+`mode` may be `production`, `experimental`, or `dev`. This file controls Flint-level user preferences, not workspace declaration.
+
+## Registry File
+
+The global registry stores:
+
+- Flint name
+- absolute path
+- optional tags
+- optional description
+- known export names
+
+The registry is how Flint resolves named workspaces locally for commands such as `list`, Flint references, and source mesh exports.

@@ -1,0 +1,98 @@
+---
+title: "Shards"
+---
+
+Shards are the capability layer of Flint. They are cognitive programs -- structured packages of instructions, templates, workflows, and knowledge that agents execute inside the workspace.
+
+Without shards, a Flint is a directory structure and some configuration. With shards, it becomes an environment where an agent can perform repeatable forms of reasoning and produce consistent artifacts.
+
+This page covers how Flint declares, installs, and manages shards. For shard internals -- manifest format, file conventions, authoring, health checks, scripts, and the full CLI reference -- see the dedicated [Shard Documentation](/flint-server/concept-what-are-shards).
+
+## Why Shards Matter
+
+This is the core mental model:
+
+- Flint is the execution environment
+- Shards are the cognitive programs available in that environment
+- Mesh is where the results of those programs become durable knowledge
+
+Declaring a shard is not just adding a plugin. It is adding a reusable mode of thinking and working. The shards you choose define what your workspace can do.
+
+## Declaring Shards
+
+Shards are declared in `flint.toml` using three lifecycle lists under `[shards]`:
+
+```toml
+[shards]
+installed = [
+  { name = "projects", remote = "NUU-Cognition/shard-projects" },
+  { name = "local-tools", source = "./Shards/(Dev Local) Local Tools" },
+]
+dev-remote = [
+  { name = "guides", remote = "NUU-Cognition/shard-guides" },
+]
+dev-local = [
+  { name = "local-tools", source = "./Shards/(Dev Local) Local Tools" },
+]
+```
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Kebab-case shard id used in `flint.toml` |
+| `remote` | `owner/repo` source for installed or dev-remote shards |
+| `source` | Local path source for installed or dev-local shards |
+| `version` | Pin an installed remote shard to a specific version tag |
+
+Installed entries declare exactly one of `remote` or `source`. Dev-remote entries use `remote`. Dev-local entries use `source`.
+
+## Three Shard Modes
+
+Flint recognizes three shard modes, each serving a different purpose:
+
+| Mode | Folder | Git | Purpose |
+|------|--------|-----|---------|
+| Installed | `Shards/Name/` | Parent Flint's git | Consumer copy used by agents |
+| Dev Remote | `Shards/(Dev Remote) Name/` | Own `.git/` repo with remote | Local authoring, can push, release, and publish |
+| Dev Local | `Shards/(Dev Local) Name/` | Parent Flint's git | Workspace-local authoring with no remote |
+
+Dev Remote shards are gitignored from the parent Flint repository. Installed and Dev Local shards are committed with the Flint unless they are otherwise ignored by local policy.
+
+## Sync Behavior
+
+`flint sync` treats the shard declarations in `flint.toml` as authoritative:
+
+- installs missing declared installed shards from their sources
+- reinstalls installed shards when the source version changes
+- clones missing Dev Remote shards
+- repairs damaged Dev Remote or Dev Local scaffolding when it can
+- reports orphan, malformed, missing-source, and outdated-spec drift
+- applies install entries, type definitions, metadata markers, shard repos, and declared Mesh folders through the shared kernel
+
+This is why a Flint can be cloned and made usable again with a single sync. The workspace declaration says which cognitive programs should be available, and sync makes that true on the local machine.
+
+## Common Commands
+
+```bash
+flint shard list              # List installed shards
+flint shard install <source>  # Install a shard
+flint shard reinstall <name>  # Reinstall an installed shard from its declaration
+flint shard update            # Update installed remote shards
+flint sync                    # Sync everything from flint.toml
+```
+
+For the full command reference, including authoring, publishing, health, and script commands, see the [Shard CLI Commands](/flint-server/reference-cli-commands) in the shard documentation.
+
+## Further Reading
+
+The shard system has its own dedicated documentation set covering everything from concepts to CLI reference:
+
+- [What Are Shards](/flint-server/concept-what-are-shards) -- the shard model, three modes, distribution, and dependencies
+- [Creating a Shard](/flint-server/guide-creating-a-shard) -- step-by-step tutorial for building and publishing a shard
+- [Manifest](/flint-server/module-manifest) -- complete `shard.yaml` field reference
+- [File Conventions](/flint-server/module-file-conventions) -- directory structure and naming patterns
+- [Install & Update](/flint-server/module-install-update) -- install pipeline, update, pull, and version pinning
+- [Health & Heal](/flint-server/module-health-heal) -- diagnostics and auto-repair
+- [Scripts](/flint-server/module-scripts) -- executable scripts shipped with shards
+- [Migrations](/flint-server/module-migrations) -- version-to-version workspace migrations
+- [Dev Lifecycle](/flint-server/module-dev-lifecycle) -- create, edit, freeze, release, publish
+- [CLI Commands](/flint-server/reference-cli-commands) -- all `flint shard` subcommands

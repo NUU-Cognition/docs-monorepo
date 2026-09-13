@@ -1,0 +1,619 @@
+/* NUU Guide theme for Fumadocs.
+
+   Import this file after Tailwind and the Fumadocs presets:
+
+     @import "tailwindcss";
+     @import "fumadocs-ui/css/neutral.css";
+     @import "fumadocs-ui/css/preset.css";
+     @import "@nuucognition/docs-theme/styles/guide.css";
+
+   The file has five parts:
+   1. Fonts and base size.
+   2. Color tokens. Maps the Fumadocs --color-fd-* tokens to the NUU palette.
+   3. Radius and layout widths.
+   4. Chrome: sidebar, top nav, table of contents, search, toggles.
+   5. Content: prose, headings, links, code, callouts, cards, tables.
+
+   The look is Paper. Hairline borders. Almost no fill. Text carries the
+   surface. The brand blue appears only on links and the active item. */
+
+/* Scan the theme components for Tailwind classes. The path is relative to this
+   file. A site does not need its own @source line for the theme package. */
+@source "../**/*.{ts,tsx}";
+
+/* ---------------------------------------------------------------------------
+   1. Fonts
+   The root layout sets --font-inter, --font-geist-sans and --font-geist-mono
+   on <html> with next/font. The inline theme maps them to Tailwind utilities.
+   --------------------------------------------------------------------------- */
+@theme inline {
+  --font-sans: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+  --font-heading: var(--font-geist-sans, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+  --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+
+  /* Brand colors as Tailwind utilities: text-brand, border-brand-text, ... */
+  --color-brand: var(--nuu-brand);
+  --color-brand-foreground: var(--nuu-brand-foreground);
+  --color-brand-text: var(--nuu-brand-text);
+
+  /* The four-tone text ladder as utilities: text-tone-1 ... text-tone-4. */
+  --color-tone-1: var(--nuu-tone-1);
+  --color-tone-2: var(--nuu-tone-2);
+  --color-tone-3: var(--nuu-tone-3);
+  --color-tone-4: var(--nuu-tone-4);
+}
+
+/* Base size is 15px. Tailwind rem units scale with it. */
+html {
+  font-size: 15px;
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-feature-settings: "cv11", "ss03";
+}
+
+code,
+pre,
+kbd {
+  font-variant-ligatures: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+/* ---------------------------------------------------------------------------
+   2. Color tokens
+   Light mode is :root. Dark mode is the .dark class on <html>.
+   The NUU neutral scale is OKLCH with zero chroma.
+   --------------------------------------------------------------------------- */
+:root {
+  /* NUU brand. */
+  --nuu-brand: #3d6a9a;
+  --nuu-brand-foreground: #ffffff;
+  --nuu-brand-text: #2a4f72;
+
+  /* NUU Four Elements. Used for callout and status colors. */
+  --nuu-water: #5b93c7;
+  --nuu-fire: #c4736e;
+  --nuu-earth: #6a9e76;
+  --nuu-ember: #d08a52;
+
+  /* Four-tone text ladder. Read T1 -> T3 -> T4. Most text is T3. */
+  --nuu-tone-1: var(--color-fd-foreground);
+  --nuu-tone-2: color-mix(in oklab, var(--color-fd-foreground) 80%, transparent);
+  --nuu-tone-3: var(--color-fd-muted-foreground);
+  --nuu-tone-4: color-mix(in oklab, var(--color-fd-muted-foreground) 60%, transparent);
+
+  /* Fumadocs tokens. */
+  --color-fd-background: oklch(1 0 0);
+  --color-fd-foreground: oklch(0.145 0 0);
+  --color-fd-muted: oklch(0.97 0 0);
+  --color-fd-muted-foreground: oklch(0.556 0 0);
+  --color-fd-popover: oklch(1 0 0);
+  --color-fd-popover-foreground: oklch(0.145 0 0);
+  --color-fd-card: oklch(1 0 0);
+  --color-fd-card-foreground: oklch(0.145 0 0);
+  --color-fd-border: oklch(0.922 0 0);
+  --color-fd-primary: var(--nuu-brand);
+  --color-fd-primary-foreground: var(--nuu-brand-foreground);
+  --color-fd-secondary: oklch(0.97 0 0);
+  --color-fd-secondary-foreground: oklch(0.205 0 0);
+  --color-fd-accent: oklch(0.97 0 0);
+  --color-fd-accent-foreground: oklch(0.205 0 0);
+  --color-fd-ring: oklch(0.708 0 0);
+
+  /* Status colors used by Callout and by code diff marks. */
+  --color-fd-info: var(--nuu-water);
+  --color-fd-warning: var(--nuu-ember);
+  --color-fd-error: var(--nuu-fire);
+  --color-fd-success: var(--nuu-earth);
+
+  /* Link color. Brand text is darker than brand so it reads on white. */
+  --nuu-link: var(--nuu-brand-text);
+  --nuu-link-underline: color-mix(in oklab, var(--nuu-brand) 40%, transparent);
+}
+
+.dark {
+  --nuu-brand: #78b0da;
+  --nuu-brand-foreground: #ffffff;
+  --nuu-brand-text: #a0cce5;
+
+  --nuu-water: #78b0da;
+  --nuu-fire: #da908a;
+  --nuu-earth: #88be92;
+  --nuu-ember: #e2a876;
+
+  --color-fd-background: oklch(0.145 0 0);
+  --color-fd-foreground: oklch(0.985 0 0);
+  --color-fd-muted: oklch(0.245 0 0);
+  --color-fd-muted-foreground: oklch(0.708 0 0);
+  --color-fd-popover: oklch(0.205 0 0);
+  --color-fd-popover-foreground: oklch(0.985 0 0);
+  --color-fd-card: oklch(0.145 0 0);
+  --color-fd-card-foreground: oklch(0.985 0 0);
+  --color-fd-border: oklch(1 0 0 / 10%);
+  --color-fd-primary: var(--nuu-brand);
+  --color-fd-primary-foreground: oklch(0.145 0 0);
+  --color-fd-secondary: oklch(0.269 0 0);
+  --color-fd-secondary-foreground: oklch(0.985 0 0);
+  --color-fd-accent: oklch(0.269 0 0);
+  --color-fd-accent-foreground: oklch(0.985 0 0);
+  --color-fd-ring: oklch(0.556 0 0);
+
+  --nuu-link: var(--nuu-brand-text);
+  --nuu-link-underline: color-mix(in oklab, var(--nuu-brand) 45%, transparent);
+}
+
+/* The neutral preset lifts the sidebar tokens in dark mode. Reset them so the
+   sidebar shares the page palette. A hairline separates it from the page. */
+.dark #nd-sidebar {
+  --color-fd-muted: oklch(0.245 0 0);
+  --color-fd-secondary: oklch(0.269 0 0);
+  --color-fd-muted-foreground: oklch(0.708 0 0);
+}
+
+/* ---------------------------------------------------------------------------
+   3. Radius and layout widths
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Quiet corners. The NUU base radius is 0.625rem. Docs chrome uses less. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.875rem;
+}
+
+:root {
+  /* The page column. Article width is page width minus the TOC column.
+     With a 286px TOC this gives a prose column near 48rem. */
+  --fd-page-width: 1120px;
+  /* Center the whole layout on very wide screens. */
+  --fd-layout-width: 1600px;
+}
+
+/* ---------------------------------------------------------------------------
+   4. Chrome
+   --------------------------------------------------------------------------- */
+
+/* Sidebar. White surface, hairline edge, no card feel. */
+#nd-sidebar {
+  background-color: var(--color-fd-card);
+  border-color: var(--color-fd-border);
+  font-size: 0.875rem;
+}
+
+/* The brand title in the sidebar header uses the heading face. */
+#nd-sidebar .nuu-brand,
+#nd-sidebar-mobile .nuu-brand,
+#nd-subnav .nuu-brand,
+#nd-nav .nuu-brand {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-fd-foreground);
+}
+
+/* Sidebar items rest at T3. The active item is brand text with no fill.
+   The nested rail that Fumadocs draws next to the active item stays. */
+#nd-sidebar a[data-active="true"],
+#nd-sidebar-mobile a[data-active="true"] {
+  background-color: transparent;
+  color: var(--nuu-link);
+  font-weight: 500;
+}
+
+/* Hover is a faint wash. The accent token is one step off white. */
+#nd-sidebar a:not([data-active="true"]):hover,
+#nd-sidebar button:not([data-theme-toggle]):hover,
+#nd-sidebar-mobile a:not([data-active="true"]):hover {
+  background-color: color-mix(in oklab, var(--color-fd-accent) 70%, transparent);
+  color: var(--color-fd-foreground);
+}
+
+/* Sidebar section labels are quiet meta text. */
+#nd-sidebar p.inline-flex,
+#nd-sidebar-mobile p.inline-flex {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nuu-tone-4);
+}
+
+/* Search toggle and product switcher. No fill. Hairline border. */
+#nd-sidebar [data-search-full],
+#nd-sidebar-mobile [data-search-full],
+#nd-sidebar [data-radix-popper-content-wrapper] ~ button,
+#nd-sidebar button[aria-haspopup="dialog"],
+#nd-sidebar-mobile button[aria-haspopup="dialog"] {
+  background-color: transparent;
+  border-color: var(--color-fd-border);
+}
+
+#nd-sidebar [data-search-full]:hover,
+#nd-sidebar button[aria-haspopup="dialog"]:hover {
+  background-color: color-mix(in oklab, var(--color-fd-accent) 70%, transparent);
+}
+
+/* The key hints inside the search toggle. */
+#nd-sidebar [data-search-full] kbd {
+  border-color: var(--color-fd-border);
+  background-color: transparent;
+  color: var(--nuu-tone-4);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
+/* Sidebar footer. Hairline top rule. */
+#nd-sidebar > div:last-child {
+  border-color: var(--color-fd-border);
+}
+
+/* Top nav. On desktop the docs layout hides the top bar and the sidebar holds
+   the brand. On mobile the bar is a blurred white strip with a hairline. */
+#nd-nav,
+#nd-subnav {
+  border-color: var(--color-fd-border);
+  background-color: color-mix(in oklab, var(--color-fd-background) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Mobile TOC bar. Same treatment. */
+#nd-tocnav {
+  border-color: var(--color-fd-border);
+  background-color: color-mix(in oklab, var(--color-fd-background) 85%, transparent);
+  box-shadow: none;
+}
+
+/* Table of contents. Small, T3 at rest, brand on the active item. */
+#nd-toc {
+  font-size: 0.8125rem;
+}
+
+#nd-toc h3 {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nuu-tone-4);
+}
+
+#nd-toc a {
+  color: var(--nuu-tone-3);
+}
+
+#nd-toc a:hover {
+  color: var(--color-fd-foreground);
+}
+
+#nd-toc a[data-active="true"] {
+  color: var(--nuu-link);
+}
+
+/* Theme toggle. A hairline pill. No fill on the idle side. */
+[data-theme-toggle] {
+  border-color: var(--color-fd-border);
+}
+
+/* Floating collapsed sidebar control. Drop the heavy shadow. */
+#nd-docs-layout > div.fixed.shadow-lg {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+  background-color: var(--color-fd-background);
+}
+
+/* Search dialog and popovers. Hairline, no glow. */
+[data-radix-popper-content-wrapper] > * {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+}
+
+/* Page footer links (previous / next). Hairline cards. */
+#nd-page article > div:last-child a.rounded-lg {
+  border-color: var(--color-fd-border);
+}
+
+#nd-page article > div:last-child a.rounded-lg:hover {
+  background-color: color-mix(in oklab, var(--color-fd-accent) 70%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   5. Content
+   --------------------------------------------------------------------------- */
+
+/* Prose color ladder. Body is a little softer than a title. */
+.prose {
+  --tw-prose-body: color-mix(in oklab, var(--color-fd-foreground) 86%, transparent);
+  --tw-prose-headings: var(--color-fd-foreground);
+  --tw-prose-lead: var(--nuu-tone-3);
+  --tw-prose-links: var(--nuu-link);
+  --tw-prose-bold: var(--nuu-tone-2);
+  --tw-prose-counters: var(--nuu-tone-3);
+  --tw-prose-bullets: var(--nuu-tone-4);
+  --tw-prose-hr: var(--color-fd-border);
+  --tw-prose-quotes: var(--nuu-tone-3);
+  --tw-prose-quote-borders: var(--color-fd-border);
+  --tw-prose-captions: var(--nuu-tone-4);
+  --tw-prose-code: var(--nuu-tone-2);
+  --tw-prose-th-borders: var(--color-fd-border);
+  --tw-prose-td-borders: var(--color-fd-border);
+  --tw-prose-kbd: var(--color-fd-foreground);
+  --tw-prose-kbd-shadows: transparent;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Page title. Geist, medium weight, tight tracking. */
+#nd-page article > h1 {
+  font-family: var(--font-heading);
+  font-size: 1.875rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Page description under the title. Lead tone. */
+#nd-page article > h1 + p {
+  color: var(--nuu-tone-3);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+/* Prose headings. Medium weight. No bold. */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.prose h1 {
+  font-size: 1.875rem;
+}
+
+.prose h2 {
+  font-size: 1.375rem;
+  margin-top: 2.5em;
+  margin-bottom: 0.75em;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--color-fd-border);
+}
+
+.prose h3 {
+  font-size: 1.125rem;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+.prose h4 {
+  font-size: 1rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+/* The anchor icon next to a heading stays quiet. */
+.prose :is(h1, h2, h3, h4, h5, h6) > a[aria-label="Link to section"] {
+  color: var(--nuu-tone-4);
+}
+
+/* Links. Brand text, thin underline, underline darkens on hover. */
+.prose a:not([data-card]):not([data-product-card]) {
+  color: var(--nuu-link);
+  font-weight: 450;
+  text-decoration: underline;
+  text-decoration-color: var(--nuu-link-underline);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms ease;
+}
+
+.prose a:not([data-card]):not([data-product-card]):hover {
+  opacity: 1;
+  text-decoration-color: var(--nuu-brand);
+}
+
+/* Strong text is one step below a title. */
+.prose strong {
+  font-weight: 500;
+}
+
+/* Blockquote. Plain, T3, hairline rule. */
+.prose blockquote {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--nuu-tone-3);
+  border-inline-start: 1px solid var(--color-fd-border);
+  padding-inline-start: 1.25em;
+}
+
+.prose blockquote p:first-of-type::before,
+.prose blockquote p:last-of-type::after {
+  content: none;
+}
+
+/* Inline code. Mono on the one off-white, hairline chip. */
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 0.1em 0.4em;
+  border: 1px solid color-mix(in oklab, var(--color-fd-border) 70%, transparent);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-fd-muted);
+  color: var(--nuu-tone-2);
+}
+
+/* Code blocks. Off-white surface, hairline, no shadow. */
+figure.shiki,
+.prose figure.shiki {
+  background-color: color-mix(in oklab, var(--color-fd-muted) 55%, var(--color-fd-background));
+  border-color: var(--color-fd-border);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+figure.shiki > div:first-child {
+  border-color: var(--color-fd-border);
+  color: var(--nuu-tone-3);
+  font-size: 0.8125rem;
+}
+
+figure.shiki pre,
+figure.shiki code {
+  font-family: var(--font-mono);
+}
+
+/* Code tabs. Same surface as a code block. */
+.prose [role="tablist"] {
+  color: var(--nuu-tone-3);
+}
+
+/* Keyboard keys. Flat, hairline. */
+.prose kbd {
+  font-family: var(--font-sans);
+  box-shadow: none;
+  border: 1px solid var(--color-fd-border);
+  background-color: transparent;
+}
+
+/* Horizontal rule. Hairline with generous space. */
+.prose hr {
+  border-color: var(--color-fd-border);
+  margin-top: 3em;
+  margin-bottom: 3em;
+}
+
+/* Lists. Quiet bullets. */
+.prose ul > li::marker {
+  color: var(--nuu-tone-4);
+}
+
+.prose ol > li::marker {
+  color: var(--nuu-tone-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Callouts (Fumadocs default component and the theme Callout).
+   Hairline border, no fill, no shadow, a thin colored rule on the left. */
+.prose > div.rounded-xl.border.bg-fd-card,
+[data-callout] {
+  background-color: transparent;
+  box-shadow: none;
+  border-color: var(--color-fd-border);
+  border-radius: var(--radius-lg);
+}
+
+/* Cards (Fumadocs Card and Cards). Hairline, no shadow, faint hover. */
+[data-card] {
+  background-color: transparent;
+  border-color: var(--color-fd-border);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+[data-card][href]:hover {
+  background-color: color-mix(in oklab, var(--color-fd-accent) 60%, transparent);
+  border-color: color-mix(in oklab, var(--color-fd-muted-foreground) 35%, transparent);
+}
+
+[data-card] h3 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* The icon box inside a Fumadocs Card. No shadow. */
+[data-card] > div.not-prose {
+  box-shadow: none;
+  background-color: transparent;
+  border-color: var(--color-fd-border);
+}
+
+/* Tables. Rules only. No fill, no vertical lines, no rounded frame.
+   Header cells are small uppercase labels at T4. */
+.prose table {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--color-fd-border);
+  border-bottom: 1px solid var(--color-fd-border);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.prose th {
+  background: transparent;
+  border-inline-start: 0;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nuu-tone-4);
+  padding: 0.6rem 0.75rem;
+}
+
+.prose td {
+  border-inline-start: 0;
+  padding: 0.6rem 0.75rem;
+  color: var(--nuu-tone-2);
+  vertical-align: top;
+}
+
+.prose th:first-child,
+.prose td:first-child {
+  padding-inline-start: 0.25rem;
+}
+
+.prose th:last-child,
+.prose td:last-child {
+  padding-inline-end: 0.25rem;
+}
+
+/* Numbers in tables line up. */
+.prose td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Images. Quiet corners, hairline frame. */
+.prose img {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-fd-border);
+}
+
+/* Steps. Hairline rail and a flat counter. */
+.fd-steps {
+  border-color: var(--color-fd-border);
+}
+
+.fd-step::before {
+  background-color: var(--color-fd-background);
+  border: 1px solid var(--color-fd-border);
+  color: var(--nuu-tone-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Selection uses a faint brand wash. */
+::selection {
+  background-color: color-mix(in oklab, var(--nuu-brand) 18%, transparent);
+}
+
+/* Focus rings are the ring token, one pixel, offset. */
+:focus-visible {
+  outline: 1px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}

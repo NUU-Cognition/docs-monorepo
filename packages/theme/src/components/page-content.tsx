@@ -4,7 +4,7 @@ import {
   DocsDescription,
   DocsTitle,
 } from "fumadocs-ui/page";
-import defaultMdxComponents from "fumadocs-ui/mdx";
+import { mdxComponents } from "./mdx-components";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function DocsPageContent({
@@ -30,11 +30,11 @@ export function DocsPageContent({
       }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-8 text-base leading-relaxed">
+      <DocsDescription className="mb-6">
         {page.data.description}
       </DocsDescription>
-      <DocsBody className="prose-lg">
-        <MDX components={defaultMdxComponents} />
+      <DocsBody>
+        <MDX components={mdxComponents} />
       </DocsBody>
     </DocsPage>
   );

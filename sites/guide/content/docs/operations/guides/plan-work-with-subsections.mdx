@@ -1,0 +1,60 @@
+---
+title: "Plan Work with Subsections"
+---
+
+This guide shows you how to break a deliverable into subsections and how to use the closer as the delivery gate. At the end the graph shows what is ready and what is blocked.
+
+## Prerequisites
+
+- You have a project with at least one deliverable. See [Set Up a Project](/operations/guides/set-up-a-project).
+- You know the nouns closer and subsection. See [About Deliverables](/operations/concepts/about-deliverables).
+
+## Open the deliverable
+
+Open the project. Open the deliverable you want to plan.
+
+You should already see the closer. Do not try to add a second closer. The service creates one and keeps it last.
+
+## Add subsections
+
+Add a subsection for each chunk of work that must happen before delivery. Give each subsection a clear title.
+
+New subsections sit above the closer. You can choose a position when you add one. If you do not choose, the new subsection still sits above the closer.
+
+Add tasks to a subsection as you name the work. A subsection with no tasks cannot be done. Status needs tasks.
+
+Keep the Delivered task in the closer. You can add more tasks to the closer if delivery itself has work. The closer must keep at least one task.
+
+## Set dependencies
+
+Link a subsection to the subsections it needs. A link means "this waits on that".
+
+Inside one deliverable, a subsection can only depend on a subsection above it. The service rejects a cycle.
+
+You can also link to a subsection in another deliverable. Use that when this chunk waits on a different outcome.
+
+The closer already depends on its siblings. Leave those links in place. They keep the closer last in the graph.
+
+## Read the graph
+
+Look at the deliverable and at the map.
+
+- A subsection is ready when its dependencies are done and its tasks are not all doing.
+- A subsection is blocked when a dependency is not done.
+- A subsection is done when every task in it is done.
+
+The map shows the same graph for the organisation. You can hide completed work. You can hide blocks that have no cross links. You can mark a few subsections as highlights so the map shows the path to them.
+
+If a subsection is done and you no longer need to see it, you can archive it. It leaves the deliverable view. It still counts as done for anything that depends on it.
+
+## Close the deliverable
+
+Do the subsection work first. Then complete the closer. Completing the closer completes the deliverable.
+
+If you complete work above the closer and leave the closer open, the deliverable is still not delivered. That is the point of the gate.
+
+## Next steps
+
+- Move backlog tasks into subsections in [Move Tasks from Backlog](/operations/guides/move-tasks-from-backlog).
+- Attach dates in [Plan Your Week](/operations/workflows/plan-your-week).
+- Read [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs) for placement rules.

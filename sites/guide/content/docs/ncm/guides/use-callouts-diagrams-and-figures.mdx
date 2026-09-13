@@ -1,0 +1,108 @@
+---
+title: "Use Callouts Diagrams and Figures"
+---
+
+This guide shows how to write callouts, diagrams, figures, and math so NCM promotes them. You write ordinary Markdown. Promotion turns those patterns into typed blocks. See [Promotion](/ncm/concepts/promotion).
+
+## Prerequisites
+
+- You can write a basic NCM document. See [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document).
+- The host parses with an NCM preset. A CommonMark or GFM parse leaves these patterns as quotes, fences, and images.
+
+## Write a callout
+
+Start a blockquote. Put a type marker on the first line. Put the body on the next lines.
+
+```md
+> [!NOTE]
+> This is a note.
+
+> [!WARNING] Check the source
+> This warning has a custom title.
+```
+
+The types are note, warning, tip, danger, info, success, question, and quote. The marker is not case sensitive. FAQ is accepted and becomes question.
+
+Add a minus after the marker to start collapsed. Add a plus to mark it collapsible and start open.
+
+```md
+> [!TIP]- Hidden until opened
+> Extra detail lives here.
+```
+
+The result is an admonition block. Nested content inside the callout becomes child blocks.
+
+## Write a diagram
+
+Use a fenced code block with the language mermaid. Put the diagram source inside.
+
+````md
+```mermaid
+graph TD
+    A --> B
+```
+````
+
+Promotion turns that fence into a mermaid block. A renderer draws the diagram. If drawing fails, the source can still show as code.
+
+## Write a figure
+
+Put an embed on its own line. Put the caption on the next line. Do not leave a blank line between them.
+
+```md
+![Architecture](arch.png)
+System overview.
+```
+
+Promotion joins the embed and the caption into one figure. A blank line between them keeps two blocks: an embed and a paragraph.
+
+A wiki embed uses the wiki-embed form. Mesh can resolve the target. A Markdown image uses the image-line form. Images are blocks. Do not put an image inside a paragraph.
+
+```md
+![Core Ideas](/ncm/concepts/core-ideas)
+![Architecture](arch.png)
+```
+
+## Write math
+
+For display math, use a math fence, or put dollar delimiters on their own lines.
+
+````md
+```math
+E = mc^2
+```
+````
+
+```md
+$$
+\frac{a}{b}
+$$
+```
+
+A latex fence is also accepted as display math. Inline math uses dollar marks inside a paragraph. A renderer loads math drawing only when the document has math.
+
+## Write footnotes and task lists
+
+Put a marker in the text. Put the definition on its own line.
+
+```md
+This needs a note.[^1]
+
+[^1]: The note lives here.
+```
+
+Task lists use a checkbox on each item.
+
+```md
+- [ ] Write the draft
+- [x] Review the figure
+```
+
+Those lists become task list blocks. Each item has its own identity.
+
+## Next Steps
+
+- [Promotion](/ncm/concepts/promotion)
+- [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter)
+- [Parse and Render a Document](/ncm/guides/parse-and-render-a-document)
+- [Presets and Extensions](/ncm/concepts/presets-and-extensions)

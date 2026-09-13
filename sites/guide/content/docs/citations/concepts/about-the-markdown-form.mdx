@@ -1,0 +1,39 @@
+---
+title: "About the Markdown Form"
+---
+
+A Description can live in the registry and as a Markdown file. The file is the same record in a form you can edit on disk. The command line tool pushes the file to the registry and pulls the registry back to a file.
+
+## Two parts of the file
+
+The file has a front matter block and a body.
+
+The front matter holds identity and provenance. It holds the permanent identity, the title, the disambiguator, authors, organisations, platforms, date, format, version marker, identifier, how the work is stored and reached, visibility, shares, and private fields. Lists use bullet items.
+
+The body holds the prose. Headings split the body into sections. The required sections are Meta Summary and Summary. Notes and Instance Body are optional. The file must not use other top-level body headings.
+
+## Names and links
+
+An author, organisation, or platform can be a plain name. It can also be a Markdown link. The link stores a name and a location. The registry keeps both.
+
+Unknown front matter keys are kept as extra data. They round-trip with the file. Deprecated keys are warned and then dropped.
+
+## Required body
+
+When you write the file form, you must include the short summary section and the longer summary section. The registry web form requires a title. It does not require those summaries. If you keep the Description as a file, write both summaries so the file can be pushed.
+
+## Shares and private fields in the file
+
+The file can list emails to share with. The file can list field names to keep private. If the file omits those lists, a push keeps the shares and private fields that the registry already has. If the file includes an empty list, a push clears the stored list.
+
+This rule also applies to other omitted fields. A push does not erase a field that the file does not include. The web form and the file can edit the same record without wiping each other.
+
+## After a push
+
+A successful push writes a small record of the push back into the file. That record notes when the push happened and where the Description lives in the registry. A later push replaces that record. It does not append a second copy.
+
+## Same record, two surfaces
+
+The web form and the file are two ways to edit one Description. The permanent identity is the join. You can create the record in the app and pull it to disk. You can write the file first and push it. Other NUU services can also read and write descriptions on your behalf.
+
+Read [Keep a Description as a File](/citations/workflows/keep-a-description-as-a-file) to use the command line tool. Read [Core Ideas](/citations/concepts/core-ideas) for what a Description is.

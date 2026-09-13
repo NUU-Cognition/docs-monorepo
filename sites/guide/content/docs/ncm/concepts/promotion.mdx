@@ -1,0 +1,62 @@
+---
+title: "Promotion"
+---
+
+Promotion is how NCM turns a familiar Markdown pattern into a typed block. You still write Markdown. The block layer reads the pattern and gives it a type.
+
+A block is not only an element with an identity. Most elements map one to one. Promotion is the extra step that builds a richer meaning. See [Core Ideas](/ncm/concepts/core-ideas).
+
+## Why promotion exists
+
+Markdown has a small set of shapes. A blockquote is a quote. A code fence is code. An image line is an image.
+
+Writers already reuse those shapes for other jobs. A blockquote with a type marker is a callout. A mermaid fence is a diagram. An image plus a caption line is a figure.
+
+Promotion names those jobs. A renderer can then draw a callout as a callout, not as a quote. A search tool can find diagrams as diagrams.
+
+## How promotion works
+
+The parser first reads the body into elements. Then a promotion pass walks that list.
+
+Each promoter looks at the current element, and sometimes at the next ones. If it matches, it consumes those elements and emits one block. The first match wins. Order is fixed, so the same input always promotes the same way.
+
+A promoter can consume more than one element. A figure consumes an embed and the caption paragraph next to it. A task list consumes a list whose items are checkboxes.
+
+Identity is assigned after promotion. The new block gets a positional identity and a stable identity. See [Block Identity](/ncm/concepts/block-identity).
+
+## Patterns that promote by default
+
+The default NCM preset promotes these common patterns.
+
+- A blockquote that starts with a type marker becomes an admonition.
+- A mermaid code fence becomes a diagram.
+- An embed with a caption on the next line becomes a figure.
+- A math or latex code fence becomes a math block. Display math between dollar delimiters is already a math element.
+- A list of checkboxes becomes a task list.
+- A footnote definition becomes a footnote block.
+- A page marker comment becomes a page marker block.
+- A paragraph that is only a link can become a link block.
+- A quote line that names a source can become an attribution.
+
+A standalone embed with no caption stays an embed. It does not become a figure.
+
+## What promotion is not
+
+Promotion does not invent a second language. You do not write a special NCM dialect beside Markdown.
+
+Promotion also does not run unless the matching extension is on. A CommonMark or GFM preset leaves these patterns as ordinary quotes, fences, and images. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
+
+Some promotions stay off until you turn them on. Definition lists, spoilers, and asides are in that set.
+
+## What you get after promotion
+
+You get a tree of typed blocks. A renderer walks that tree. Each type can have its own drawing. A bad block can fall back without taking down the rest of the document. See [Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
+
+To write the patterns, follow [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
+
+## Further Reading
+
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Presets and Extensions](/ncm/concepts/presets-and-extensions)
+- [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

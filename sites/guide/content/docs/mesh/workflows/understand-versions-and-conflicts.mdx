@@ -1,0 +1,71 @@
+---
+title: "Understand Versions and Conflicts"
+---
+
+This guide explains how change is stored, and what you do when two edits collide. You work in batches. You can name and restore document versions. You choose a side when a save is rejected.
+
+A published version of a whole mesh is a different idea. See [Published Versions](/mesh/concepts/published-versions).
+
+## Prerequisites
+
+- You can edit the mesh.
+- You know that a title is identity. See [Core Ideas](/mesh/concepts/core-ideas).
+- If you work with other people, they also have edit access to this mesh.
+
+## How a batch works
+
+Every write is a batch. A save is a batch. A rename is a batch. A create is a batch. A media add is a batch.
+
+The batch applies as a whole. If one part cannot apply, nothing in that batch is written. The mesh does not keep a half rename or a half save.
+
+A rename also rewrites inbound wikilinks. Those rewrites sit in the same batch. Links and the new title land together.
+
+Empty work is not a batch. If you save with no change, the mesh does not add a history row.
+
+## See document history
+
+Open a document. Open version history.
+
+History is a list of editing sessions, newest first, grouped by day. It is not a list of every keystroke. It is a reading of the change log.
+
+You can name a version. A named version stays easy to find. Automatic sessions between named versions collapse so the names stay visible.
+
+History needs the service. If you are offline, the list waits until you are connected.
+
+## Restore a version
+
+Choose a version. Restore it.
+
+Restore is not a delete. The restored content is written as a new change. Later history stays. You can restore the later state again if you need it.
+
+If you want the old text but not a move of the current document, copy the version into a new document. The copy gets a new title. It does not take the old tags.
+
+## When a save collides
+
+Two people can change the same document. You can also have a stale tab after the document moved elsewhere.
+
+If your save is based on an old copy, the batch is rejected. Nothing is written. The workspace asks you to choose.
+
+- Keep the copy that already landed. Your local edits for that document are dropped.
+- Keep your local content. It is written on top of the copy that landed.
+- Wait. Nothing is written. Your local copy stays until you choose.
+
+You cannot resolve a conflict while you are offline. Waiting costs nothing.
+
+If the document moves again before you finish, choose again. The last rejected batch is the one you replay.
+
+## Media name collisions
+
+If you add a media file whose name already exists, that batch is rejected. Take the existing file. Then add yours again under a new name. An upload cannot replay the way a document save can.
+
+## Offline work
+
+You can keep typing when the connection drops. The device holds your edits. Structural changes such as rename, delete, share, and publish wait for the service.
+
+When the connection returns, pending writes go out as batches. A collision then follows the same choice as above.
+
+## Next steps
+
+- [Publish a Version](/mesh/workflows/publish-a-version)
+- [Core Ideas](/mesh/concepts/core-ideas)
+- [See How a Document Connects](/mesh/guides/see-how-a-document-connects)

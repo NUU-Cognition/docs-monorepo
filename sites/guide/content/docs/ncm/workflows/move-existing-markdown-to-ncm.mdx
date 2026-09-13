@@ -1,0 +1,80 @@
+---
+title: "Move Existing Markdown to NCM"
+---
+
+This guide is for a document that already exists as Markdown. You want NCM to parse it as a typed tree. You change only what the default NCM parse will read in a new way.
+
+## Prerequisites
+
+- You have a Markdown file that already reads in another tool.
+- You know the default NCM preset. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
+- You know what promotion does. See [Promotion](/ncm/concepts/promotion).
+
+## Parse it as it is
+
+First parse the file with the default NCM preset. Do not edit yet.
+
+Most CommonMark and GFM documents already parse. Headings, paragraphs, lists, tables, task lists, and fenced code become blocks. You get identity on those blocks with no extra work.
+
+Read the diagnostics. Unclosed fences, table column mismatches, and invalid heading levels are the usual problems. Fix those in the source.
+
+## Add frontmatter if you need metadata
+
+If the file has no frontmatter, add a YAML block at the very start. Move the title into `title` if you want metadata without relying on the first heading.
+
+```md
+---
+title: Existing note
+tags:
+  - imported
+---
+```
+
+Keep custom fields flat. See [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+
+If a host uses the strict preset, frontmatter is required.
+
+## Adjust patterns that will promote
+
+Look for shapes that NCM treats as richer blocks.
+
+A blockquote that already starts with a type marker becomes an admonition. If you wanted a quote, remove the type marker.
+
+A mermaid fence becomes a diagram. Leave the language as mermaid if you want that.
+
+An image line followed at once by a caption line becomes a figure. If you wanted a lone image and a separate paragraph, put a blank line between them.
+
+A checkbox list becomes a task list. That is usually what you want.
+
+A footnote definition line becomes a footnote block. Keep the in-text markers in sync with the definitions.
+
+Inline images are not part of NCM. Move every image to its own block line.
+
+Headings with six hashes are not headings. Rewrite them as level five, or as a paragraph.
+
+## Decide what to leave alone
+
+Definition lists, spoilers, and asides do not promote in the default preset. Leave those as ordinary paragraphs unless the host turns those extensions on.
+
+Raw HTML is off in the default NCM preset. Prefer Markdown shapes. Page markers from a PDF parse are HTML comments of the form `<!--page:1-->`. Keep those if you need page sync. They become page marker blocks.
+
+Wiki links can stay in the double-bracket title form. Mesh can resolve them. If you already use standard Markdown links, those stay links.
+
+## Add anchors where you need stable handles
+
+If another document or an annotation must keep a handle after edits, add an author anchor. Put `^id` at the end of the line you care about.
+
+Do not add an anchor to every block. Headings already get slugs. Use anchors for paragraphs and lists that must stay findable. See [Block Identity](/ncm/concepts/block-identity).
+
+## Parse again and render
+
+Parse the edited file. Check that callouts, diagrams, and figures have the types you expect. Render the tree. Confirm that a caption joined to an image, and that a callout is not a plain quote.
+
+If a host must still match GitHub, parse that copy with GFM instead. The same file then keeps quotes and fences unpromoted. Use an NCM preset when you want the richer tree.
+
+## Next Steps
+
+- [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document)
+- [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
+- [Parse and Render a Document](/ncm/guides/parse-and-render-a-document)
+- [Core Ideas](/ncm/concepts/core-ideas)

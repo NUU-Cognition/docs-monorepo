@@ -1,0 +1,51 @@
+---
+title: "Identity and Slug"
+---
+
+An organisation has two names that matter. One never changes. The other is the short name you choose. Mixing them up causes broken links and confused members. This page keeps them apart.
+
+## Stable identity
+
+The stable identity is the permanent public identifier of an organisation. The service creates it when the organisation is created. You do not choose it. You cannot change it.
+
+Public pages use the stable identity. Other NUU products store it when they need to point at the organisation. If the display name later changes, those pointers still work.
+
+This is why a public page can survive a rename. The world may still find the organisation at the same identity.
+
+## Slug
+
+The slug is a short display name. You choose it when you create a team organisation.
+
+A slug uses lowercase letters, numbers, and hyphens. It cannot start or end with a hyphen. It must be unique. Some common words are reserved and you cannot use them.
+
+The slug is how you and other members talk about the organisation in short form. It is not the identifier that other products should store.
+
+A personal organisation does not ask you for a slug. You do not pick one.
+
+## Why both exist
+
+A name that people like will change. A team renames itself. A slug that looks good today may look wrong later.
+
+A public page and a foreign record cannot follow every rename. They need one value that stays. That value is the stable identity.
+
+The slug exists so that people can choose a readable short name at creation. The stable identity exists so that the rest of NUU does not depend on that choice.
+
+## What you can change
+
+On a team organisation, an admin can change the display name. The admin can also change the tagline, description, picture, and other public fields. See [Public Pages](/orgs/concepts/public-pages).
+
+The stable identity stays the same through those edits.
+
+Treat the slug as set at creation. Choose it with care. If the name you want is taken, pick another.
+
+## What other products should do
+
+When another NUU product needs to remember an organisation, it should store the stable identity. It may show the current name and slug to people. It should not treat the slug as a permanent key.
+
+You do not need to manage this yourself when you use NUU Organisations as a person. You only need to know that the public page is tied to the stable identity, not to the name you type.
+
+## Further Reading
+
+- [Create an Organisation](/orgs/guides/create-an-organisation)
+- [Public Pages](/orgs/concepts/public-pages)
+- [Introduction](/orgs)

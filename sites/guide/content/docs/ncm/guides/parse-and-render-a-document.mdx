@@ -1,0 +1,61 @@
+---
+title: "Parse and Render a Document"
+---
+
+This guide describes the parse and render path as a sequence of steps. It does not list programming interfaces. You start with Markdown. You end with a drawn document.
+
+## Prerequisites
+
+- You know the nouns element, block, promotion, and preset. See [Core Ideas](/ncm/concepts/core-ideas).
+- You have Markdown to parse. A Mesh host may also give you a hydrated document with resolved wiki links.
+
+## Choose how the document is read
+
+Pick a preset before you parse. CommonMark, GFM, and NCM default are the usual choices. The preset decides which promotions run. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
+
+If the source comes from Mesh, the host can pass a hydrated document. Wiki links in that input already have a status: resolved, missing, or ambiguous. The parser attaches that status to the links. If the source still has raw wiki-link or wiki-embed marks, the parser records an info note and leaves them for a later renderer.
+
+## Parse frontmatter then the body
+
+The parser normalizes line endings. It then looks for frontmatter at the very start.
+
+If frontmatter is present, it becomes metadata. Title, tags, and dates are lifted into a canonical form. Custom fields stay on the document if they are flat. See [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+
+If there is no title in frontmatter, the first level-one heading can supply it.
+
+The rest of the file is the body. The body parser reads the body into a list of elements. Elements are syntax only. They have no identity.
+
+## Build blocks
+
+The block step walks the elements. It assigns positional identity. It assigns stable identity. It runs promotion.
+
+A mermaid fence becomes a diagram. A callout becomes an admonition. An embed plus a caption becomes a figure. See [Promotion](/ncm/concepts/promotion) and [Block Identity](/ncm/concepts/block-identity).
+
+The result is a tree of blocks. Nested content such as callout bodies, list items, and footnote bodies are child blocks with dotted identities.
+
+You can validate the tree. Validation reports errors and warnings. The default parse tries to keep going. A strict parse stops.
+
+Unsafe URLs and unsafe HTML are cleaned during parse. A renderer should still treat unknown HTML with care.
+
+## Render the tree
+
+Pass the blocks to a renderer. The renderer walks the tree in order. Each block type has a drawing. You can replace the drawing for one type if your host needs a different one.
+
+A throwing block does not take down the document. That block falls back to escaped source. Sibling blocks still draw.
+
+Themes style the page. Wiki links and embeds can show three states: resolved, missing, and ambiguous. Missing is not a failure. Ambiguous means more than one target matched. A true load failure is reserved for media that did not arrive.
+
+Math and code highlighting load when the document needs them. A document without math does not pay that cost.
+
+## What you get
+
+You get metadata for the document. You get a block tree with identity. You get a drawn page that follows the tree.
+
+The Markdown file is still the authoring source. The block tree is what products store, annotate, and display.
+
+## Next Steps
+
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Block Identity](/ncm/concepts/block-identity)
+- [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

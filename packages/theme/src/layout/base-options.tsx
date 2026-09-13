@@ -1,9 +1,23 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import type { SiteConfig } from "../config";
 import { nuuDefaults } from "../config";
+import { Logo } from "../components/logo";
 
 /**
- * Create base layout options for a documentation site
+ * The brand title shown in the sidebar header and the mobile top bar.
+ * Uses the site logo when the config has one. Falls back to the NUU mark.
+ */
+export function BrandTitle({ config }: { config: SiteConfig }) {
+  return (
+    <span className="nuu-brand inline-flex items-center gap-2">
+      {config.logo ?? <Logo width={18} height={19} className="text-fd-foreground" />}
+      <span>{config.name}</span>
+    </span>
+  );
+}
+
+/**
+ * Create base layout options for a documentation site.
  *
  * @param config - Site-specific configuration
  * @returns BaseLayoutProps configured for the site
@@ -11,18 +25,26 @@ import { nuuDefaults } from "../config";
 export function createBaseOptions(config: SiteConfig): BaseLayoutProps {
   return {
     nav: {
-      title: config.logo ? (
-        <div className="flex items-center gap-2">
-          {config.logo}
-          <span className="font-semibold">{config.name}</span>
-        </div>
-      ) : (
-        <span className="font-semibold">{config.name}</span>
-      ),
+      title: <BrandTitle config={config} />,
+      url: normalizeBasePath(config.basePath),
+    },
+    themeSwitch: {
+      enabled: true,
+      mode: "light-dark",
     },
     githubUrl: config.github ?? nuuDefaults.github,
-    links: config.links ?? nuuDefaults.links,
+    links: (config.links ?? nuuDefaults.links).map((link) => ({
+      text: link.text,
+      url: link.url,
+      external: link.external,
+    })),
   };
+}
+
+/** "/docs/" -> "/docs". "" or "/" -> "/". */
+function normalizeBasePath(basePath: string | undefined): string {
+  const trimmed = (basePath ?? "").replace(/\/+$/, "");
+  return trimmed.length > 0 ? trimmed : "/";
 }
 
 /**
@@ -30,7 +52,7 @@ export function createBaseOptions(config: SiteConfig): BaseLayoutProps {
  */
 export const baseOptions: BaseLayoutProps = {
   nav: {
-    title: <span className="font-semibold">NUU Docs</span>,
+    title: <span className="nuu-brand font-medium">NUU Docs</span>,
   },
   githubUrl: nuuDefaults.github,
   links: nuuDefaults.links,

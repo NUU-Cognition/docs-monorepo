@@ -1,0 +1,566 @@
+---
+title: "CLI Reference"
+---
+
+This page reflects the current command surface in `apps/flint-cli/src/index.ts` and the command modules it mounts. `flint orbh` mounts the shared Orbh command tree from `apps/orbh-cli/src/` and adds Flint path resolution plus `flint orbh artifact`.
+
+## How to Read the CLI
+
+Global flags:
+
+- top level: `-V, --version`, `-h, --help`
+- every Commander subcommand also accepts `-h, --help`
+- commands that operate on a Flint usually accept `-p, --path <dir>` or `--path <dir>`; commands that manage global state do not
+
+If you are new to Flint, the most important starting commands are still:
+
+```bash
+flint init
+flint sync
+flint shard list
+flint whoami
+```
+
+Dev-gated commands are present in the dev binary and hidden in production mode unless the feature gate allows them.
+
+## Flint Lifecycle
+
+### `flint init [name]`
+
+Create a Flint workspace.
+
+- `--preset <name>`
+- `--from-git <url>`
+- `--path <dir>`
+
+### `flint list|ls`
+
+List registered Flints from the local registry.
+
+- `--json`
+- `--full-path`
+- `-s, --status`
+- `-g, --group`
+- `-t, --tag <tag>`
+- `--search <query>`
+
+### `flint status`
+
+Show CLI, workspace, local Flint versions, pending migrations, and the `.obsidian/` template summary.
+
+- `-p, --path <dir>`
+
+### `flint open [flint-name]`
+
+Open a registered Flint in the configured app flow.
+
+- `--no-plugin`
+
+### `flint obshn <profile> [prompt]`
+
+Open a new terminal tab in Obsidian and launch `flint orbh i <profile>`.
+
+- `-p, --path <dir>`
+
+### `flint register [path]`
+
+Register a Flint in the global registry.
+
+- `-f, --force`
+
+### `flint unregister [path]`
+
+Remove a Flint from the global registry without deleting files.
+
+- `-f, --force`
+
+### `flint delete [name-or-path]`
+
+Permanently delete a Flint folder and registry entry. Treat this as destructive.
+
+- `-f, --force`
+
+### `flint move <name-or-path> <destination>`
+
+Move a Flint and update the registry.
+
+- `-f, --force`
+- `-y, --yes`
+
+### `flint sync`
+
+Sync the workspace against `flint.toml`.
+
+- `-p, --path <dir>`
+- `--migrate`
+
+### `flint gigasync`
+
+Run `git sync` -> `obsidian update` -> `shard update` -> `sync`, stopping on the first failure.
+
+### `flint plan`
+
+Show what `flint push` would do as a drift report only.
+
+- `--apply`
+
+### `flint registry`
+
+Validate the global Flint registry.
+
+- `validate` flags: `--dry-run`, `--json`
+
+### `flint update`
+
+Check for or install the latest `@nuucognition/flint-cli`.
+
+- `-c, --check`
+
+## Shards
+
+### `flint shard [name] [action] [args...]`
+
+Manage shard packages. The root command also supports direct shard script/action routing through `[name] [action] [args...]`.
+
+- `-p, --path <dir>`
+
+Subcommands and flags:
+
+- `install [sources...]`: `-f, --force`, `--all-dev`, `--with-deps`, `--from-local <ref>`, `-p, --path <dir>`
+- `uninstall <name>`: `-p, --path <dir>`
+- `reinstall [name]`: `-p, --path <dir>`
+- `list|ls`: `-s, --sources`, `-p, --path <dir>`, `--wide`
+- `update`: `-p, --path <dir>`, `--reinstall`
+- `status <name>`: `-p, --path <dir>`
+- `info <name>`: `-p, --path <dir>`
+- `scripts <name>`: `-p, --path <dir>`
+- `setup <name>`: `-p, --path <dir>`, `--complete`, `--reset`, `--scope <scope>`
+- `start <name>`: `-p, --path <dir>`, `--dump`
+- `start-dev <name>`: `-p, --path <dir>`
+- `hstart <name>`: `-p, --path <dir>`, `--dump`
+- `hstart-dev <name>`: `-p, --path <dir>`
+- `create <name>`: `-s, --shorthand <id>`, `-d, --description <text>`, `--setup`, `--state`, `-p, --path <dir>`
+- `dev <name> <url>`: `-p, --path <dir>`
+- `clone <source>`: `-p, --path <dir>`
+- `rename title <name> <new-title>`: `-p, --path <dir>`
+- `rename shorthand <name> <new-shorthand>`: `-p, --path <dir>`
+- `push <name>`: `-m, --message <msg>`, `-b, --bump [level]`, `-p, --path <dir>`
+- `publish <name>`: `--org <slug>`, `-p, --path <dir>`
+- `unpublish <slug>`
+- `published`
+- `release <name> [version]`: `-p, --path <dir>`
+- `versions <name>`: `-p, --path <dir>`
+- `pin <name> <version>`: `-p, --path <dir>`
+- `unpin <name>`: `-p, --path <dir>`
+
+Shard migrations:
+
+- `migrate show [name]`: `-p, --path <dir>`, `--wide`
+- `migrate list <name>`: `-p, --path <dir>`
+- `migrate run <name>`: `-p, --path <dir>`
+- `migrate finish <name>`: `-p, --path <dir>`
+- `migrate rerun <name> <step>`: `-p, --path <dir>`
+
+## Workspace and Sources
+
+### `flint source`
+
+Manage external source material.
+
+- `repo add <name> <url>`: `-p, --path <dir>`
+- `repo remove <name>`: `-f, --force`, `-p, --path <dir>`
+- `repo update <name>`: `-p, --path <dir>`
+- `repo list`: `-p, --path <dir>`, `--wide`
+- `meshexport add <ref>`: `-p, --path <dir>`
+- `meshexport remove <ref>`: `-p, --path <dir>`
+- `meshexport list [flint]`: `-p, --path <dir>`
+
+`meshexport` is the compatibility command surface for source bundle exports from other Flints.
+
+### `flint workspace`
+
+Manage active repositories in `Workspace/Repos/`.
+
+- `create <name> <remote>`: `-p, --path <dir>`
+- `clone <name> <remote>`: `-p, --path <dir>`
+- `register <name>`: `-p, --path <dir>`
+- `remove <name>`: `-f, --force`, `-p, --path <dir>`
+- `update <name>`: `-p, --path <dir>`
+- `list`: `-p, --path <dir>`, `--wide`
+
+## References
+
+### `flint reference`
+
+Manage named references.
+
+- `codebase <name> <path>`: add a codebase declaration and local fulfillment
+- `flint <name>`: `-p, --path <dir>`
+- `remove <name>`: `-p, --path <dir>`
+- `list`: `-p, --path <dir>`, `--wide`
+
+### `flint fulfill <type> [name] [targetPath]`
+
+Fulfill a codebase reference with a local path.
+
+- `-p, --path <dir>`
+- `--target <path>`
+- `--all`
+
+Current supported `<type>`:
+
+- `codebase`
+
+### `flint resolve <type> <name>`
+
+Resolve a reference to a local path.
+
+- `-p, --path <dir>`
+- `--json`
+
+Supported `<type>` values:
+
+- `codebase`
+- `flint`
+- `lattice`
+- `bundle`
+- `source`
+
+### `flint lattice`
+
+Manage lattice connections and run lattice functions.
+
+- root flags: `-p, --path <dir>`
+- `list`
+- `run <name> <function> [args...]`
+- `connect <name>`
+- `disconnect <name>`
+- `pin <name> <record-id>`
+- `unpin <name> <record-id>`
+- `sync <name>`
+
+### `flint worktree`
+
+Manage git worktrees for codebase references.
+
+- `list <codebase>`: `-p, --path <dir>`, `--json`
+- `add <codebase> <suffix>`: `-p, --path <dir>`
+- `remove <codebase> <target>`: `-p, --path <dir>`
+
+## Outputs
+
+### `flint export`
+
+Manage Mesh bundle exports.
+
+- `list`: `-p, --path <dir>`
+- `scan`: `-p, --path <dir>`
+- `add <file> <name> [mode]`: `-d, --depth <n>`, `-p, --path <dir>`
+- `remove <name>`: `-p, --path <dir>`
+- `build [name]`: `-p, --path <dir>`
+
+### `flint send <target> <title> <instructions> <files...>`
+
+Send files to another registered Flint's inbox.
+
+- `-p, --path <dir>`
+- `-c, --copy <files...>`
+
+## Agents and Coding Tools
+
+### `flint orbh`
+
+Drive the Orbh meta-harness from inside a Flint. This is the current agent command surface; removed command families such as `flint code` and `flint agent` are not registered.
+
+Most Orbh subcommands that resolve Flint context also accept `-p, --path <dir>`.
+
+Launch and attachment:
+
+- `launch <target> <prompt>`: `--continues <sessionId>`, `--max-turns <n>`, `--budget <usd>`, `--model <model>`, `--title <title>`, `--description <description>`, `-p, --path <dir>`
+- `resume <id> [prompt]`: `-p, --path <dir>`
+- `i|interactive <target> [prompt]`: `-c, --continue <sessionId>`, `--continues <sessionId>`, `--model <model>`, `--no-detach`, `--detachable`, `--close-after <seconds>`, `--dev-channels`, `-p, --path <dir>`
+- `continue|c`: `-S, --status <status>`, `-r, --runtime <runtime>`, `-q, --search <text>`, `-p, --path <dir>`
+- `attach <id>`: `--steal`, `-p, --path <dir>`
+- `detach [id]`: `-p, --path <dir>`
+
+Session lists and inspection:
+
+- `list`: `-a, --all`, `-s, --stats`, `-i, --interactive`, `-S, --status <status>`, `-r, --runtime <runtime>`, `-q, --search <text>`, `--print`, `--wide`, `--subagents`, `-p, --path <dir>`
+- `active`: `-r, --runtime <runtime>`, `-q, --search <text>`, `--json`, `--print`, `--wide`, `-p, --path <dir>`
+- `watch <id>`: `-v, --verbose`
+- `inspect <id>`: `-r, --results`
+- `stats <id>`: `--files`
+- `focus <id>`
+- `profiles [target]`: `--wide`
+- `runtimes`: `--wide`
+
+Session lifecycle and coordination:
+
+- `session <id> [action] [value...]`: actions include `register`, `return`, `set`, `get`, `ask`, `note`, `await`; flags `--timeout <seconds>`, `-f, --filter <key=value>`, `--list`, `--host <host>`, `--port <port>`, `--orb-store-dir <path>`, `--config <path>`, `--wide`, `-p, --path <dir>`
+- `message`
+- `send <targetId> <text...>`: `--wake`, `--revive`
+- `request [targetId] [question...]`: `--timeout <seconds>`, `--cancel <requestId>`
+- `respond <requestId> <answer...>`
+- `requests <id>`: `--pending`, `--wide`
+- `result <id>`
+- `wait <ids...>`: `--timeout <seconds>`
+- `kill [id]`
+- `interrupt <targetId> <text...>`
+- `close [id]`: `--obsidian`
+- `park [id]`: `--until-group <group>`, `--barrier-timeout <seconds>`, `--obsidian`
+- `discard [id]`: `--obsidian`
+- `end|x [id]`: `--result <text>`, `--to <spaceId>`, `--require-promote`, `--no-promote`, `--no-close`, `--no-kill`
+- `promote [id]`: `--to <spaceId>`
+- `save [id]`: `-o, --out <dir>`, `--runtime <runtime>`, `--cwd <dir>`
+- `restore <bundleDir>`: `--cwd <dir>`, `--force`
+- `artifact <id> <path>`: `-p, --path <dir>`
+
+Page, workflow, and background jobs:
+
+- `page [id]`: `--raw`, `--no-mutate`, `-p, --path <dir>`
+- `page run <ref> [args...]`: `--session <id>`, `--no-mutate`, `-p, --path <dir>`
+- `page arm [id]`: `--max-wait <seconds>`, `-p, --path <dir>`
+- `workflow start <workflow>`: `--session <id>`, `--stages <n>`, `--stage <n>`, `--title <t>`, `--next <a>`, `--exit <e>`, `--checklist <items>`
+- `workflow advance`: `--session <id>`, `--stage <n>`, `--title <t>`, `--next <a>`, `--exit <e>`, `--checklist <items>`
+- `workflow check <text...>`: `--session <id>`
+- `workflow close`: `--session <id>`, `--outcome <o>`
+- `workflow show`: `--session <id>`
+- `job run <command>`: `--session <id>`, `--group <g>`, `--agent <target>`, `--timeout <seconds>`
+- `job complete <id>`: `--session <id>`, `--exit <code>`, `--output-file <path>`
+- `job list`: `--session <id>`
+- `job result <id>`: `--session <id>`
+- `job wait <id>`: `--session <id>`, `--poll <ms>`
+- `job clear`: `--session <id>`, `--all`
+
+Spaces, rooms, maintenance, and server:
+
+- `space list`: `--wide`
+- `space show [id]`
+- `space init <basis> [id]`: `--sync`, `--no-sync`
+- `rooms`: `--wide`, `--json`
+- `room create <name>`: `--topic <topic>`
+- `room list`: `--wide`, `--json`
+- `room read <room>`: `--since-cursor`, `--no-advance`
+- `room join <room>`: `--notify <policy>`
+- `room leave <room>`
+- `room post <room> <text...>`
+- `room context show <room>`
+- `room context append <room> <text...>`
+- `room context edit <room>`: `--search <old>`, `--replace <new>`
+- `server start`: `--host <host>`, `--port <port>`, `--orb-store-dir <path>`, `--config <path>`, `--daemon`
+- `server stop`: `--host <host>`, `--port <port>`, `--orb-store-dir <path>`, `--config <path>`
+- `server status`: `--host <host>`, `--port <port>`, `--orb-store-dir <path>`, `--config <path>`
+- `orchestrator|orch status`: `--json`
+- `orchestrator managers|ls`: `--all`, `-i, --interactive`, `--json`, `--wide`
+- `orchestrator reap`: `--json`
+- `orchestrator ensure|start`
+- `orchestrator stop`
+- `heal`: `--dry-run`, `--include-synced`, `--json`
+- `rebuild-session-snapshots`: `--json`
+- `update`
+- `push`: `-m, --message <message>`
+- `move-spool <spoolId>`: `--from <spaceId>`, `--to <spaceId>`
+- `rebuild|reset`: `--json`, `--dry-run`, `--yes`, `--force`, `--cwd <dir>`, `--runtime <name>`
+- `verify [sessionId]`: `--json`
+- `verify-sessions`: `--json`
+- `reconcile`: `--all`, `--dry-run`, `--grace <seconds>`, `--json`
+- `tui`: `--view <sessions|active|rooms>`, `-p, --path <dir>`
+
+Native runtime helpers:
+
+- `claude list`: `--json`, `-u, --untracked`, `-i, --interactive`, `--wide`
+
+## Server and UI State
+
+### `flint server`
+
+Manage the local Flint server.
+
+- `start`: `-p, --port <port>`, `--path <dir>`, `--steel-url <url>`, `--host-type <type>`, `--ephemeral`, `--dev-plate <name=url>`
+- `daemon`
+- `dev`: `-p, --port <port>`, `--path <dir>`
+- `status`: `--server <url>`, `--wide`
+- `stop`: `--server <url>`
+- `list`: `--wide`
+
+### `flint steel`
+
+Manage Steel UI state in `.steel/`.
+
+- `preferences`: `-p, --path <dir>`, `--reset`
+- `state <plate-name>`: `-p, --path <dir>`, `--reset`
+- `boards <plate-name>`: `-p, --path <dir>`
+
+### `flint runtime`
+
+Manage runtimes through the local server. This command group is dev-gated.
+
+- `start [flintPath]`: `--server <url>`
+- `stop [runtimeId]`: `--path <dir>`, `--server <url>`
+- `list`: `--server <url>`, `--wide`
+
+## Utilities
+
+### `flint git`
+
+Git passthrough plus Flint-specific helpers.
+
+Special subcommands:
+
+- `init`
+- `sync`: `-m, --message <msg>`, `--replay`
+- `publish <url>`
+
+If the first argument is not one of those helpers, Flint passes the rest through to `git`.
+
+### `flint migrate`
+
+Manage Flint-level workspace migrations.
+
+- root flags: `-p, --path <dir>`, `--wide`
+- `list`: `-p, --path <dir>`, `-a, --all`, `--wide`
+- `run`: `-p, --path <dir>`, `--scope <scope>`
+- `shared`: `-p, --path <dir>`
+- `local`: `-p, --path <dir>`
+- `finish`: `-p, --path <dir>`
+- `rerun <step-id>`: `-p, --path <dir>`
+
+Legacy compatibility:
+
+- `flint migration end <id>`: `-p, --path <dir>`
+- `flint migration finish <id>`: `-p, --path <dir>`
+
+### `flint obsidian`
+
+Manage the shared `.obsidian` template clone.
+
+- root flag: `-p, --path <dir>`
+- `update`: `--no-reload`
+- `patches list`
+- `patches replay|apply`
+- `profiles`
+- `profiles list`
+- `profiles activate|apply <profile>`
+- `profiles deactivate`
+- `status`
+- `push`: `-m, --message <msg>`; dev-gated
+- `reset`: `-f, --force`
+
+### `flint plate`
+
+Manage Steel Plates.
+
+- `list`: `-p, --path <dir>`, `--json`, `--wide`
+- `install <name-or-source>`: `--version <version>`, `-p, --path <dir>`
+- `update [name]`: `-p, --path <dir>`
+- `reinstall [name]`: `-p, --path <dir>`
+- `info <name>`: `-p, --path <dir>`
+
+### `flint tinderbox`
+
+Orchestrate multiple Flints (and shared codebases) as one declared, git-versioned box. A Tinderbox is a directory with a `tinderbox.toml` that declares member Flints (`[flints]`), shared repos (`[repos]`), and cross-Flint connections (`[connections]`). Members are declared in **own** mode (cloned from a git URL into a folder under the box) or **reference** mode (`registry:Name` — point at the existing registered copy instead of cloning), and as `required` (missing → error) or `optional` (missing → warning, for remotes a machine cannot reach).
+
+All `flint tinderbox` subcommands use walk-up discovery to find `tinderbox.toml`, so they run from the Tinderbox root or from inside any member Flint.
+
+**Lifecycle subcommands:**
+
+- `init <name>` — bootstrap an empty Tinderbox in the current directory
+- `init --from <url>` — clone an existing Tinderbox from a git remote and sync it (name is read from the cloned `tinderbox.toml`)
+- `start <name> [path]` — promote the current Flint into a new Tinderbox, moving it under the box root
+- `import <name> [source]` — physically MOVE a registered Flint into this box (confirmed unless `--yes`); if `<name>` is not registered and a `source` is given, declare it by URL / `registry:Name` instead. Supports `--no-open`.
+- `add <name> <source>` — declare a Flint by git URL (own) or `registry:Name` (reference) without materializing it; the next `sync` clones or references it
+- `remove <name>` — eject a member: undeclare it and strip its wiring while keeping it registered (inverse of `import`); `--move-out <dir>` relocates the folder out of the box
+- `rename <from> <to>` — rename a member Flint, cascading the change to `[connections]`, `[repos].exposed-to`, the folder, the registry, and fulfillments; `--tinderbox <new-name>` renames the Tinderbox itself
+- `dissolve` — tear down the box: eject every member (folders are preserved), strip wiring, and remove `tinderbox.toml`; `--move-to <dir>`, `--force`, `--yes`
+
+**Sync and drift:**
+
+- `sync` — materialize declared members (clone own-mode, reference registry-mode, adopt/relocate a registry match after verifying its remote), register them in Obsidian, and wire connections and repos. Flags: `--dry-run`, `--json`, `--full` (also run `flint sync` in each member), `--only <names...>` / `--skip <names...>`, `--no-open`, and the undeclared-deletion controls `--yes` / `--delete-undeclared` / `--force`.
+- `status` — per-member mode, tier, present, registered, and connection-fulfillment state, plus a Repos section; supports `--json`
+- `check` — read-only drift detection between `tinderbox.toml` and disk (undeclared/missing/renamed members, broken materialization, stale registry/connection/repo wiring); exits 1 on any drift; supports `--json`
+- `heal` — auto-fix drift by rewriting `tinderbox.toml` and then running a full sync; previews the plan and confirms first (`--dry-run`, `--yes`)
+
+**Repos and connections:**
+
+- `repo add <name> <source>` — clone a git repo into `Repos/` (or `path:<dir>` for reference mode) and expose it to member Flints; `--exposed-to <all|names>`, `--mode <own|reference>`
+- `repo remove <name>` — drop a repo declaration and strip references from exposed Flints; `--purge` deletes the clone (confirmed unless `--yes`)
+- `repo list` — list declared repos: name, mode, location, present, exposed-to
+- `connection add [from] [to]` — declare a directional connection, or an interconnected group with `--group <names...>`
+- `connection remove [from] [to]` — remove a connection and strip the wired references from child Flints (also accepts `--group`)
+- `connection list` — list declared connection edges and whether each is wired
+
+**Git and identity across the box:**
+
+- `git sync` — sync the Tinderbox repo and run `flint git sync` in every member Flint
+- `git publish <url>` — add a remote and push the box's initial commit; force-renames the branch to `main` and auto-commits pending changes (warns/confirms unless `--yes`)
+- `whoami <name>` — propagate the person identity to every member Flint
+
+### `flint config`
+
+Manage global Flint configuration.
+
+Subcommands:
+
+- `open`
+- `get <key>`
+- `set <key> <value>`
+- `name [name]`: `--unset`
+- `machine-name [name]`: `--unset`
+
+### `flint helper`
+
+Small workflow helpers.
+
+- `type newnumber <type>`: `-p, --path <dir>`, `--raw`
+- `rename <old> <new>`: `-p, --path <dir>`
+- `delete <name>`: `-p, --path <dir>`, `--archive`
+- `router start`: `-p, --port <port>`
+- `stitch <name>`: `-p, --path <dir>`, `--print`, `--also-print`
+- `uuid`
+
+### `flint features`
+
+List and manage feature flags through the shared CLI-core feature system.
+
+### `flint mcp`
+
+Expose Flint workspace capabilities as an MCP server.
+
+- `serve`: `-p, --path <dir>`, `--server <url>`
+
+### `flint setup`
+
+Machine setup.
+
+- `shell-integration`: `--shell <shell>`, `--apply`, `--dry-run`, `--print`
+
+### `flint dev`
+
+Developer tools. This command group is dev-gated.
+
+- `perf status`: `--server <url>`
+- `perf on`: `--server <url>`, `--interval <ms>`
+- `perf off`: `--server <url>`
+- `perf watch`: `--server <url>`, `--interval <ms>`
+
+### Auth and Identity
+
+Auth and identity helpers are supplied through the shared CLI core.
+
+- `flint whoami`
+- `flint auth-status`
+- `flint login`: `--verbose`
+- `flint logout`
+
+Operator name and machine name are configured through `flint config name` and `flint config machine-name`.
+
+## Practical Advice
+
+For everyday work, think in terms of a few dependable loops:
+
+- `init` to create the environment
+- `sync` to materialize declared capabilities and dependencies
+- `orbh` to run the work
+- `export` to publish results
+
+That sequence matches Flint's actual shape as a workspace where agents execute cognitive programs and leave durable artifacts behind.

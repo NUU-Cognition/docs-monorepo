@@ -2,7 +2,12 @@ import { Command } from "commander";
 import * as path from "path";
 import * as fs from "fs";
 import { readConfig, writeConfig, getConfigPath } from "./config.js";
-import { findDocConfig, listDocConfigs, portDocConfig } from "./port.js";
+import {
+  findDocConfig,
+  listDocConfigs,
+  portDocConfig,
+  portAllDocConfigs,
+} from "./port.js";
 import { scaffoldSite, findNextPort } from "./scaffold.js";
 
 const program = new Command();
@@ -51,36 +56,65 @@ program
 // push
 // ============================================================================
 
+function requireDocsRepo(): string {
+  const config = readConfig();
+  if (!config) {
+    console.error(
+      `Error: No docs repo configured. Run 'nuu-docs setup <path>' first.`
+    );
+    console.error(`  Config location: ${getConfigPath()}`);
+    process.exit(1);
+  }
+
+  if (!fs.existsSync(config.docsRepoPath)) {
+    console.error(`Error: Docs repo not found at ${config.docsRepoPath}`);
+    console.error(`  Run 'nuu-docs setup <path>' to update.`);
+    process.exit(1);
+  }
+
+  return config.docsRepoPath;
+}
+
+function requireFlint(): string {
+  const flintPath = process.cwd();
+  const meshPath = path.join(flintPath, "Mesh");
+  if (!fs.existsSync(meshPath)) {
+    console.error(
+      `Error: Not inside a Flint — no Mesh/ directory at ${flintPath}`
+    );
+    process.exit(1);
+  }
+  return flintPath;
+}
+
 program
   .command("push")
-  .description("Push a doc set from the current Flint to the docs repo")
-  .argument("<name>", 'Name of the doc set (matches "(NUU Docs) <name>.md")')
-  .argument("<site>", "Target site directory in the docs repo (e.g. flint, vessel)")
-  .action((name: string, site: string) => {
-    const config = readConfig();
-    if (!config) {
-      console.error(
-        `Error: No docs repo configured. Run 'nuu-docs setup <path>' first.`
-      );
-      console.error(`  Config location: ${getConfigPath()}`);
-      process.exit(1);
+  .description(
+    "Push a doc set from the current Flint to the docs repo (default site: guide)"
+  )
+  .argument("[name]", 'Name of the doc set (matches "(NUU Docs) <name>.md")')
+  .argument(
+    "[site]",
+    "Target site directory in the docs repo (default: the config's site, else guide)"
+  )
+  .option("--all", "Push every doc set found in the current Flint")
+  .action((name: string | undefined, site: string | undefined, opts: { all?: boolean }) => {
+    const docsRepoPath = requireDocsRepo();
+    const flintPath = requireFlint();
+
+    if (opts.all) {
+      const { failed } = portAllDocConfigs({
+        flintPath,
+        docsRepoPath,
+        targetSite: site ?? name,
+      });
+      if (failed.length > 0) process.exit(1);
+      return;
     }
 
-    if (!fs.existsSync(config.docsRepoPath)) {
-      console.error(
-        `Error: Docs repo not found at ${config.docsRepoPath}`
-      );
-      console.error(`  Run 'nuu-docs setup <path>' to update.`);
-      process.exit(1);
-    }
-
-    // Detect the current Flint
-    const flintPath = process.cwd();
-    const meshPath = path.join(flintPath, "Mesh");
-    if (!fs.existsSync(meshPath)) {
-      console.error(
-        `Error: Not inside a Flint — no Mesh/ directory at ${flintPath}`
-      );
+    if (!name) {
+      console.error("Error: Missing doc set name. Usage: nuu-docs push <name> [site]");
+      console.error("       or: nuu-docs push --all");
       process.exit(1);
     }
 
@@ -94,7 +128,7 @@ program
         console.error("  (none)");
       } else {
         for (const doc of docs) {
-          console.error(`  - "${doc.name}" (site: ${doc.site})`);
+          console.error(`  - "${doc.name}" (site: ${doc.site}${doc.slug ? `, slug: ${doc.slug}` : ""})`);
         }
       }
       process.exit(1);
@@ -104,7 +138,7 @@ program
     portDocConfig({
       configPath,
       flintPath,
-      docsRepoPath: config.docsRepoPath,
+      docsRepoPath,
       targetSite: site,
     });
   });
@@ -183,7 +217,9 @@ program
     } else {
       console.log(`Found ${docs.length} doc set(s):\n`);
       for (const doc of docs) {
-        console.log(`  ${doc.name}  (site: ${doc.site})`);
+        console.log(
+          `  ${doc.name}  (site: ${doc.site}${doc.slug ? `, slug: ${doc.slug}` : ""})`
+        );
       }
     }
   });

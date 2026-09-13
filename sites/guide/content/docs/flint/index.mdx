@@ -1,0 +1,184 @@
+---
+title: "Introduction"
+---
+
+Flint is a local-first workspace system for thinking, planning, and documentation that stays close to real source material. It gives you a structured folder, a CLI, and a few strong conventions so your notes, references, exports, and agent workflows all live in one place without turning into a mess.
+
+An important part of Flint is the shard model. Flint is the environment. Shards are the cognitive programs an agent executes inside that environment.
+
+If you want the shortest possible description, it is this:
+
+> A Flint is a structured workspace where durable thinking lives in markdown, external dependencies are declared by name, and agents can execute shard-based cognitive programs in a stable environment.
+
+That sounds simple, and it is. The value comes from how the pieces fit together.
+
+## What Flint Feels Like in Practice
+
+Most people reach for Flint when they have already felt one of these problems:
+
+- project notes are scattered across random markdown files, tickets, chats, and scratchpads
+- docs drift away from the codebase they are supposed to describe
+- AI sessions start from zero every time because the workspace has no stable entrypoint
+- “reference material” and “actual thinking” are mixed together in the same pile
+
+Flint is designed to separate those concerns cleanly.
+
+Your own ideas, plans, and decisions go in `Mesh/`. External source material comes in through `Sources/` or references. Active repo clones live in `Workspace/Repos/`. Shareable output gets built into `Exports/`. Local Flint state stays in `.flint/`, while Orbh agent session spools live in `.orb/`.
+
+That separation is the core of the system.
+
+## Who Flint Is For
+
+Flint is especially useful for three kinds of work.
+
+### Software Projects
+
+If you need architecture notes, migration plans, task tracking, investigation logs, and direct links to real codebases, Flint gives those things a durable home without pretending the notes themselves are the product.
+
+### Research and Writing
+
+If your work depends on gathering source material, comparing ideas, and gradually turning rough notes into a coherent guide or report, Flint gives you a clean split between raw input, working notes, and published output.
+
+### Agent-Assisted Work
+
+If you regularly work with Claude, Codex, or other agents, Flint gives them a better starting point than “here is a repo, figure it out.” An agent can read the init note, load the relevant shards, resolve the needed codebases, and execute repeatable cognitive programs inside a known structure.
+
+## The Big Idea: Bounded Workspaces
+
+A Flint is intentionally bounded. It is one workspace for one coherent area of work.
+
+That matters because unbounded note systems tend to drift toward one of two bad states:
+
+- everything ends up in one giant undifferentiated vault
+- every new topic gets its own improvised structure with no shared rules
+
+Flint avoids both. It says:
+
+- keep one workspace focused
+- give each area of the workspace a clear job
+- declare external dependencies explicitly
+- let the CLI manage the parts that should be machine-consistent
+
+The result is easier for both humans and agents to understand.
+
+## The Workspace Shape
+
+Every Flint starts with a core structure like this:
+
+```text
+(Flint) My Project/
+├── flint.toml
+├── flint.json
+├── .flint/
+├── Mesh/
+├── Media/
+├── Shards/
+├── Sources/
+├── Exports/
+└── Workspace/
+```
+
+Here is the fast mental model for each directory.
+
+| Area | Purpose |
+|------|---------|
+| `Mesh/` | Your durable thinking: notes, plans, system docs, reports |
+| `Media/` | Images, PDFs, screenshots, and binary assets |
+| `Shards/` | Installed cognitive programs for agents |
+| `Sources/` | Read-only external material copied into the workspace, including `Sources/Repos/` and `Sources/Bundles/` |
+| `Exports/` | Built, shareable outputs generated from Mesh |
+| `Workspace/` | Active repositories and workspace-side working surfaces, especially `Workspace/Repos/` |
+| `.flint/` | Local Flint state such as references, lattices, and sync bookkeeping |
+
+When you use Orbh agent sessions, Flint also creates `.orb/` for session spools, runs, messages, and indexes.
+
+## Why the Split Matters
+
+The most important distinction in Flint is not “markdown versus config.” It is the distinction between kinds of relationship to information.
+
+### Mesh is where you think
+
+This is where your own durable understanding lives. Notes in `Mesh/` should be things you would still want if every external source disappeared tomorrow.
+
+### Sources are where you keep copied input
+
+This is where you put read-only copies of external material that you want inside the workspace. A source repo or sourced mesh export is useful context, but it is not the same thing as your interpretation of it.
+
+### References are how you point outward
+
+Sometimes you do not want to copy something into the workspace at all. You just want to say, “this Flint depends on that codebase” or “this Flint needs to know about that other Flint.” That is what references are for.
+
+### Exports are what you publish
+
+An export is not just “a note I like.” It is a built artifact generated from a Mesh root note and the graph around it.
+
+Once you see those four roles clearly, the rest of Flint makes much more sense.
+
+## Flint Is Local-First, Not Isolated
+
+Flint is file-based by design:
+
+- notes are markdown
+- config is TOML and JSON
+- built outputs are ordinary files on disk
+- registry and local state are inspectable
+
+That gives you durability and portability. But Flint is not trying to cut you off from the rest of your environment. Flint supports:
+
+- codebase references
+- Flint-to-Flint references
+- source repositories
+- source bundles from Flint exports
+- workspace repositories
+- exports
+- agent sessions
+- MCP server access
+- lattice integrations
+
+So the right mental model is not “sealed notebook.” It is “well-structured workspace that can point to and ingest the outside world.”
+
+## What Makes Flint Work Well with Agents
+
+Flint is unusually agent-friendly because it gives the agent a reliable entrypoint and a constrained space to operate in.
+
+That is only half the story, though. The other half is that the agent is not improvising from scratch every time. Shards give it cognitive programs to run: structured instructions, workflows, templates, and knowledge that turn a vague request into a repeatable operation.
+
+The common pattern looks like this:
+
+1. the agent reads `Mesh/(System) Flint Init.md`
+2. it loads the relevant shard init files and cognitive programs
+3. it resolves the codebases or sources it actually needs
+4. it writes durable outcomes back into `Mesh/`
+
+That is a much better workflow than expecting the agent to infer structure from a generic repo or a disorganized note vault.
+
+## A Better Way to Think About the CLI
+
+The Flint CLI is best understood as a reconciliation tool, not just a collection of commands.
+
+You describe what the workspace should know about in `flint.toml`:
+
+- shards
+- references
+- sources
+- exports
+- workspace repositories
+- lattices
+
+Then Flint synchronizes the real workspace toward that declaration. That is why `flint sync` is so central.
+
+This is especially important for shards. Declaring a shard is not just “installing an extension.” It is choosing which cognitive programs the workspace makes available to an agent.
+
+## Where to Go Next
+
+If you are new to Flint, read in this order:
+
+1. [Quick Start](/flint/guide/quick-start)
+2. [Core Concepts](/flint/guide/core-concepts)
+3. [Creating a Flint](/flint/guide/creating-a-flint)
+
+If you already understand the basic model and want to do real work:
+
+- [Tutorial Project Planning](/flint/guide/tutorial-project-planning)
+- [Tutorial Research Notes](/flint/guide/tutorial-research-notes)
+- [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration)

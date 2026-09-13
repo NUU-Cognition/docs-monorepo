@@ -1,0 +1,75 @@
+---
+title: "Core Ideas"
+---
+
+NUU Docs is built from a small set of nouns. Learn these nouns first. The rest of the product is how they connect.
+
+## Document
+
+A document is one source in your library. It has a name, a source type, and a parse state.
+
+The source can be a file, a URL, or pasted text. A PDF is the common file source. A video URL, a public article URL, and pasted transcript text are the other types.
+
+The document is the unit you open, tag, collect, share, reparse, and delete. Deleting a document removes it and all versions.
+
+## Version
+
+A version is one snapshot of parsed content for a document. The first successful parse creates version 1. A later reparse creates a new version. If you edit the parsed content and save, that save also creates a new version.
+
+Old versions stay on the document. You can open an earlier version in the parsed pane. The latest version is the default.
+
+## Parsed content
+
+Parsed content is the structured result of a parse. It lives on the version. You read it in the parsed pane.
+
+It is not the source. The source stays on the left. The parsed copy sits on the right after parse succeeds. A parse can also leave a warning. A warning is not a failure. A video can parse with an empty transcript.
+
+## Source pane and parsed pane
+
+When you open a document, you see two reading areas. The source pane shows the original. The parsed pane shows the structured content for the version you selected.
+
+For a PDF with page markers, the two panes can stay in step as you scroll. You can turn that lock off. Older parses without page markers scroll on their own.
+
+See [About Source and Parsed Panes](/docs/concepts/about-source-and-parsed-panes).
+
+## Tag
+
+A tag is a label you attach to a document or a collection. Tags are yours. They form a path with slashes, so a tag can sit under another tag.
+
+You use tags to filter the library. A document can have many tags.
+
+## Collection
+
+A collection is a group of documents you own. A document can sit in more than one collection. Adding a document does not copy it.
+
+A collection has a kind. A playlist is the usual kind: you name it and add documents. A book is another kind: it holds a source file and, after a split, one document per chapter. Chapters can be front matter, body chapters, or appendix items, in order.
+
+Deleting a playlist does not delete the documents inside it. Deleting a book does delete its chapters.
+
+See [About Tags and Collections](/docs/concepts/about-tags-and-collections).
+
+## Share
+
+A share gives another person read access to a document you own. You name the person by email. Access is read only. The person cannot parse, reparse, share, or delete your document.
+
+If that person has not signed in yet, the share stays pending until they do. Sharing also gives them access to the Surf output for that document.
+
+## Public link
+
+A public link is a read-only link that opens the document in NUU Surf. The visitor does not need a NUU account. That view has no chat, notes, or highlights.
+
+This is different from making a document public inside NUU Docs. Public inside NUU Docs means any signed-in NUU user can open the document in the library. You can also put a password on the public link.
+
+See [About Sharing](/docs/concepts/about-sharing).
+
+## Reparse
+
+A reparse runs parse again on the same document. The current version stays. A new version appears when the run finishes.
+
+You reparse when the text is wrong, incomplete, or out of date. If reparse is not enough, you can report a problem on a parsed run.
+
+See [How to Fix a Bad Parse](/docs/workflows/how-to-fix-a-bad-parse).
+
+## How the nouns relate
+
+You add a source. That source becomes a document. Parse writes parsed content onto a version. You read the source pane next to the parsed pane. Tags and collections organise documents. Shares and public links let other people read. Reparse adds versions without replacing the document.

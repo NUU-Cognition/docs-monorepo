@@ -1,0 +1,98 @@
+---
+title: "Sources"
+---
+
+`Sources/` is Flint's intake layer for external material that should be copied into the workspace. If `Shards/` gives an agent cognitive programs to execute, `Sources/` gives those programs local material to read from.
+
+Use sources when you want external content to become part of the working environment. The source stays external in origin, but Flint materializes a local copy so agents and humans can inspect it without resolving a remote dependency every time.
+
+## What Lives in `Sources/`
+
+Flint currently supports two source families:
+
+- source repositories copied into `Sources/Repos/`
+- Flint bundles copied into `Sources/Bundles/`
+
+Both are declared in `flint.toml` under `[sources]`.
+
+```toml
+[sources]
+repositories = [
+  { name = "Design System", url = "https://github.com/org/design-system" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+```
+
+## Source Repositories
+
+Source repositories are read-only reference copies of external Git repositories.
+
+```bash
+flint source repo add "Design System" https://github.com/org/design-system
+flint source repo list
+flint source repo update "Design System"
+flint source repo remove "Design System"
+```
+
+When Flint adds one of these repositories it:
+
+- records the declaration in `flint.toml`
+- materializes missing declared repositories into `Sources/Repos/` during sync or plan-apply
+- uses a shallow reference-style clone
+- strips `.git` so the copy behaves like workspace material, not an active checkout
+- writes metadata markers so the source is visible from the Mesh metadata layer
+
+This is the right choice when an agent needs code or documents as reference input, but the repo is not supposed to be edited in place from the current Flint.
+
+## Source Mesh Exports
+
+Source mesh exports let one Flint pull a published export from another Flint into its own workspace.
+
+```bash
+flint source meshexport list
+flint source meshexport add "Research Hub/Guide"
+flint source meshexport remove "Research Hub/Guide"
+```
+
+The value format is always:
+
+```text
+"Flint Name/Export Name"
+```
+
+When you add a mesh export source, Flint:
+
+1. resolves the source Flint through the local registry
+2. checks that the named export exists
+3. records a `[sources].bundles` declaration
+4. copies the built bundle output into `Sources/Bundles/...` during sync or plan-apply
+5. writes metadata markers for the sourced material
+
+That gives the current Flint a stable local copy of another workspace's published knowledge.
+
+## Sync Behavior
+
+`flint sync` treats `[sources]` as the source of truth.
+
+For Flint bundles, sync reconciles the copied output against the declarations in `flint.toml`. Missing declared bundles are copied from the producer's `Exports/(Bundle) ...` directory. Extra local bundle folders are reported as drift rather than silently deleted.
+
+For source repositories, Flint can also clone missing declared repositories and keep `.gitignore` aligned with the current declarations.
+
+## Sources vs References
+
+Choose `Sources/` when you want the external material copied into the Flint.
+
+Choose `references` when you only need a named pointer to another codebase or Flint and do not want Flint to copy the content itself.
+
+That distinction matters in practice:
+
+- sources make material locally browseable for agents
+- references keep dependencies lightweight and machine-specific
+
+## Sources vs Workspace Repositories
+
+Use `Workspace/Repos/` for repositories you intend to actively work in.
+
+Use `Sources/Repos/` for read-only reference copies that support the agent's cognitive work without becoming the workspace's active development surface.

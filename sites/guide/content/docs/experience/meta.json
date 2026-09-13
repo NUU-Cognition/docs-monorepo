@@ -1,0 +1,11 @@
+{
+  "title": "NUU Experience",
+  "root": true,
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}
