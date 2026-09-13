@@ -8,7 +8,8 @@
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "port": "tsx scripts/port-from-flint.ts",
-    "nuu-docs": "node packages/nuu-docs-cli/dist/index.js"
+    "nuu-docs": "node packages/nuu-docs-cli/dist/index.js",
+    "gen-icons": "node scripts/gen-product-icons.mjs"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

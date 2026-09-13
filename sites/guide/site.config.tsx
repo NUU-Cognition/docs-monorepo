@@ -1,4 +1,5 @@
 import type { SiteConfig } from "@nuucognition/docs-theme";
+import { Logo } from "@nuucognition/docs-theme";
 import { GuideLogo } from "@/lib/product-icons";
 
 /**
@@ -14,12 +15,14 @@ export const siteConfig: SiteConfig = {
   url: "https://guide.nuucognition.com",
   basePath: "",
   logo: <GuideLogo size={18} className="text-fd-foreground" />,
-  github: "https://github.com/NUU-Cognition",
+  // No GitHub button. The NUU mark in the sidebar footer links to the main site.
+  github: null,
   links: [
     {
       text: "NUU Cognition",
       url: "https://nuucognition.com",
       external: true,
+      icon: <Logo width={16} height={17} />,
     },
   ],
 };

@@ -7,6 +7,8 @@ const withMDX = createMDX();
 // No basePath: every product lives at /<slug>.
 const config: NextConfig = {
   reactStrictMode: true,
+  // The floating dev badge covers the sidebar footer. Agentation lives there too.
+  devIndicators: false,
 };
 
 export default withMDX(config);

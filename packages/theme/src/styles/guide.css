@@ -612,8 +612,10 @@ figure.shiki code {
   background-color: color-mix(in oklab, var(--nuu-brand) 18%, transparent);
 }
 
-/* Focus rings are the ring token, one pixel, offset. */
-:focus-visible {
+/* Focus rings are the ring token, one pixel, offset.
+   Text fields are excluded: the search input and other inputs draw their
+   own focus state, and this unlayered rule would beat their utilities. */
+:focus-visible:not(input):not(textarea):not(select):not([contenteditable]) {
   outline: 1px solid var(--color-fd-ring);
   outline-offset: 2px;
 }
