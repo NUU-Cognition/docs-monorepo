@@ -1,11 +1,11 @@
 {
-  "name": "@nuucognition/flint-docs",
+  "name": "@nuucognition/guide",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --port 30060",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 30060",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "postinstall": "fumadocs-mdx"
