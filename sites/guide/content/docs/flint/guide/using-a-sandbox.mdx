@@ -1,0 +1,84 @@
+---
+title: "Using a Sandbox"
+---
+
+This guide walks through creating an isolated Flint environment, running real `flint` commands inside it, proving it left the real machine untouched, and tearing it down. See [Module - Sandboxes](/flint/modules/sandboxes) for the concepts.
+
+You need the `@nuucognition/flint-sandbox` package built (`pnpm --filter @nuucognition/flint-sandbox build`).
+
+## 1. Create a sandbox and run a command
+
+```js
+import { createSandbox, destroySandbox } from '@nuucognition/flint-sandbox';
+
+const handle = await createSandbox({
+  root: '/tmp/my-sandbox',
+  workspaces: ['alpha'],
+  identity: { name: 'Sandbox Tester', machineName: 'sbx' },
+});
+
+// Run the real flint CLI inside the sandbox — cwd defaults to workspace `alpha`.
+const listed = await handle.flint(['list']);
+console.log(listed.stdout);   // shows only `alpha`, not the machine's real Flints
+
+await destroySandbox(handle);
+```
+
+`createSandbox` provisions `/tmp/my-sandbox/home` (the isolated global home), an initialized workspace at `/tmp/my-sandbox/workspaces/alpha`, and a `sandbox.json` manifest. `handle.flint(args)` runs `flint` with the sandbox environment already applied.
+
+## 2. Let the sandbox clean itself up
+
+Prefer `withSandbox` so the sandbox is always destroyed, even if your code throws:
+
+```js
+import { withSandbox } from '@nuucognition/flint-sandbox';
+
+await withSandbox({ workspaces: ['alpha'] }, async (handle) => {
+  await handle.flint(['helper', 'type', 'newnumber', 'Task']);   // → 001
+  await handle.flint(['registry', 'validate']);                  // reads the sandbox registry
+});
+// sandbox is gone here
+```
+
+## 3. Prove it didn't touch the real machine
+
+Wrap any sandbox work in `proveIsolation`. It hashes the real `~/.nuucognition` before and after, filtering the daemon lock files that always churn on an active machine:
+
+```js
+import { proveIsolation, withSandbox } from '@nuucognition/flint-sandbox';
+
+const proof = await proveIsolation(async () => {
+  await withSandbox({ workspaces: ['alpha'] }, async (handle) => {
+    await handle.flint(['list']);
+    await handle.flint(['helper', 'type', 'newnumber', 'Task']);
+  });
+});
+
+console.log(proof.clean);   // true — nothing real changed (beyond ignored lock files)
+console.log(proof.rawClean, proof.ignoredDiff);   // the unfiltered signal + what was filtered
+```
+
+Gate assertions on `proof.clean`. `proof.rawClean` is usually `false` on a busy machine because of `blacksmith/*.lock` and `orbh/*.lock`; `proof.ignoredDiff` shows exactly what was filtered.
+
+## 4. Drive raw commands with `exec`
+
+For anything that isn't `flint`, use `exec` — you get the sandbox environment and the child's exit status:
+
+```js
+const r = await handle.exec('node', ['-e', 'console.log(process.env.FLINT_HOME)']);
+console.log(r.stdout.trim());   // <root>/home
+console.log(r.exitCode);
+```
+
+To inspect the exact environment a sandbox applies, call `handle.envFor()`.
+
+## What works, and the one caveat
+
+Inside a sandbox, commands that go through the Flint core isolate cleanly: `flint list`, `flint register`, `flint status`, `flint helper …`, and registry/server-registry operations all read and write the sandbox home.
+
+The exception is identity: `flint whoami` and `flint config name` route through the external `@nuucognition/cli-core` package, which does not yet honor `FLINT_HOME`, so they still report the real machine identity (a read-through — they do not corrupt the real config). Don't rely on sandbox identity for those two commands yet. See [Module - Sandboxes](/flint/modules/sandboxes) for details.
+
+## See also
+
+- [Module - Sandboxes](/flint/modules/sandboxes) — concepts, the API surface, and the isolation seam
+- [Guide - Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration) — dispatching agents that could run inside sandboxes

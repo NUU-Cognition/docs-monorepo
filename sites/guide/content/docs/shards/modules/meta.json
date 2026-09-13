@@ -1,0 +1,12 @@
+{
+  "title": "Modules",
+  "pages": [
+    "manifest",
+    "file-conventions",
+    "install-update",
+    "health-heal",
+    "scripts",
+    "migrations",
+    "dev-lifecycle"
+  ]
+}

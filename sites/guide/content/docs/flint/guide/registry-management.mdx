@@ -1,0 +1,164 @@
+---
+title: "Registry Management"
+---
+
+Flint keeps a local registry of known workspaces on your machine. You can think of it as Flint’s address book.
+
+Without that address book, many of the most useful cross-workspace commands would have no stable way to resolve names.
+
+## What the Registry Is
+
+The registry is a local JSON file stored at:
+
+```text
+~/.nuucognition/flint/registry.json
+```
+
+Each entry records the basic identity of a workspace, including things like:
+
+- its name
+- its absolute path
+- optional tags
+- optional description
+- known export or bundle names
+
+The registry is local to your machine. It is not a cloud service and it is not committed into each Flint.
+
+## Why the Registry Matters So Much
+
+Several Flint workflows depend on name-based lookup.
+
+For example:
+
+- `flint open <name>` needs to map a Flint name to a path
+- `flint source meshexport add "Flint/Export"` needs to find the source Flint locally
+- `flint reference flint "Some Flint"` benefits from the target being registered
+- `flint list` is simply reading the registry
+
+So the registry is not an optional convenience. It is part of how Flint makes separate workspaces discoverable.
+
+## The Good News: `init` Usually Handles It
+
+When you create a Flint with `flint init`, registration happens automatically. In most everyday use, you do not have to think about the registry very often.
+
+You usually notice it only when:
+
+- you cloned or moved a Flint manually
+- you are bringing in a Flint created on another machine
+- a path changed and the registry entry drifted
+
+## Registering an Existing Flint
+
+If you already have a valid Flint on disk, register it with:
+
+```bash
+flint register /path/to/flint
+```
+
+From inside the workspace you can simply run:
+
+```bash
+flint register
+```
+
+This is the command you reach for when Flint exists physically but is invisible to name-based commands.
+
+## Updating a Stale Entry
+
+If a Flint has moved or the registry entry needs refreshing, use:
+
+```bash
+flint register /path/to/flint --force
+```
+
+This is especially useful after reorganizing directories, cloning a workspace elsewhere, or repairing a broken registry state.
+
+## Listing Registered Workspaces
+
+The basic command is:
+
+```bash
+flint list
+```
+
+Useful variations:
+
+```bash
+flint list --status
+flint list --json
+flint list --full-path
+flint list --group
+flint list --tag docs
+flint list --search flint
+```
+
+These are not just formatting flags. They help with different kinds of registry maintenance:
+
+- `--status` shows whether stored paths still exist
+- `--search` is useful when you remember the topic but not the exact name
+- `--group` helps when you are using tags as a lightweight catalog
+
+## What Happens When a Path Is Broken
+
+Broken paths are handled a little differently depending on the command.
+
+For example:
+
+- plain `flint list` filters out invalid entries unless `--status` is used
+- `flint list --status` surfaces the broken items explicitly
+
+That makes `--status` the right first command when you suspect registry drift.
+
+## Unregistering a Workspace
+
+If you want to remove a Flint from the local registry without touching its files, use:
+
+```bash
+flint unregister /path/to/flint
+```
+
+Or from inside the workspace:
+
+```bash
+flint unregister
+```
+
+This is not the same as deleting the workspace. It only removes the registry entry.
+
+If you really want to remove both the registry entry and the workspace directory, use `flint delete`.
+
+## Why Name Uniqueness Matters
+
+Flint names need to be unique on one machine. Flint checks this during creation and `--from-git` bootstrap.
+
+That requirement is not arbitrary. It is what makes commands like these reliable:
+
+- `flint open <name>`
+- `flint reference flint "<name>"`
+- `flint source meshexport add "Name/Export"`
+
+If multiple workspaces shared the same name, those commands would become ambiguous.
+
+## Registry and Identity Are Different
+
+The registry tracks workspaces. It does not track people.
+
+If you want to set the current person identity inside a Flint, use:
+
+```bash
+flint config name "Your Name"
+flint whoami
+```
+
+That identity is stored in the shared `~/.nuucognition/config.toml` and resolves to `Mesh/People/@<Name>.md` in each workspace. It is a different layer of state from the global registry.
+
+## A Practical Maintenance Pattern
+
+If something feels wrong with name-based lookup, use this sequence:
+
+1. run `flint list --status`
+2. identify the broken or missing entry
+3. re-run `flint register --force` if the workspace still exists
+4. run `flint sync` inside the workspace
+
+That solves most registry-related issues quickly.

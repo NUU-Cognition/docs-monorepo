@@ -1,0 +1,35 @@
+---
+title: "Media"
+---
+
+`Media/` is the binary asset layer of a Flint. It holds the files that support the workspace's thinking but do not belong in markdown form.
+
+Typical examples include:
+
+- images embedded in Mesh notes
+- screenshots from product or code reviews
+- PDFs and reference documents
+- diagrams, exports, and attachments
+
+## Why `Media/` Exists
+
+Flint is optimized around markdown, but real work also depends on files that cannot be represented cleanly as notes. `Media/` keeps those assets close to the Mesh without forcing them into the note graph itself.
+
+This becomes especially important when a shard-driven workflow produces or depends on supporting artifacts. The cognitive program may live in `Shards/`, and the written reasoning may land in `Mesh/`, but the image, PDF, or screenshot that supports the reasoning belongs in `Media/`.
+
+## How It Interacts with Exports
+
+The current export builder can copy referenced media into built exports. That makes `Media/` the right place for assets that should travel with published documentation.
+
+If a guide, report, or reference page needs an image in the final export, keeping that image in `Media/` gives Flint a consistent place to resolve it from during build.
+
+## A Good Working Pattern
+
+Keep the file in `Media/` and keep the explanation in `Mesh/`.
+
+In practice:
+
+- `Media/` stores the raw asset
+- `Mesh/` stores the note that interprets, links, or explains it
+
+That keeps the workspace readable for humans and agents while preserving the supporting material in a predictable place.

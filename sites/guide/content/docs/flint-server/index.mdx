@@ -1,0 +1,257 @@
+---
+title: "Quick Start: Your First Flint"
+---
+
+This guide walks from install to a useful first workspace. The goal is not just to get Flint running, but to get you into the right habits from the start.
+
+## Before You Begin
+
+You need:
+
+- Node.js with `npm`
+- a terminal where global installs are allowed
+- any text editor you like
+- Obsidian if you want the best vault-style editing experience, though it is optional
+
+## Step 1: Install the CLI
+
+Install the CLI package:
+
+```bash
+npm install -g @nuucognition/flint-cli
+```
+
+Check that the binary is available:
+
+```bash
+flint --version
+```
+
+If you want to see whether a newer release exists later:
+
+```bash
+flint update --check
+```
+
+## Step 2: Create a Workspace
+
+Create a new Flint in the current directory:
+
+```bash
+flint init "My Project"
+```
+
+This is the default, cleanest starting point. Behind the scenes, Flint:
+
+- creates the workspace directory
+- writes `flint.toml`
+- writes `flint.json`
+- creates the standard subdirectories
+- registers the workspace in your local registry
+- runs the initial sync and kernel reconciliation pass
+
+Useful variants:
+
+```bash
+flint init "My Project" --preset default
+flint init "My Project" --path ~/workspaces
+flint init --from-git git@github.com:owner/repo.git
+```
+
+When to use them:
+
+- `--preset default` when you want a more fully seeded workspace from the start
+- `--path` when your current directory is not where you want the Flint created
+- `--from-git` when the workspace already exists as a Flint repository elsewhere
+
+## Step 3: Move Into the Flint
+
+```bash
+cd "(Flint) My Project"
+```
+
+The base structure looks like this:
+
+```text
+(Flint) My Project/
+├── flint.toml
+├── flint.json
+├── .flint/
+├── Mesh/
+├── Media/
+├── Shards/
+├── Sources/
+│   ├── Repos/
+│   └── Bundles/
+├── Exports/
+└── Workspace/
+    ├── Repos/
+    └── Bench/
+```
+
+That layout is worth learning early because it will shape everything you do next.
+
+- `Mesh/` is where your actual thinking goes.
+- `Shards/` is where the workspace keeps cognitive programs for agents.
+- `Sources/Repos/` and `Sources/Bundles/` are for copied-in external context.
+- `Workspace/Repos/` is for active repos that belong inside the workspace.
+- `Exports/` is for built output.
+- `.flint/` is for local fulfillment and sync state.
+
+## Step 4: Read the Init Note
+
+Open:
+
+```text
+Mesh/(System) Flint Init.md
+```
+
+This file is not just a welcome message. It is the workspace contract for both humans and agents. A good init note answers:
+
+- what this Flint is for
+- what belongs in `Mesh/`
+- which shards matter here
+- what external systems the workspace depends on
+- how an agent should start working
+
+If you skip this note, the workspace will feel more confusing than it needs to.
+
+This is also where you make the workspace executable for an agent. The init note tells the agent which shard-based cognitive programs are relevant and how to apply them here.
+
+## Step 5: Add a First Note
+
+Create something simple in `Mesh/`, such as:
+
+```markdown
+---
+id: 11111111-1111-1111-1111-111111111111
+tags:
+  - "#note"
+---
+
+# Project Ideas
+
+Initial thoughts for the project.
+
+## Goals
+
+- Keep architecture notes close to the codebase
+- Track follow-up tasks in one place
+- Export a clean public guide later
+```
+
+At this stage, focus on three habits:
+
+- use frontmatter consistently
+- use tags deliberately
+- start linking related notes with `[wiki links](/flint-server/wiki-links)`
+
+These habits matter because shards work best when an agent can read the workspace cleanly and write back into it predictably.
+
+## Step 6: Declare One Real Dependency
+
+The biggest mistake new users make is treating a Flint like a self-contained notebook. Flint becomes much more useful once it is connected to something real.
+
+### If the workspace is about a codebase
+
+Declare and fulfill a codebase reference:
+
+```bash
+flint reference codebase "Main App" /path/to/app
+flint reference list
+```
+
+Now the workspace has a named relationship to the code it is describing.
+
+### If the workspace needs read-only material from elsewhere
+
+Add a source bundle from another Flint export:
+
+```bash
+flint source meshexport list
+flint source meshexport add "Research Hub/Guide"
+flint plan --apply
+```
+
+### If the workspace should contain an active repo clone
+
+Create a workspace repo:
+
+```bash
+flint workspace create "App" git@github.com:me/app.git
+flint workspace list
+```
+
+The distinction matters:
+
+- use references when the thing stays outside the workspace
+- use sources when you want copied-in read-only context
+- use workspace repos when the repo should live inside the Flint
+
+That structure is what makes Flint a usable execution environment for shards. A cognitive program is much more reliable when the agent can clearly tell what is durable thinking, what is copied context, and what is active working code.
+
+## Step 7: Sync After Config Changes
+
+Any time you meaningfully change `flint.toml`, run:
+
+```bash
+flint sync
+```
+
+`flint sync` is responsible for reconciling the workspace with the declarations you made. Depending on what is configured, it can:
+
+- ensure standard directories and state files exist
+- install or reconcile declared shards
+- bootstrap `.obsidian/`
+- synchronize source repositories and source bundles
+- refresh metadata notes for sources and references
+- update `.gitignore`
+- refresh registry information
+
+If Flint has a heartbeat, it is `flint sync`.
+
+It is also the moment when declared cognitive programs become available in the workspace. If shards are the programs, sync is one of the main ways Flint makes sure the execution environment is ready for them.
+
+## Step 8: Build Something Shareable
+
+If you want to publish a guide or report from the workspace, tag a root note with `#export` and run:
+
+```bash
+flint export scan
+flint export build
+flint export list
+```
+
+This is where Flint starts to feel different from a normal markdown vault. Notes are not only for internal thinking; they can also become built artifacts.
+
+## Step 9: Open the Workspace Comfortably
+
+If you use Obsidian, you can open the folder directly there. You can also use:
+
+```bash
+flint open
+```
+
+The important point is that Flint does not require one specific editor. The files remain plain and portable.
+
+## A Strong First-Day Workflow
+
+If you want a practical first-day loop, do this:
+
+1. create the Flint
+2. improve the init note
+3. write two or three real Mesh notes
+4. add one codebase reference or one source
+5. run `flint sync`
+6. tag one note with `#export`
+7. run an export build
+
+By the end of that sequence, you will have touched the main parts of the system in the right order.
+
+## Where to Continue
+
+Once the workspace exists, choose the guide that matches the kind of work you actually want to do:
+
+- [Guide - Tutorial Project Planning](/flint-server/guide-tutorial-project-planning)
+- [Guide - Tutorial Research Notes](/flint-server/guide-tutorial-research-notes)
+- [Guide - Tutorial Agent Collaboration](/flint-server/guide-tutorial-agent-collaboration)

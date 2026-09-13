@@ -1,0 +1,100 @@
+---
+title: "Sandboxes"
+---
+
+A **sandbox** is a disposable, fully isolated Flint environment. Inside a sandbox an agent (or a test) can run real `flint` commands — create artifacts, initialize workspaces, exercise the registry — against a self-contained home directory, with no risk of touching the machine's real global state, real workspaces, or real Obsidian registration.
+
+Sandboxes exist so that agents can be given a live Flint to act in and report back on, and so automated tests can drive the CLI end-to-end without a shared machine. The same isolation boundary is the foundation for a future hosted/packaged offering — a sandbox home is a valid target to run a Flint server against.
+
+> Status: the sandbox package (`@nuucognition/flint-sandbox`) is v1. The core `FLINT_HOME` seam it depends on has landed; a `flint sandbox` CLI surface is designed and pending (see the end of this page).
+
+## The isolation seam: `FLINT_HOME`
+
+Every piece of machine-global Flint state lives under one root, `~/.nuucognition` by default:
+
+| Path | Holds |
+|------|-------|
+| `~/.nuucognition/config.toml` | The shared operator identity (`name`, `machine-name`) |
+| `~/.nuucognition/flint/registry.json` | The registry of known Flints on this machine |
+| `~/.nuucognition/flints/servers.json` | The running Flint-server registry |
+| `~/.nuucognition/flint/presets/` | Flint presets |
+
+The `FLINT_HOME` environment variable **replaces that root in full**. With `FLINT_HOME=/some/dir`, the shared config resolves to `/some/dir/config.toml`, the registry to `/some/dir/flint/registry.json`, and so on. When `FLINT_HOME` is unset, behavior is byte-identical to the default — nothing changes for normal use.
+
+`FLINT_HOME` is read at call time, so a single process (or a child process) can point Flint at a different home just by setting the variable in its environment. This is the whole basis of sandbox isolation: a sandbox sets `FLINT_HOME` (plus a few sibling seams) to a directory it owns, and every `flint` invocation inside it reads and writes there instead of the real machine home.
+
+### The companion seams
+
+A complete sandbox composes the sibling home-overrides alongside `FLINT_HOME`, all pointed under the sandbox home:
+
+| Variable | Isolates |
+|----------|----------|
+| `FLINT_HOME` | Shared config, flint registry, server registry, presets |
+| `FLINT_REGISTRY_DIR` | The flint registry directory specifically (finer override; takes precedence over `FLINT_HOME` for the registry) |
+| `ORBH_HOME` | Orbh session spools and orchestrator state |
+| `BLACKSMITH_HOME` | Blacksmith daemon lock/resources |
+| `ORB_SERVER_STORAGE_DIR` | Orb-server storage |
+
+### What isolates today, and what does not
+
+Everything routed through the `flint` **package** honors `FLINT_HOME`: the registry (`flint list`, `flint register`), workspace operations, the artifact helpers (`flint helper …`), and the server registry. Verified end-to-end: inside a sandbox, `flint list` sees only the sandbox's own workspaces, `flint helper type newnumber` counts from the sandbox, and `flint registry validate` reads the sandbox registry — while the real `~/.nuucognition` is never written.
+
+**Known gap:** the identity commands `flint whoami` and `flint config name` route through the external `@nuucognition/cli-core` package, which resolves the shared config with its own logic and does not yet honor `FLINT_HOME`. Inside a sandbox these still report the *real* machine identity. This is a read-through — it does **not** write to or corrupt the real config — but a sandbox cannot yet present its own identity to those two commands. Closing this gap requires `FLINT_HOME` support in cli-core (external to this repo).
+
+## The `@nuucognition/flint-sandbox` package
+
+The package provides the programmatic surface. A sandbox root has this layout:
+
+```
+<root>/
+  sandbox.json          # manifest: version, createdAt, workspaces, options
+  home/                 # the FLINT_HOME target — config.toml, registry, etc.
+  workspaces/
+    <name>/             # a real initialized Flint workspace (flint.toml, Mesh/, …)
+```
+
+### API
+
+| Function | Purpose |
+|----------|---------|
+| `createSandbox(options)` | Provision a sandbox root: isolated `home/`, one or more initialized workspaces, seeded identity, and a `sandbox.json` manifest. Returns a `SandboxHandle`. |
+| `loadSandbox(root)` | Rehydrate a `SandboxHandle` from an existing `sandbox.json`. |
+| `destroySandbox(handleOrRoot)` | Tear a sandbox down completely. Refuses any directory lacking a `sandbox.json`, so it can never delete an arbitrary path. |
+| `withSandbox(options, fn)` | Create a sandbox, run `await fn(handle)`, and **always** destroy it in a `finally` — the ergonomic way to avoid leaked scratch roots. |
+| `proveIsolation(fn)` | Content-hash the real `~/.nuucognition` before and after `await fn()`, returning `{ clean, rawClean, diff, ignoredDiff }`. Volatile lock files (`blacksmith/*.lock`, `orbh/*.lock`) are filtered by default, so `clean` reflects real leaks; `rawClean` is the unfiltered signal. |
+
+`SandboxHandle` carries `root`, `homeDir`, and `workspaces`, plus:
+
+- `envFor(overrides?)` — the exact environment record a caller exports so that any `flint` invocation lands in the sandbox (sets `FLINT_HOME`, `FLINT_REGISTRY_DIR`, and the companion seams under `home/`). The managed seam keys win over caller overrides.
+- `exec(command, args?, options?)` — run an arbitrary command with the sandbox environment, capturing `stdout`, `stderr`, `exitCode`, and `signal`.
+- `flint(args, opts?)` — a convenience over `exec` that runs the `flint` CLI with the sandbox environment and a cwd defaulting to the named (or first) workspace.
+
+### Isolation proof
+
+Because a live machine constantly rewrites daemon lock files, `proveIsolation` distinguishes a real leak from ambient churn:
+
+- `clean` — `true` when nothing outside the ignored volatility set changed. Gate tests on this.
+- `rawClean` — the unfiltered result (usually `false` on an active machine because of lock files).
+- `ignoredDiff` — exactly what was filtered, so you can audit the ignore list.
+
+## Planned: the `flint sandbox` CLI
+
+A CLI surface is designed (and pending implementation) over this API, wired into the Flint command tree as a `dev`-tier command group:
+
+```
+flint sandbox create <name> [--workspace <spec>...] [--shard <spec>...] [--json]
+flint sandbox list [--store <dir>] [--json]
+flint sandbox inspect <sandbox> [--json]
+flint sandbox exec <sandbox> -- <command> [args...]     # raw stdout/stderr + child exit code
+flint sandbox snapshot <sandbox> <name> [--replace]     # filesystem copy of current state
+flint sandbox reset <sandbox> <name> [--yes]            # restore a snapshot
+flint sandbox destroy <sandbox> [--yes]
+```
+
+Managed sandboxes live under `<FLINT_HOME>/flint/sandboxes/` by default. Snapshot/reset use a filesystem copy (not a manifest replay) because a sandbox is a real Flint home whose meaningful state includes post-create registry, installed shards, and generated Mesh files — a replay could only recreate the initial topology.
+
+## See also
+
+- [Module - Agent Sessions](/flint/modules/agent-sessions) — Orbh sessions that dispatch agents into environments
+- [Guide - Using a Sandbox](/flint/guide/using-a-sandbox) — a worked walkthrough
+- [Reference - Configuration](/flint/reference/configuration) — `FLINT_HOME` and the global config layers

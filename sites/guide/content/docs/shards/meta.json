@@ -1,0 +1,10 @@
+{
+  "title": "Flint Shards",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "modules",
+    "reference"
+  ]
+}
