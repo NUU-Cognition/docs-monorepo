@@ -104,7 +104,7 @@ The update process:
 2. **Check pinned versions** -- shards pinned to a specific version are skipped if already at that version
 3. **Remote version check** -- for GitHub sources, the shard.yaml version is fetched via the GitHub API (`application/vnd.github.raw+json`) without cloning. If the remote version is not newer, the shard is skipped. The fetch retries once on server errors
 4. **Re-download** -- shards with newer remote versions are re-resolved and reinstalled through the same `installShardFromSource()` pipeline
-5. **Migration detection** -- after update, `detectMigrations()` scans for applicable migration files (see [Module - Migrations](/shards/modules/migrations))
+5. **Migration detection** -- after update, `detectMigrations()` scans for applicable migration files (see [Migrations](/shards/modules/migrations))
 6. **Record version** -- updated shard versions are recorded
 
 Updates run in parallel with a concurrency limit of 5. Each shard reports its result as `updated`, `skipped`, or `failed`.
@@ -169,7 +169,7 @@ All path operations validate that targets are within the flint directory to prev
 
 ## Related
 
-- [Module - Manifest](/shards/modules/manifest) -- the `shard.yaml` fields that drive installation
-- [Module - Migrations](/shards/modules/migrations) -- version-to-version migration files detected during update
-- [Module - Health & Heal](/shards/modules/health-heal) -- diagnosing and fixing shard installation issues
-- [Module - Dev Lifecycle](/shards/modules/dev-lifecycle) -- how dev shards use path sources and local editing
+- [Manifest](/shards/modules/manifest) -- the `shard.yaml` fields that drive installation
+- [Migrations](/shards/modules/migrations) -- version-to-version migration files detected during update
+- [Health & Heal](/shards/modules/health-heal) -- diagnosing and fixing shard installation issues
+- [Dev Lifecycle](/shards/modules/dev-lifecycle) -- how dev shards use path sources and local editing

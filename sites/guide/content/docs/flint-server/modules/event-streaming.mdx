@@ -8,7 +8,7 @@ The Event Streaming module provides real-time updates to connected clients via S
 
 Clients connect to `GET /events/stream` and receive a continuous stream of typed events. The connection starts with a snapshot of current state for each subscribed channel, then switches to streaming deltas as changes occur. A heartbeat fires every 30 seconds to keep connections alive.
 
-SSE was chosen over WebSockets because the communication pattern is one-directional (server pushes to client) and SSE provides automatic reconnection via the browser's `EventSource` API. See [Concept - Architecture](/flint-server/concepts/architecture) for the full rationale.
+SSE was chosen over WebSockets because the communication pattern is one-directional (server pushes to client) and SSE provides automatic reconnection via the browser's `EventSource` API. See [Architecture](/flint-server/concepts/architecture) for the full rationale.
 
 ## Channels
 
@@ -86,7 +86,7 @@ Comments (heartbeats) use:
 
 ## Related
 
-- [Concept - Architecture](/flint-server/concepts/architecture) — why SSE over WebSockets
-- [Module - Orbh Sessions](/flint-server/modules/orbh-sessions) — session events and transcript streaming
-- [Module - Plates](/flint-server/modules/plates) — artifact events from file watchers
-- [Reference - REST API](/flint-server/reference/rest-api) — the `/events/stream` endpoint specification
+- [Architecture](/flint-server/concepts/architecture) — why SSE over WebSockets
+- [Orbh Sessions](/flint-server/modules/orbh-sessions) — session events and transcript streaming
+- [Plates](/flint-server/modules/plates) — artifact events from file watchers
+- [REST API](/flint-server/reference/rest-api) — the `/events/stream` endpoint specification

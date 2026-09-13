@@ -1,6 +1,7 @@
 {
   "title": "NUU Citations",
   "root": true,
+  "defaultOpen": false,
   "pages": [
     "index",
     "concepts",

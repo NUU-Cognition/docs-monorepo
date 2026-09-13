@@ -8,7 +8,7 @@ This guide takes you from a blank file to a small NCM document. At the end you h
 
 - You can write Markdown.
 - You have a place to save a text file.
-- You will parse with the default NCM preset. See [Concept - Presets and Extensions](/ncm/concepts/presets-and-extensions).
+- You will parse with the default NCM preset. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
 
 ## Start with frontmatter
 
@@ -22,7 +22,7 @@ tags:
 ---
 ```
 
-Tags without a hash get a hash when the document is parsed. You can also write the hash yourself. See [Guide - Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+Tags without a hash get a hash when the document is parsed. You can also write the hash yourself. See [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
 
 ## Add a heading and a paragraph
 
@@ -34,7 +34,7 @@ Write a level-one heading. Then write a paragraph. Put an author anchor at the e
 This paragraph can keep a stable identity. ^lead
 ```
 
-The heading gets a slug from its text. The paragraph gets the stable identity `lead`. See [Concept - Block Identity](/ncm/concepts/block-identity).
+The heading gets a slug from its text. The paragraph gets the stable identity `lead`. See [Block Identity](/ncm/concepts/block-identity).
 
 Headings go from one hash to five hashes. A sixth hash is not a heading in NCM.
 
@@ -56,12 +56,12 @@ Strikethrough uses two tildes around the text. Task lists use a checkbox marker 
 Point at another document by title. Use double brackets around the title.
 
 ```md
-See [Concept - Core Ideas](/ncm/concepts/core-ideas) for the nouns.
+See [Core Ideas](/ncm/concepts/core-ideas) for the nouns.
 ```
 
 The parser does not look up that title. Mesh can resolve it later. A renderer can then show the link as resolved, missing, or ambiguous.
 
-To embed media, use a Markdown image line as its own block. Images are not inline. See [Guide - Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
+To embed media, use a Markdown image line as its own block. Images are not inline. See [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
 
 ## Read the document as blocks
 
@@ -69,11 +69,11 @@ Parse the file. You get metadata from the frontmatter. You get a tree of blocks 
 
 Expect a frontmatter block, a header block, a paragraph block, and a list block. The paragraph keeps the stable identity `lead`. Nested list items get dotted positional identities.
 
-That tree is the document that a renderer draws. See [Guide - Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
+That tree is the document that a renderer draws. See [Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
 
 ## Next Steps
 
-- [Guide - Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
-- [Guide - Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter)
-- [Concept - Core Ideas](/ncm/concepts/core-ideas)
-- [Guide - Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)
+- [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
+- [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter)
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

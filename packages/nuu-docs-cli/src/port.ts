@@ -263,7 +263,10 @@ function convertWikiLinks(
   return content.replace(/\[\[([^\]]+)\]\]/g, (_, linkText) => {
     const parts = linkText.split("|");
     const target = parts[0].trim();
-    const display = parts[1]?.trim() || target;
+    // Drop the page-type prefix from the display text when no alias is given
+    const display =
+      parts[1]?.trim() ||
+      target.replace(/^(Guide|Module|Reference|Concept)\s+-\s+/, "");
 
     // Try to find in our link map
     const url = linkMap.get(target);
@@ -315,7 +318,11 @@ function createMetaJson(
   root?: boolean
 ): string {
   const meta: Record<string, unknown> = { title };
-  if (root) meta.root = true;
+  if (root) {
+    meta.root = true;
+    // Collapsed on the site landing page; inside the tab the folder is the tree root
+    meta.defaultOpen = false;
+  }
   meta.pages = pages;
   return JSON.stringify(meta, null, 2) + "\n";
 }

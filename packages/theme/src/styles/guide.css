@@ -411,7 +411,7 @@ h6 {
 }
 
 /* Links. Brand text, thin underline, underline darkens on hover. */
-.prose a:not([data-card]) {
+.prose a:not([data-card]):not([data-product-card]) {
   color: var(--nuu-link);
   font-weight: 450;
   text-decoration: underline;
@@ -421,7 +421,7 @@ h6 {
   transition: text-decoration-color 150ms ease;
 }
 
-.prose a:not([data-card]):hover {
+.prose a:not([data-card]):not([data-product-card]):hover {
   opacity: 1;
   text-decoration-color: var(--nuu-brand);
 }

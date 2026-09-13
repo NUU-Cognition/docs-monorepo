@@ -1,6 +1,7 @@
 {
   "title": "Flint Shards",
   "root": true,
+  "defaultOpen": false,
   "pages": [
     "index",
     "getting-started",

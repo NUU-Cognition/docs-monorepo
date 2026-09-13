@@ -10,7 +10,7 @@ An element is the syntactic read of the Markdown. It says what pattern the parse
 
 A block is the semantic result. It says what the document means to a product. Every block has an identity. Most elements map to one block. Some elements become a richer block through promotion.
 
-The parser builds elements first. Then it builds blocks. See [Guide - Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
+The parser builds elements first. Then it builds blocks. See [Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
 
 ## Block identity
 
@@ -18,23 +18,23 @@ Every block has a positional identity. The first body block is `b1`. The next is
 
 Most blocks also have a stable identity. An author can set it with an anchor. A heading can use a slug. Other blocks fall back to a hash of their content.
 
-The positional identity can shift when you insert or reorder content. The stable identity is meant to survive those edits. See [Concept - Block Identity](/ncm/concepts/block-identity).
+The positional identity can shift when you insert or reorder content. The stable identity is meant to survive those edits. See [Block Identity](/ncm/concepts/block-identity).
 
 ## Promotion
 
 Promotion turns one or more elements into a richer block. A callout blockquote becomes an admonition. A mermaid fence becomes a diagram. An embed plus the next line of caption becomes a figure.
 
-Promotion is not a new syntax family. You still write Markdown. The block layer reads a familiar pattern and gives it a type. See [Concept - Promotion](/ncm/concepts/promotion).
+Promotion is not a new syntax family. You still write Markdown. The block layer reads a familiar pattern and gives it a type. See [Promotion](/ncm/concepts/promotion).
 
 ## Preset and extension
 
 A preset is a named set of parse choices. CommonMark is strict base Markdown. GFM adds tables, strikethrough, and task lists. NCM adds the promotions that this format is for.
 
-An extension is one promotion you can switch on or off. Figures, admonitions, and footnotes are on in the default NCM preset. Definition lists, spoilers, and asides stay off unless you turn them on. See [Concept - Presets and Extensions](/ncm/concepts/presets-and-extensions).
+An extension is one promotion you can switch on or off. Figures, admonitions, and footnotes are on in the default NCM preset. Definition lists, spoilers, and asides stay off unless you turn them on. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
 
 ## Frontmatter
 
-Frontmatter is a YAML block at the very start of the document. It carries metadata such as title, tags, and dates. Custom fields must stay flat. If you omit a title, the first level-one heading can supply it. See [Guide - Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+Frontmatter is a YAML block at the very start of the document. It carries metadata such as title, tags, and dates. Custom fields must stay flat. If you omit a title, the first level-one heading can supply it. See [Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
 
 ## Embed and wikilink
 
@@ -44,7 +44,7 @@ A wikilink points at another document by title. A wiki embed places another docu
 
 ## Admonition
 
-An admonition is a callout block. You write it as a blockquote that starts with a type marker. The types are note, warning, tip, danger, info, success, question, and quote. See [Guide - Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
+An admonition is a callout block. You write it as a blockquote that starts with a type marker. The types are note, warning, tip, danger, info, success, question, and quote. See [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
 
 ## Figure
 
@@ -58,4 +58,4 @@ A page marker records a source page from a PDF parse. It is an HTML comment of t
 
 You write Markdown. The parser reads syntax into elements. Promotion and identity turn elements into blocks. A preset chooses which promotions run. Frontmatter sits at the front as metadata. Embeds, wiki links, admonitions, figures, and page markers are block types in that tree.
 
-Start with [Guide - Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document) if you want to see the nouns in a document.
+Start with [Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document) if you want to see the nouns in a document.

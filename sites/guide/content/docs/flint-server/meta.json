@@ -1,6 +1,7 @@
 {
   "title": "Flint Server",
   "root": true,
+  "defaultOpen": false,
   "pages": [
     "index",
     "getting-started",

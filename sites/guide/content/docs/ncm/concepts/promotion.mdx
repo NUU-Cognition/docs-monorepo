@@ -4,7 +4,7 @@ title: "Promotion"
 
 Promotion is how NCM turns a familiar Markdown pattern into a typed block. You still write Markdown. The block layer reads the pattern and gives it a type.
 
-A block is not only an element with an identity. Most elements map one to one. Promotion is the extra step that builds a richer meaning. See [Concept - Core Ideas](/ncm/concepts/core-ideas).
+A block is not only an element with an identity. Most elements map one to one. Promotion is the extra step that builds a richer meaning. See [Core Ideas](/ncm/concepts/core-ideas).
 
 ## Why promotion exists
 
@@ -22,7 +22,7 @@ Each promoter looks at the current element, and sometimes at the next ones. If i
 
 A promoter can consume more than one element. A figure consumes an embed and the caption paragraph next to it. A task list consumes a list whose items are checkboxes.
 
-Identity is assigned after promotion. The new block gets a positional identity and a stable identity. See [Concept - Block Identity](/ncm/concepts/block-identity).
+Identity is assigned after promotion. The new block gets a positional identity and a stable identity. See [Block Identity](/ncm/concepts/block-identity).
 
 ## Patterns that promote by default
 
@@ -44,19 +44,19 @@ A standalone embed with no caption stays an embed. It does not become a figure.
 
 Promotion does not invent a second language. You do not write a special NCM dialect beside Markdown.
 
-Promotion also does not run unless the matching extension is on. A CommonMark or GFM preset leaves these patterns as ordinary quotes, fences, and images. See [Concept - Presets and Extensions](/ncm/concepts/presets-and-extensions).
+Promotion also does not run unless the matching extension is on. A CommonMark or GFM preset leaves these patterns as ordinary quotes, fences, and images. See [Presets and Extensions](/ncm/concepts/presets-and-extensions).
 
 Some promotions stay off until you turn them on. Definition lists, spoilers, and asides are in that set.
 
 ## What you get after promotion
 
-You get a tree of typed blocks. A renderer walks that tree. Each type can have its own drawing. A bad block can fall back without taking down the rest of the document. See [Guide - Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
+You get a tree of typed blocks. A renderer walks that tree. Each type can have its own drawing. A bad block can fall back without taking down the rest of the document. See [Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
 
-To write the patterns, follow [Guide - Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
+To write the patterns, follow [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures).
 
 ## Further Reading
 
-- [Concept - Core Ideas](/ncm/concepts/core-ideas)
-- [Concept - Presets and Extensions](/ncm/concepts/presets-and-extensions)
-- [Guide - Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
-- [Guide - Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)
+- [Core Ideas](/ncm/concepts/core-ideas)
+- [Presets and Extensions](/ncm/concepts/presets-and-extensions)
+- [Use Callouts Diagrams and Figures](/ncm/guides/use-callouts-diagrams-and-figures)
+- [Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm)

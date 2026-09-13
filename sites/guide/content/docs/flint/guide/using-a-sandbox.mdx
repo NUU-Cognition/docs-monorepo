@@ -2,7 +2,7 @@
 title: "Using a Sandbox"
 ---
 
-This guide walks through creating an isolated Flint environment, running real `flint` commands inside it, proving it left the real machine untouched, and tearing it down. See [Module - Sandboxes](/flint/modules/sandboxes) for the concepts.
+This guide walks through creating an isolated Flint environment, running real `flint` commands inside it, proving it left the real machine untouched, and tearing it down. See [Sandboxes](/flint/modules/sandboxes) for the concepts.
 
 You need the `@nuucognition/flint-sandbox` package built (`pnpm --filter @nuucognition/flint-sandbox build`).
 
@@ -76,9 +76,9 @@ To inspect the exact environment a sandbox applies, call `handle.envFor()`.
 
 Inside a sandbox, commands that go through the Flint core isolate cleanly: `flint list`, `flint register`, `flint status`, `flint helper …`, and registry/server-registry operations all read and write the sandbox home.
 
-The exception is identity: `flint whoami` and `flint config name` route through the external `@nuucognition/cli-core` package, which does not yet honor `FLINT_HOME`, so they still report the real machine identity (a read-through — they do not corrupt the real config). Don't rely on sandbox identity for those two commands yet. See [Module - Sandboxes](/flint/modules/sandboxes) for details.
+The exception is identity: `flint whoami` and `flint config name` route through the external `@nuucognition/cli-core` package, which does not yet honor `FLINT_HOME`, so they still report the real machine identity (a read-through — they do not corrupt the real config). Don't rely on sandbox identity for those two commands yet. See [Sandboxes](/flint/modules/sandboxes) for details.
 
 ## See also
 
-- [Module - Sandboxes](/flint/modules/sandboxes) — concepts, the API surface, and the isolation seam
-- [Guide - Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration) — dispatching agents that could run inside sandboxes
+- [Sandboxes](/flint/modules/sandboxes) — concepts, the API surface, and the isolation seam
+- [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration) — dispatching agents that could run inside sandboxes
