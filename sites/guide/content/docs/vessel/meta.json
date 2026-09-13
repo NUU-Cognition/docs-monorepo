@@ -1,5 +1,6 @@
 {
   "title": "NUU Vessel",
+  "root": true,
   "pages": [
     "index",
     "guide",
