@@ -1,6 +1,7 @@
 import { source } from "@/lib/source";
 import { DocsPageContent } from "@nuucognition/docs-theme";
 import { notFound } from "next/navigation";
+import { siteConfig } from "@/site.config";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -23,8 +24,14 @@ export async function generateMetadata(props: {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  // The landing page is named after the site. Do not render "NUU Guide | NUU Guide".
+  const title =
+    page.data.title === siteConfig.name
+      ? { absolute: page.data.title }
+      : page.data.title;
+
   return {
-    title: page.data.title,
+    title,
     description: page.data.description,
   };
 }
