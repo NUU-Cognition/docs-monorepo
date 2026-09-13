@@ -3,31 +3,29 @@ title: "NUU Guide"
 description: "User guides for every NUU Cognition product"
 ---
 
-import { Card, Cards } from "fumadocs-ui/components/card";
-
-NUU Guide is the documentation site for every NUU Cognition product. Each product has its own guide with concepts, tutorials, modules, and reference pages. Pick a product below to start.
+NUU Guide is the documentation site for every NUU Cognition product. Each product has its own guide with concepts and step-by-step guides. The guides are conceptual. They describe what you can do and how the pieces fit, not every button. Pick a product below to start.
 
 ## Products
 
-<Cards>
-  <Card href="/docs" title="NUU Docs" description="The resource library. Add a source, and read the original next to the parsed version." />
-  <Card href="/surf" title="NUU Surf" description="The zoomable reader. Open a parsed document and move through it like a map." />
-  <Card href="/operations" title="NUU Operations" description="The delivery system for a person and for an organisation." />
-  <Card href="/orgs" title="NUU Organisations" description="The group layer. Organisations, memberships, invitations, and public organisation pages." />
-  <Card href="/profiles" title="NUU Profiles" description="The identity authority. How a person appears in public across NUU." />
-  <Card href="/citations" title="NUU Citations" description="Citations that carry identity and permissions. Cite a source, embed it, and keep the link alive." />
-  <Card href="/experience" title="NUU Experience" description="The shared feedback loop for the NUU suite. Submit and track feedback." />
-  <Card href="/onyx" title="NUU Onyx" description="The NUU Onyx product guide." />
-  <Card href="/ncm" title="NUU Cognition Markdown" description="The markdown dialect used across NUU. Write to think, not to code." />
-  <Card href="/mesh" title="NUU Mesh" description="The thought environment. Markdown files that reference each other and compound into knowledge." />
-</Cards>
+<ProductGrid columns={2}>
+  <ProductCard href="/docs" title="NUU Docs" description="The resource library. Add a source and read the original next to the parsed version." />
+  <ProductCard href="/surf" title="NUU Surf" description="The reader. Zoom from a summary of a document down to its original text." />
+  <ProductCard href="/operations" title="NUU Operations" description="Delivery management for a person and for an organisation. Projects, deliverables, tasks, and strikes." />
+  <ProductCard href="/orgs" title="NUU Organisations" description="The group layer. Organisations, memberships, invitations, and public organisation pages." />
+  <ProductCard href="/profiles" title="NUU Profiles" description="The identity authority. Your public profile, ghosts, claims, and groups." />
+  <ProductCard href="/citations" title="NUU Citations" description="The registry of source descriptions. Describe a source once and cite it everywhere." />
+  <ProductCard href="/experience" title="NUU Experience" description="The feedback loop. Offer a suggestion, report a bug, and follow what changed." />
+  <ProductCard href="/onyx" title="NUU Onyx" description="The knowledge workspace. Meshes of linked documents, edited live and published for readers." />
+  <ProductCard href="/ncm" title="NUU Cognition Markdown" description="The structured Markdown format. Blocks with stable identity, callouts, diagrams, and figures." />
+  <ProductCard href="/mesh" title="NUU Mesh" description="The model under Onyx. Titles, links, backlinks, versions, and published versions." />
+</ProductGrid>
 
 ## Platform
 
-<Cards>
-  <Card href="/flint" title="NUU Flint" description="The structured workspace for knowledge work. Mesh, shards, sources, exports, and agents in one place." />
-  <Card href="/flint-server" title="Flint Server" description="The server that hosts Flint workspaces, Orbh sessions, and event streams." />
-  <Card href="/shards" title="Flint Shards" description="Cognitive programs for agents. Skills, workflows, templates, and knowledge in one package." />
-  <Card href="/orbh" title="OrbH" description="The durable session layer that launches, tracks, and coordinates agent harnesses." />
-  <Card href="/vessel" title="NUU Vessel" description="The publishing layer for markdown workspaces. Declare what to share and publish with one command." />
-</Cards>
+<ProductGrid columns={2}>
+  <ProductCard href="/flint" title="NUU Flint" description="The structured workspace for knowledge work. Mesh, shards, sources, exports, and agents in one place." />
+  <ProductCard href="/flint-server" title="Flint Server" description="The server that hosts Flint workspaces, Orbh sessions, and event streams." />
+  <ProductCard href="/shards" title="Flint Shards" description="Cognitive programs for agents. Skills, workflows, templates, and knowledge in one package." />
+  <ProductCard href="/orbh" title="OrbH" description="The durable session layer that launches, tracks, and coordinates agent harnesses." />
+  <ProductCard href="/vessel" title="NUU Vessel" description="The publishing layer for Markdown workspaces. Declare what to share and publish with one command." />
+</ProductGrid>

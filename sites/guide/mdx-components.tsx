@@ -1,16 +1,14 @@
-import defaultMdxComponents from "fumadocs-ui/mdx";
-import { Card, Cards } from "fumadocs-ui/components/card";
 import type { MDXComponents } from "mdx/types";
+import { mdxComponents as themeMdxComponents } from "@nuucognition/docs-theme";
 
 /**
  * MDX components available to every page in NUU Guide.
- * Cards and Card render the product list on the landing page.
+ * The theme supplies the Fumadocs defaults plus Cards, Card, Callout,
+ * ProductGrid, and ProductCard.
  */
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
-    ...defaultMdxComponents,
-    Card,
-    Cards,
+    ...(themeMdxComponents as MDXComponents),
     ...components,
   };
 }

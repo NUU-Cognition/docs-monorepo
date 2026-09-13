@@ -10,6 +10,7 @@ import type { SiteConfig } from "@nuucognition/docs-theme";
 export const siteConfig: SiteConfig = {
   name: "NUU Guide",
   description: "User guides for every NUU Cognition product",
+  url: "https://guide.nuucognition.com",
   basePath: "",
   logo: (
     <img
