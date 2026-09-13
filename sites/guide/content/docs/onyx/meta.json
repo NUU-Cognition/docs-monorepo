@@ -1,0 +1,10 @@
+{
+  "title": "NUU Onyx",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}

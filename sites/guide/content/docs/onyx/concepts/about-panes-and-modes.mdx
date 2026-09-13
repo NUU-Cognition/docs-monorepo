@@ -1,0 +1,51 @@
+---
+title: "About Panes and Modes"
+---
+
+The middle of the workspace is not one window. It is a grid of panes. Each pane has its own tabs and its own back and forward trail. That split is the point of the layout. You can read one document while you edit another. You can keep a map open while you write a child page.
+
+## Panes
+
+A pane is one cell in the grid. The workspace can hold up to four panes. Common layouts are one pane, two columns, two rows, or a two by two grid. You choose a layout in the workspace editor.
+
+An empty pane is legal. If you close the last tab in a pane, the cell stays. You fill it later, or you remove the cell from the layout.
+
+A title is unique inside a pane. Opening the same document again in that pane focuses the existing tab. Opening it in a new pane is how you split.
+
+On a phone the grid draws one cell. Split actions are hidden there because a second pane would not be visible.
+
+## Tabs
+
+A tab is one open document or one open media file in a pane. You can reorder tabs. You can drag a tab to another pane. Closing a tab does not delete the document.
+
+The focused pane is the pane that receives new opens, back, and forward. Quick open and wikilink follows use that pane unless you ask for a new pane.
+
+Each pane keeps its own trail. Back means the previous document in this pane. It does not mean the previous document in the whole workspace.
+
+## Modes
+
+Read, edit, and raw are three views of the same document. They share one header. The header keeps the title, the save state, and the mode switch in the same place when you change mode.
+
+- Use read mode when you want the rendered page.
+- Use edit mode when you want to write.
+- Use raw mode when you want to see the file as text.
+
+The read and edit switch is a two-way toggle. Raw is a separate stop. You enter raw on purpose. You leave it back to edit if you can write, or back to read if you cannot.
+
+A default mode lives in settings. New opens follow that default. A read-only role always opens in read mode.
+
+## Focus mode
+
+Focus mode hides the rails and the extra chrome so the document uses the screen. You can leave it the same way you entered it. Escape also leaves it when nothing else is open.
+
+## Presence
+
+When other people have the same document open, the header shows who is here. People who are editing show as distinct from people who are only viewing. Cursors from other editors can appear in the body. Presence is a live signal. It is not a lock. Two people can still type in the same document. If the writes collide, you resolve a conflict. See [Concept - Core Ideas](/onyx/concepts/core-ideas).
+
+## Why the layout works this way
+
+The mesh is title-addressed and flat. Navigation is "open this title", not "walk this folder". Panes and tabs are how you hold more than one title at once. Modes are how you change the job of a title without opening a second app.
+
+The command palette lists the layout acts that are possible now. Those acts include quick open, open in a new pane, close this pane, show or hide a rail, and enter focus mode.
+
+To use this in order, follow [Guide - Work with Panes and Tabs](/onyx/guides/work-with-panes-and-tabs). For how titles connect, see [Concept - About Documents and Wikilinks](/onyx/concepts/about-documents-and-wikilinks).

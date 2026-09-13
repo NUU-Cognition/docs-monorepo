@@ -1,0 +1,70 @@
+---
+title: "Core Ideas"
+---
+
+Onyx has a small set of nouns. Learn these first. Every later page uses them with the same meaning.
+
+## Mesh
+
+A mesh is a named collection of Markdown documents and media. You create a mesh, you open it, and you work inside it. Home lists your meshes. You can rename a mesh. You can leave a mesh you joined. You can delete a mesh you own. Delete removes the documents for every collaborator.
+
+## Document and title
+
+A document is one Markdown page in a mesh. The title is the address of that document. Two documents in the same mesh cannot share a title. You open a document by its title. You rename a document by changing its title.
+
+## Wikilink and backlink
+
+A wikilink is a link that names another document by title. You follow a wikilink to open that document. If the title does not exist yet, you can create the document from the link.
+
+A backlink is the reverse. If document A links to document B, then B lists A as a backlink. The context rail shows backlinks for the open document.
+
+## Pane and tab
+
+A pane is one column of open documents in the middle of the workspace. A tab is one open document inside a pane. A title is unique inside a pane. The same document can be open in two panes. That is how you split a view.
+
+## Read, edit, and raw modes
+
+Each open document has a mode.
+
+- Read mode shows the rendered document. You cannot type in the body.
+- Edit mode shows the editor. You change the body and the properties.
+- Raw mode shows the file as text, including the properties block.
+
+A collaborator with a read-only role has no edit mode. Raw mode is still available.
+
+## Autosave
+
+Edits save as you type. You do not need a separate save step for ordinary writing. The header shows when a save is in progress, when work is still local, or when a conflict needs a choice. If you leave the mesh with work that has not settled, the workspace asks you to save or discard.
+
+## Conflict
+
+A conflict happens when two writes hit the same document and one write is stale. Nothing from the rejected write is stored. You choose the other copy, or you keep your copy. You can also decide later. Conflict resolution needs a connection.
+
+## Version history
+
+Version history is a timeline of how a document changed. Automatic sessions group by day. You can name a version so it stays easy to find. Restore writes a new change. The old version stays in the timeline. History is not available on a published version, and it is not available when you browse as a guest.
+
+## Publication
+
+A publication is a frozen copy of a mesh at one moment. You give it a version label. Readers can open it without an account. The live mesh can keep changing. The published version does not.
+
+## Collaborator role
+
+A collaborator is a person with access to a mesh. A role sets what they can do.
+
+- Owner created the mesh.
+- Admin can edit documents and manage sharing.
+- Editor can change documents.
+- Read-only can read documents and cannot change them.
+
+An invitation is pending until the person accepts it from home.
+
+## Command palette
+
+The command palette is a search over actions that are possible right now. Typical actions include new document, quick open, split pane, version history, focus mode, and download. Rows that cannot run are hidden, not greyed.
+
+## How the nouns relate
+
+You open a mesh. The tree lists documents by title. You open titles as tabs in panes. You write in edit mode. Autosave stores the work. Wikilinks connect titles. Backlinks show the inbound side. Collaborators share the same mesh under roles. A publication freezes a copy for readers. A conflict asks you to choose when two edits collide. Version history lets you name and restore a past state. The command palette is the short path to those acts.
+
+Read [Concept - About Documents and Wikilinks](/onyx/concepts/about-documents-and-wikilinks) next. Then read [Concept - About Panes and Modes](/onyx/concepts/about-panes-and-modes) and [Concept - About Sharing and Publication](/onyx/concepts/about-sharing-and-publication).

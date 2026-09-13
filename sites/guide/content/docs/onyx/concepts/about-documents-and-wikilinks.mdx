@@ -1,0 +1,52 @@
+---
+title: "About Documents and Wikilinks"
+---
+
+A mesh is flat. There is no folder inside the mesh. The address of a document is its title. The tree on the left is a view of those titles. It is not a second store of files.
+
+This design keeps links stable in one way. A wikilink always names a title. It does not name a path. When you rename a document, the workspace rewrites every wikilink that pointed at the old title. The rename and the rewrites land together, or they do not land at all.
+
+## Titles and the tree
+
+You can use a simple title. You can also nest a title under another title. Nested titles show as children in the tree. A child still has its own full title. The tree only shortens the label under the parent.
+
+Missing parents do not break the tree. If a child exists and the parent title does not, the child hangs under the nearest ancestor that does exist.
+
+You can pin a document. Pins sit at the top of the tree in an order that every collaborator sees. An editor can change pins. A rename keeps the pin.
+
+You can type in the tree to search by title. That is the fast path when you do not remember where a document sits.
+
+## Properties
+
+Every document has a properties block above the body. Properties are the identity row of the document. They stay with the title in read mode and in edit mode. Raw mode hides the property table because the body already shows the same block as text.
+
+Some property keys belong to the workspace. You can see them. You cannot edit them.
+
+## Wikilinks
+
+You insert a wikilink by naming a title. The editor offers matching titles as you type. If no title matches what you typed, you can still insert the link. The link stays unresolved until that title exists.
+
+A plain click on a wikilink follows it. That is the workspace contract. If the target is missing, following the link can create the document. The create step asks you to confirm the title first.
+
+A wikilink writes the title between double brackets. That spelling is the stable format. The workspace treats the inner text as the title. You can also add a display label. The label is what you see. The title is still the address.
+
+## Backlinks and media
+
+The context rail answers two questions about the open document.
+
+- Which documents link here?
+- Which media does this document embed, or which media does the whole mesh hold?
+
+Backlinks update as soon as a link is written or a title is renamed. A click on a backlink opens that document.
+
+Media lives in the mesh with the documents. You can paste or drop an image into a document. The workspace stores the file and inserts an embed. You can also import markdown files and media in one pass. The context rail can open the document that contains a file, or open the file itself as a tab.
+
+Unused media is still in the mesh. You can remove it when you no longer need it. Remove needs edit access and a connection.
+
+## Why titles are the key
+
+You never address a document by a hidden id. You address work by title in the tree, in wikilinks, in quick open, and in the open document.
+
+The cost is uniqueness. Two documents cannot share a title. Import asks you what to do when a file would reuse a title. The default is to skip the existing document so an import does not overwrite by accident.
+
+See [Concept - Core Ideas](/onyx/concepts/core-ideas) for the noun list. To put this into practice, follow [Guide - Link Documents and Follow Backlinks](/onyx/guides/link-documents-and-follow-backlinks).
