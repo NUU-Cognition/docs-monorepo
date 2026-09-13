@@ -1,6 +1,7 @@
 {
   "title": "NUU Docs",
   "root": true,
+  "icon": "docs",
   "defaultOpen": false,
   "pages": [
     "index",

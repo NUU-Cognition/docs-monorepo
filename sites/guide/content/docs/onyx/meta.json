@@ -1,6 +1,7 @@
 {
   "title": "NUU Onyx",
   "root": true,
+  "icon": "onyx",
   "defaultOpen": false,
   "pages": [
     "index",
