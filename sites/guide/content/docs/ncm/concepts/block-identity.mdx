@@ -1,0 +1,61 @@
+---
+title: "Block Identity"
+---
+
+NCM gives every block an identity so other work can point at it. An annotation can anchor to a paragraph. One block can be reused in another document. A change can be tracked at the block level.
+
+Identity is why NCM is not only Markdown as a string. The same input always produces the same identities. That property is deterministic. See [Concept - Core Ideas](/ncm/concepts/core-ideas).
+
+## Positional identity
+
+The positional identity is the place of the block in the tree. The first body block is `b1`. The second is `b2`. Nested items use a dotted form. A list item can be `b4.1`. A nested item can be `b4.1.1`. A table row uses the same dotted form.
+
+Insert a block near the top and later positional identities shift. That is expected. Positional identity is stable inside one parse. It is not stable across edits.
+
+Frontmatter is the exception. The frontmatter block uses the fixed identity `frontmatter`. It does not take a `b1` slot. It is always first when it is present.
+
+## Stable identity
+
+The stable identity is meant to survive edits. NCM assigns it in this order.
+
+1. An author anchor. You put `^id` at the end of the first line, or on its own line after the block. Letters, numbers, hyphens, and underscores are valid. This form wins.
+2. A heading slug. A heading without an author anchor gets a slug from its text.
+3. A content hash. Other blocks fall back to a hash of their content.
+
+A heading with an author anchor uses the anchor, not the slug.
+
+```md
+# Introduction ^intro
+
+A paragraph you want to keep. ^important-para
+```
+
+The heading keeps the stable identity `intro` if you later change the heading text. The paragraph keeps `important-para` if you move it.
+
+Footnote definitions use a deterministic stable identity from their label. That identity stays tied to the label.
+
+## Why both exist
+
+Products need both handles.
+
+Positional identity is cheap to walk. It is good for order, diffs inside one parse, and nested structure.
+
+Stable identity is the handle you keep. Point an annotation at a stable identity. Transclude a block by stable identity. After a reorder, the handle still finds the same content.
+
+If two headings would share a slug, NCM resolves the clash in a deterministic way. You do not pick that suffix. Prefer an author anchor when a heading must stay findable.
+
+## What identity is for
+
+Use identity when you need a block to stay addressable.
+
+- Annotations attach to a block, not to a character offset in a string.
+- Reuse can point at one block in another document.
+- Change tracking can compare blocks instead of whole files.
+
+The parser assigns identity when it builds blocks. You do not assign positional identity by hand. You can assign a stable identity with an author anchor. See [Concept - Promotion](/ncm/concepts/promotion) for how identity is attached after promotion.
+
+## Further Reading
+
+- [Concept - Core Ideas](/ncm/concepts/core-ideas)
+- [Guide - Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document)
+- [Guide - Parse and Render a Document](/ncm/guides/parse-and-render-a-document)

@@ -1,0 +1,9 @@
+{
+  "title": "Guides",
+  "pages": [
+    "write-your-first-ncm-document",
+    "use-callouts-diagrams-and-figures",
+    "add-metadata-with-frontmatter",
+    "parse-and-render-a-document"
+  ]
+}

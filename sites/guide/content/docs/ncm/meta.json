@@ -1,0 +1,10 @@
+{
+  "title": "NUU Cognition Markdown",
+  "root": true,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "workflows"
+  ]
+}

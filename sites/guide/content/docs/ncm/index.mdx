@@ -1,0 +1,59 @@
+---
+title: "Introduction"
+---
+
+NUU Cognition Markdown (NCM) is a structured Markdown format. A document is normal Markdown. The parser turns that Markdown into a stable tree of typed blocks.
+
+Every block has an identity. The identity stays the same for the same input. You can attach an annotation to a paragraph. You can reuse one block in another document. You can track a change at the block level.
+
+Some familiar Markdown patterns become first-class blocks. A callout blockquote becomes an admonition. A mermaid code fence becomes a diagram. An embed with a caption becomes a figure.
+
+## Who it is for
+
+This format is for two audiences.
+
+Writers author NCM documents. You write headings, lists, tables, callouts, diagrams, and metadata in Markdown. You do not need to know how the parser works.
+
+Developers parse and render NCM documents. You take Markdown as input. You get a tree of blocks. You walk that tree to display, search, or store the document.
+
+## The problem it solves
+
+Plain Markdown is a string. A string has no identity for a paragraph. A string does not say that a callout is different from a quote. A string does not give you a stable handle for an annotation.
+
+NCM keeps the authoring surface as Markdown. It adds a typed tree after parse. The tree is the document that NUU products use.
+
+You still write with headings, lists, and fences. After parse, those shapes are blocks with types and identities. That is the gap this format fills.
+
+## Where it fits
+
+NCM is the Markdown layer of NUU Cognition. Other NUU products sit around it.
+
+- You write Mesh notes in Markdown. Wiki links and embeds in those notes are NCM syntax.
+- Flint stores thinking in Markdown files. Those files can be NCM documents.
+- NUU Docs pages are Markdown. This guide uses the same format.
+- A PDF parse can emit page markers. NCM keeps those markers as blocks so a viewer can stay in step with source pages.
+- A renderer walks the block tree and draws the document.
+
+NCM is the format and the parse. A renderer is a separate step. See [Guide - Parse and Render a Document](/ncm/guides/parse-and-render-a-document).
+
+## What you get
+
+You get a document with metadata, elements, and blocks. See [Concept - Core Ideas](/ncm/concepts/core-ideas).
+
+You get two kinds of identity on every block. One is positional. One is stable. See [Concept - Block Identity](/ncm/concepts/block-identity).
+
+You get promotion. Promotion turns a familiar Markdown pattern into a richer block. See [Concept - Promotion](/ncm/concepts/promotion).
+
+You get presets. A preset is a named set of parse choices. CommonMark, GFM, and NCM are the main presets. You can switch extensions on or off. See [Concept - Presets and Extensions](/ncm/concepts/presets-and-extensions).
+
+Frontmatter carries metadata such as title and tags. See [Guide - Add Metadata with Frontmatter](/ncm/guides/add-metadata-with-frontmatter).
+
+Math, embeds, wiki links, task lists, footnotes, and page markers are part of the format. The default NCM preset turns the common ones into blocks.
+
+## Where to go next
+
+If you want the mental model first, read [Concept - Core Ideas](/ncm/concepts/core-ideas).
+
+If you want to write a document now, follow [Guide - Write Your First NCM Document](/ncm/guides/write-your-first-ncm-document).
+
+If you already have Markdown, follow [Guide - Move Existing Markdown to NCM](/ncm/workflows/move-existing-markdown-to-ncm).
