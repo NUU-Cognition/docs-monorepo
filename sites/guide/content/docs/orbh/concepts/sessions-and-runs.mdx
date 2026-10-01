@@ -1,0 +1,163 @@
+---
+title: "Sessions and Runs"
+---
+
+An Orbh session is a durable record of work with one agent. A run is one harness invocation inside that session. The session keeps its id across many runs.
+
+This distinction is why a session survives restarts, resumes, and context compaction. The harness process is temporary. The session record is permanent.
+
+## Session Identity
+
+Each session carries one stable id. The id never changes. Resume, compaction, and account moves keep the same id.
+
+Each session also carries a title and a description. The agent sets them at registration. The operator reads them in the session list. A launch can pre-set them with flags.
+
+Each session carries a runtime, a profile, and a mode. The runtime names the harness. The profile names the model and effort preset. The mode names the execution shape.
+
+Each session exposes a free-form key/value interface. The agent stores progress there. The operator reads it without opening the transcript.
+
+```bash
+flint orbh session set phase reading-code
+flint orbh session get phase
+```
+
+Common keys are `phase`, `progress`, `blockers`, and `artifacts`. Keys under `core:` belong to Orbh itself. Agents leave them alone.
+
+## Event-Sourced Spool
+
+Orbh stores each session as an event-sourced spool. Every change appends one event to an append-only log. The log is the source of truth.
+
+Orbh also keeps a materialized snapshot per spool. The snapshot is the fast read path. Normal reads use the snapshot. They never fold the log.
+
+| File | Purpose |
+| --- | --- |
+| `spaces/<spaceId>/spools/<spoolId>.jsonl` | Spool event log. |
+| `spaces/<spaceId>/spools/<spoolId>.json` | Materialized session snapshot. |
+| `spaces/<spaceId>/spools/<spoolId>/<threadId>.jsonl` | Transcript event log. |
+
+Sessions live in the machine-local space `local`. They stay there for life. Resume never moves a spool between spaces.
+
+When a snapshot is missing or stale, maintenance rebuilds it from the log:
+
+```bash
+flint orbh rebuild-session-snapshots <id>
+```
+
+## Turns, Runs, and Results
+
+A run is one started harness process. It records its status, its activity, its end reason, and its result text.
+
+A turn is one headless run from the agent side. Each turn ends with an explicit return:
+
+```bash
+flint orbh session return --finish "<result>"
+flint orbh session return --await "<result>"
+```
+
+`--finish` ends the work. `--await` leaves the session dormant but wakeable. Omitting both means `--finish`.
+
+The return payload is the deliverable. A clean process exit is not enough. A headless session that exits without a return has no result.
+
+Results form one stream per session. Each returned turn appends one result. A reader fetches the latest result or one historical run:
+
+```bash
+flint orbh result <id>
+flint orbh result <id> --run 2
+```
+
+A parent collects a subagent through this stream. It waits for the correlated result. It never reads child process output. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents).
+
+## When a Turn Returns Nothing
+
+A headless turn that exits without a return stays `working` first. Orbh re-prompts the session at most twice. Each re-prompt asks the harness to return properly.
+
+When the re-prompts are exhausted, Orbh records the end reason `failed-unreturned`. The session becomes `awaiting`. It stays recoverable. An operator resumes it with a new prompt.
+
+A deliberate stop never enters this path. Kill, close, park, and discard each record their own end. No re-prompt follows them.
+
+## Modes
+
+Orbh records one mode on each session. The mode sets the lifecycle expectation.
+
+| Mode | Meaning |
+| --- | --- |
+| `interactive` | A person sits at a terminal. Orbh observes terminal activity. A quiet shell is idle, not dead. |
+| `headless` | A standalone session with no parent. It must return an explicit result for a clean finish. |
+| `subagent` | A headless session with a parent. Its return payload is the deliverable to its parent. |
+
+Two more words describe launch shapes, not stored modes. A peer is a headless session with no parent, started by bare `launch`. A detached session is an interactive session that keeps running after its client disconnects. The operator re-attaches later.
+
+A session can move between interactive and headless shape with `switch`. The session id stays the same. Only the harness shape changes.
+
+## Work State
+
+`workState` is the operator-facing lifecycle field. It has five values.
+
+| State | Meaning |
+| --- | --- |
+| `working` | A live or recoverable turn is active. An exit without a return stays here while Orbh decides. |
+| `needs-input` | A blocking question waits for an answer. |
+| `awaiting` | The session rests after `--await`, `park`, `failed-unreturned`, or a provider error. It wakes on new activity. |
+| `finished` | The session returned with `--finish` or an operator closed it. |
+| `abandoned` | An operator discarded or killed the session, or reconciliation marked a dead run as lost. |
+
+Three rules derive the state. A stored return decides first: `--finish` gives `finished` and `--await` gives `awaiting`. A pending blocking question gives `needs-input`. Anything else with no completion fact stays `working` until the reaper rules.
+
+`awaiting` is dormant, not terminal. The orchestrator sweep owns the wake. A message, a child result, a room event, or a scheduled time resumes the session. See [Orchestrator](/orbh/modules/orchestrator).
+
+## Observed Activity
+
+Interactive sessions add one read-side override. The terminal wrapper observes each live run as `busy` or `idle`. The session list shows the observed value instead of the stored state.
+
+A `busy` run shows `working`. An `idle` run with live subagents shows `working`. An `idle` run with no live subagents shows `needs-input`. The operator sees at a glance whether the agent works or waits at the prompt.
+
+This override never writes. The stored work state stays unchanged. Headless sessions never use it.
+
+## Retention
+
+Retention is the shelf state. It is separate from work state.
+
+| Retention | Meaning |
+| --- | --- |
+| `active` | Normal visible session. |
+| `parked` | Session rests and resumes later. |
+| `closed` | Session left active operation. |
+| `finished` | Session ended with an explicit return. |
+| `error` | Session ended without a completion fact. |
+
+Three operator verbs set the shelf directly:
+
+```bash
+flint orbh close <id>     # Terminal finish plus closed retention
+flint orbh park <id>      # Awaiting plus parked retention
+flint orbh discard <id>   # Tombstone plus abandonment; hidden from the list
+```
+
+`close` finishes the session and terminates the harness. `park` is the legacy spelling of await: the session rests and the orchestrator wakes it on new activity. `discard` tombstones the entry and hides it from the default list.
+
+Unattended runs also self-shelve at run end. An explicit return shelves `finished`. An end without a completion fact shelves `error`. Interactive sessions never self-shelve on a normal terminal end.
+
+## Resume
+
+Resume adds one new run to the same session. The session keeps its id, its title, its interface keys, and its result history.
+
+```bash
+flint orbh resume <id> "<prompt>"
+```
+
+Any resume flips retention back to `active`. The new run derives a fresh work state from its own facts. A parked session, a finished session, and a `failed-unreturned` session all resume the same way. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+## Further Reading
+
+- [What Is Orbh](/orbh/concepts/what-is-orbh)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Orchestrator](/orbh/modules/orchestrator)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [Compaction](/orbh/modules/compaction)
+- [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters)
+- [Accounts](/orbh/modules/accounts)
+- [Server and SDK](/orbh/modules/server-and-sdk)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

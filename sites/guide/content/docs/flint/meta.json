@@ -1,0 +1,13 @@
+{
+  "title": "NUU Flint",
+  "root": true,
+  "icon": "flint",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "concepts",
+    "guide",
+    "modules",
+    "reference"
+  ]
+}

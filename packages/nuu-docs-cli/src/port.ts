@@ -255,7 +255,83 @@ export function buildUrlPrefix(config: DocsConfig): string {
   return prefix;
 }
 
+/** The heading id that Fumadocs gives a heading (github-slugger rules) */
+function headingId(heading: string): string {
+  return heading
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+    .replace(/\s/g, "-");
+}
+
 function convertWikiLinks(
+  content: string,
+  urlPrefix: string,
+  linkMap: Map<string, string>
+): string {
+  // Wiki links inside fenced or inline code are examples: keep them as written
+  return mapText(content, (text) => convertWikiLinksInText(text, urlPrefix, linkMap));
+}
+
+const HTML_TAGS = new Set([
+  "a", "b", "i", "em", "strong", "kbd", "sub", "sup", "details", "summary", "div", "span", "p",
+  "table", "thead", "tbody", "tr", "td", "th", "ul", "ol", "li", "code", "pre", "video", "iframe",
+]);
+const VOID_TAGS = new Set(["br", "hr", "img"]);
+
+/**
+ * A tag that a page writes on purpose: a JSX component or an HTML tag that closes
+ * (a closing tag on the page, a self-closing tag, or a void tag). A placeholder such
+ * as <name> or <Name> has no closing tag, so it is text.
+ */
+function isKeptTag(rest: string, page: string): boolean {
+  const m = rest.match(/^<(\/?)([A-Za-z][\w.]*)(?=[\s>/])/);
+  if (!m) return false;
+  const [, closing, name] = m;
+  if (VOID_TAGS.has(name)) return true;
+  if (!/^[A-Z]/.test(name) && !HTML_TAGS.has(name)) return false;
+  if (closing) return page.includes(`<${name}`);
+  if (/^<[^<>]*\/>/.test(rest)) return true;
+  return page.includes(`</${name}>`);
+}
+
+const CODE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g;
+
+/** Apply fn to the text outside fenced and inline code */
+function mapText(content: string, fn: (text: string) => string): string {
+  return content
+    .split(CODE)
+    .map((segment, i) => (i % 2 === 1 ? segment : fn(segment)))
+    .join("");
+}
+
+/**
+ * Markdown text is not always valid MDX: "{" opens an expression and "<name>" opens a tag.
+ * Outside code, a placeholder such as <name> becomes inline code, and every other "<",
+ * "{", and "}" gets a backslash. A literal URL takes a following backslash or backtick
+ * into the link, so a URL with a placeholder (http://127.0.0.1:<port>) becomes inline
+ * code as a whole first.
+ */
+function escapeMdxText(content: string): string {
+  const prepared = mapText(content, (text) =>
+    text
+      .replace(/<(https?:\/\/[^>\s]+)>/g, "[$1]($1)")
+      .replace(/https?:\/\/[^\s`|()]*<[A-Za-z][\w.:/-]*>[^\s`|()]*/g, (url) => `\`${url}\``)
+  );
+  return mapText(prepared, (text) =>
+    text
+      .replace(/(?<!\\)[{}]/g, (brace) => `\\${brace}`)
+      .replace(
+        /(?<!\\)<([A-Za-z][\w.:/-]*>)?/g,
+        (match, placeholder: string | undefined, at: number, whole: string) => {
+          if (isKeptTag(whole.slice(at), content)) return match;
+          return placeholder ? `\`${match}\`` : "\\<";
+        }
+      )
+  );
+}
+
+function convertWikiLinksInText(
   content: string,
   urlPrefix: string,
   linkMap: Map<string, string>
@@ -263,6 +339,12 @@ function convertWikiLinks(
   return content.replace(/\[\[([^\]]+)\]\]/g, (_, linkText) => {
     const parts = linkText.split("|");
     const target = parts[0].trim();
+
+    // A link to a heading of the same page: [[#Heading]] or [[#Heading|text]]
+    if (target.startsWith("#")) {
+      const heading = target.slice(1);
+      return `[${parts[1]?.trim() || heading}](#${headingId(heading)})`;
+    }
     // Drop the page-type prefix from the display text when no alias is given
     const display =
       parts[1]?.trim() ||
@@ -298,6 +380,9 @@ function processContent(
 
   // Convert wiki links
   processed = convertWikiLinks(processed, urlPrefix, linkMap);
+
+  // Escape the characters that MDX reads as expressions or tags
+  processed = escapeMdxText(processed);
 
   // Normalize code block languages
   processed = normalizeCodeBlocks(processed);

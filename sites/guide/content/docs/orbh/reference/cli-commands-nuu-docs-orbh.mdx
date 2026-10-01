@@ -1,0 +1,650 @@
+---
+title: "Orbh CLI Commands"
+---
+
+This page documents the `flint orbh` command surface. It groups the commands as `flint orbh --help` groups them.
+
+## Command Groups
+
+### Launch and Run
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh launch [target] [prompt]` | Launch a new headless agent session. |
+| `flint orbh ping` | Run one unattended inference turn and print its returned string. |
+| `flint orbh step` | Run the steps a Flint declares for itself, one headless turn per step. |
+| `flint orbh i [target] [prompt]` | Launch an interactive agent TUI with Orbh session tracking (`interactive` is the long form). |
+| `flint orbh tui` | Open the full-screen Orbh cockpit. |
+| `flint orbh v` | Open the vertical Orbh cockpit. |
+| `flint orbh resume <id> [prompt]` | Resume a headless session with a prompt. |
+| `flint orbh continue` | Pick a session interactively and continue it on its own profile (`c` is the short form). |
+| `flint orbh request [target] [text...]` | Launch a request turn and wait for its result, or post a deferred question to a session. |
+| `flint orbh wait <ids...>` | Wait for the correlated results of anchored turns. |
+| `flint orbh attach [id]` | Attach to a detachable interactive session. Without an id it browses detached sessions. |
+| `flint orbh detach [id]` | Detach the active client of a detachable interactive session. The agent keeps running. |
+
+### Session Interface
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh session <id> <action> [value...]` | Run an agent-facing session action. See `session` below. |
+| `flint orbh update <text...>` | Record a durable, non-blocking operator update from inside a session. |
+| `flint orbh rooms` | List Orbh rooms. This is the rooms form of `orbh list`. |
+| `flint orbh improve` | File a structured Orbh improvement through the improve station. |
+| `flint orbh approval` | Manage typed, non-blocking human approval gates (approve, refine, reject). |
+| `flint orbh respond <id> <response...>` | Answer a pending question on a session. |
+| `flint orbh result <id>` | Get a session turn result. It shows the latest result by default. |
+| `flint orbh requests <id>` | View all request and response pairs for a session. |
+| `flint orbh message <verb> ...` | Send or inspect persisted inter-session messages. See `message` below. |
+| `flint orbh humanchannel` | Configure and test the machine human-input channel. |
+| `flint orbh artifact` | Track a created artifact path in the session interface. |
+
+### Lifecycle
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh end [id]` | Finish a session and close or terminate the live harness (`x` is the short form). |
+| `flint orbh kill [id]` | Kill a running session process and its process group. |
+| `flint orbh close [id]` | Close a session and close the bound terminal tab. |
+| `flint orbh park [id]` | Await further activity for a session and close the bound terminal tab. |
+| `flint orbh discard [id]` | Discard a session. It tombstones the entry and hides it from `orbh list`. |
+| `flint orbh focus <id>` | Focus the bound terminal tab of a session. |
+
+### Inspect
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh list` | Open the Sessions cockpit in a TTY, or print the static table. |
+| `flint orbh active` | Open the Active cockpit with subagents nested, or print the static tree. |
+| `flint orbh timeline` | Reconstruct a read-only chronological timeline for a session tree or room. |
+| `flint orbh inspect <id>` | Inspect one session in detail. |
+| `flint orbh peek <id>` | Show compact projection-only status for a session. |
+| `flint orbh stats <id>` | Show detailed session statistics: turns, tokens, tools, files. |
+| `flint orbh watch <id>` | View a session transcript. |
+| `flint orbh context [id]` | Show token context-window occupancy for a session. |
+| `flint orbh scope` | Print which Orb store the next command resolves to, and why. |
+
+### Spaces and Spools
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh space` | Inspect and initialize Orb spaces. |
+| `flint orbh station` | Create and manage durable Orbh stations. |
+| `flint orbh cron` | Create and manage durable scheduled Orbh sessions. |
+| `flint orbh move-spool` | Transfer a spool between spaces. |
+| `flint orbh save [id]` | Save the native transcript files of a session into a portable bundle. |
+| `flint orbh restore <bundleDir>` | Restore a saved session bundle into this machine's native harness storage. |
+| `flint orbh import <bundleDir>` | Import a saved session bundle as a full Orbh session on this machine. |
+
+### Runtimes and Profiles
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh runtimes` | List discovered Orbh runtimes and their executable details. |
+| `flint orbh profiles [target]` | Inspect and sync Orbh runtime profiles. See `profiles` below. |
+| `flint orbh auth <verb> ...` | Manage isolated harness login accounts. See `auth` below. |
+| `flint orbh claude` | Run Claude-specific native session operations. |
+
+### Maintenance
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh heal` | Repair Orbh Data Layer conformance violations. |
+| `flint orbh verify` | Verify Orbh Data Layer conformance. |
+| `flint orbh verify-sessions` | Show the deprecated alias for `verify`. |
+| `flint orbh rebuild-session-snapshots` | Re-stamp the per-session projection from canonical session-control events. |
+| `flint orbh rebuild` | Destroy derived Orb transcript events and rebuild them from native transcripts (`reset` is the alias). |
+
+### Infrastructure
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh orchestrator` | Inspect and control the per-machine Orbh orchestrator (`orch` is the short form). |
+| `flint orbh server` | Manage the standalone Orbh server. |
+
+### Other
+
+| Command | Purpose |
+| --- | --- |
+| `flint orbh archive` | Move old terminal session spools out of the hot path, and back. |
+| `flint orbh reconcile` | Mark dead working sessions abandoned and end their stale runs. |
+| `flint orbh interrupt <targetId> <text...>` | Interrupt a working headless session with a message digest. |
+| `flint orbh page [id]` | Render the introspection Page of a session. See `page` below. |
+| `flint orbh job <verb> ...` | Run and inspect background jobs for a session. See `job` below. |
+| `flint orbh room <verb> ...` | Create, join, read, and update Orbh rooms. See `room` below. |
+| `flint orbh stream` | Manage durable stream ownership, dispatch state, and recovery. |
+| `flint orbh agent` | Create and manage durable orb agents. |
+| `flint orbh worker` | Spawn and follow workers. |
+| `flint orbh procedure` | Attach a deterministic step register to a session. |
+| `flint orbh workflow` | Manage durable cross-session chaining. |
+| `flint orbh compact <verb>` | Run agent-authored compaction. See `compact` below. |
+| `flint orbh command-action` | Inspect and claim an exact command action in a session. |
+| `flint orbh switch` | Switch a session between interactive and headless mode. Both landings come up live. |
+| `flint orbh copy-spools` | Copy the old session spools of the `flint` space into `local`. |
+| `flint orbh store` | Run the operator verbs of an Orb store. |
+| `flint orbh fork` | Fork a session into a new detached interactive session from its transcript. |
+
+## Core Commands
+
+### i
+
+`flint orbh i [target] [prompt]` launches an interactive agent. Without a target it uses the default target list. With `-c` it continues a previous session.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `-c, --continue <sessionId>` | Continue a previous Orbh session. |
+| `--continues <sessionId>` | Link the new session as a continuation of another session. |
+| `--model <model>` | Override the model. |
+| `--account <name>` | Use a harness account, or `none` to bypass the runtime default. |
+| `--prompt-file <path>` | Read the prompt from a UTF-8 file. |
+| `--no-detach` | Run in legacy foreground handoff mode. |
+| `--detached` | Start the detachable daemon and return at once. |
+| `--force` | Bypass the live-run guard when continuing. |
+
+Example:
+
+```bash
+flint orbh i claude "Review the open tasks and report status"
+```
+
+See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+### launch
+
+`flint orbh launch [target] [prompt]` launches a new headless session. It returns at once. Without a target it uses the default target list.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--continues <sessionId>` | Link the new session as a continuation of another session. |
+| `--max-turns <n>` | Set the maximum number of agent turns. |
+| `--budget <usd>` | Set the maximum budget in USD where the harness supports it. |
+| `--model <model>` | Override the model. |
+| `--account <name>` | Use a harness account, or `none` to bypass the runtime default. |
+| `--title <title>` | Pre-set the session title. |
+| `--description <description>` | Pre-set the session description. |
+| `--prompt-file <path>` | Read the prompt from a UTF-8 file. |
+
+Example:
+
+```bash
+flint orbh launch "Summarize the inbox notes" --title "Inbox summary"
+```
+
+See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+### resume
+
+`flint orbh resume <id> [prompt]` resumes a headless session with a prompt. A live detachable manager attaches instead of resuming.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--account <name>` | Set the account for a session that has no stored account. |
+| `--steal` | Terminate the live non-detachable run before resuming. |
+| `--force` | Bypass the live-run guard. This can create concurrent runtimes. |
+
+Example:
+
+```bash
+flint orbh resume a1b2c3 "Continue with the next file"
+```
+
+See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+### continue
+
+`flint orbh continue` opens an interactive picker and continues the picked session on the profile it started with. `c` is the short form.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `-S, --status <status>` | Filter by session work state, for example `working` or `finished`. |
+| `-r, --runtime <runtime>` | Filter by runtime, for example `claude` or `codex`. |
+| `-q, --search <text>` | Pre-filter title, description, and prompt text. |
+| `--force` | Bypass the live-run guard. |
+
+Example:
+
+```bash
+flint orbh continue --status working
+```
+
+See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+### request
+
+`flint orbh request [target] [text...]` launches a request turn and waits for its correlated result. With a session id as the target it posts a deferred question to that session instead.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--runtime <runtime>` | Set the harness runtime or runtime/name target. |
+| `-c, --continue <sessionId>` | Resume a previous session and wait for the result of the new turn. |
+| `--continues <sessionId>` | Link the new session as a continuation of another session. |
+| `--max-turns <n>` | Set the maximum number of agent turns. |
+| `--budget <usd>` | Set the maximum budget in USD where the harness supports it. |
+| `--model <model>` | Override the model. |
+| `--title <title>` | Pre-set the session title. |
+| `--description <description>` | Pre-set the session description. |
+| `--timeout <seconds>` | Set the maximum wait time before detaching. |
+| `--stream` | Stream the live transcript while waiting. |
+| `-q, --quiet` | Print only the raw result. |
+
+Example:
+
+```bash
+flint orbh request -q codex "List the failing tests"
+```
+
+See [Delegating to Subagents](/orbh/guides/delegating-to-subagents).
+
+### wait
+
+`flint orbh wait <ids...>` waits for the correlated results of one or more anchored turns.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--next` | Wait for a result newer than the latest result present at invocation. |
+| `--timeout <seconds>` | Set the maximum wait time before giving up. |
+
+Example:
+
+```bash
+flint orbh wait a1b2c3 d4e5f6 --timeout 300
+```
+
+See [Delegating to Subagents](/orbh/guides/delegating-to-subagents).
+
+### result
+
+`flint orbh result <id>` prints a session turn result. It prints the latest result by default.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--run <n>` | Get the result for the 1-based run number. |
+
+Example:
+
+```bash
+flint orbh result a1b2c3
+```
+
+See [Sessions and Runs](/orbh/concepts/sessions-and-runs).
+
+### attach
+
+`flint orbh attach [id]` attaches to a detachable interactive session. Without an id it browses detached sessions. It follows a completed compaction predecessor to its successor.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--print` | Print the detached-session table instead of opening the picker. No id only. |
+| `--json` | Print the detached-session listing as JSON. No id only. |
+| `--plain` | Use the explicit raw transport mode instead of the App Layer. |
+
+Example:
+
+```bash
+flint orbh attach a1b2c3
+```
+
+### detach
+
+`flint orbh detach [id]` detaches the active client of a detachable interactive session from another terminal. The agent keeps running. Inside a harness it self-targets through `ORBH_SESSION_ID`.
+
+Example:
+
+```bash
+flint orbh detach a1b2c3
+```
+
+### session
+
+`flint orbh session <id> <action> [value...]` runs an agent-facing session action. When `ORBH_SESSION_ID` is set, the id can be omitted for `register`, `return`, `set`, `get`, and `ask`.
+
+| Action | Syntax | Purpose |
+| --- | --- | --- |
+| `register` | `session <id> register <title> <description>` | Set the title and description and mark the session working. |
+| `return` | `session <id> return <result>` | Record the explicit result of the current turn. |
+| `set` | `session <id> set <key> <value>` | Set an interface key. |
+| `get` | `session <id> get <key>` | Print an interface value. |
+| `ask` | `session <id> ask <question>` | Create a blocking request and wait for an answer. |
+| `note` | `session <id> note <text>` | Append an operator note. |
+
+`return` flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--finish` | Finish the session. This is the default. |
+| `--await` | Leave the session awaiting follow-up. |
+| `--until-group <group>` | With `--await`: resume when every job in this group is terminal. |
+| `--barrier-timeout <seconds>` | With `--until-group`: fail still-running group jobs after this time. |
+| `--wake-at <when>` | With `--await`: wake on a schedule. It takes an ISO 8601 datetime or a `+duration`. |
+
+Example:
+
+```bash
+flint orbh session return --await "Waiting for review"
+```
+
+See [Sessions and Runs](/orbh/concepts/sessions-and-runs).
+
+### message
+
+`flint orbh message` sends or inspects persisted inter-session messages.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `send` | `message send <targetId> <text...>` | Append a message to a target session. |
+| `broadcast` | `message broadcast <text...>` | Fan one message out to every live agent and worker session. |
+| `request` | `message request [targetId] [question...]` | Ask a blocking peer request of another session. |
+| `respond` | `message respond <requestId> <answer...>` | Respond to a pending peer request on this session. |
+| `list` | `message list <id>` | List a session message history. |
+
+Main flags: `send` takes `--revive` to resume a session that has ended with the message digest as the prompt. `request` takes `--timeout <seconds>` and `--cancel <requestId>`. `list` takes `--wide`.
+
+Example:
+
+```bash
+flint orbh message send a1b2c3 "The draft is ready for review"
+```
+
+See [Rooms and Messages](/orbh/modules/rooms-and-messages).
+
+### room
+
+`flint orbh room` creates, joins, reads, and updates Orbh rooms. `flint orbh rooms` lists rooms.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `create` | `room create <name> --topic <topic>` | Create a durable room. |
+| `list` | `room list` | List rooms. It takes `--wide` and `--json`. |
+| `read` | `room read <room>` | Read a room stream and context. |
+| `join` | `room join <room>` | Join a room from this session. |
+| `leave` | `room leave <room>` | Leave a room from this session. |
+| `post` | `room post <room> <text...>` | Post a message to a room. |
+| `context` | `room context show\|append\|edit <room>` | Show, append, or edit the room context library. |
+
+Main flags: `read` takes `--since-cursor` and `--no-advance`. `join` takes `--notify <all|mentions|mute>`.
+
+Example:
+
+```bash
+flint orbh room post standup "Today I finish the CLI reference"
+```
+
+See [Rooms and Messages](/orbh/modules/rooms-and-messages).
+
+### list
+
+`flint orbh list` opens the Sessions cockpit in a TTY. With `--print` it prints the static table. With `--json` it prints machine-readable output.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--print` | Print the static session table instead of opening the cockpit. |
+| `--json` | Print machine-readable JSON. |
+| `--wide` | Print the static table full-width without narrow stacking. |
+| `-S, --status <status>` | Filter by session work state. |
+| `-r, --runtime <runtime>` | Filter by runtime. |
+| `-q, --search <text>` | Search title, description, and prompt text. |
+| `-s, --stats` | Print token and turn stats. |
+| `--subagents` | Flatten subagent sessions into top-level rows. |
+| `--all-scopes` | List sessions machine-wide, grouped by scope. |
+| `--detached` | Show only detached-interactive sessions. |
+| `-a, --all` | Include discarded and application-tagged sessions. |
+
+Example:
+
+```bash
+flint orbh list --print --status working
+```
+
+See [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit).
+
+### inspect
+
+`flint orbh inspect <id>` inspects one session in detail.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `-r, --results` | Show run results. |
+
+Example:
+
+```bash
+flint orbh inspect a1b2c3 --results
+```
+
+See [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit).
+
+### watch
+
+`flint orbh watch <id>` shows a session transcript. It opens fullscreen in a TTY.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `-v, --verbose` | Show full thinking blocks and tool output. |
+| `--stream` | Force streaming output instead of the fullscreen viewer. |
+
+Example:
+
+```bash
+flint orbh watch a1b2c3
+```
+
+See [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit).
+
+### page
+
+`flint orbh page [id]` renders the introspection Page of a session. It self-targets through `ORBH_SESSION_ID`.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `run` | `page run <source>/<name> [args...]` | Invoke one Page function on demand. |
+| `arm` | `page arm [id]` | Arm the long-poll pager for a session. Run it in the background. |
+| `status` | `page status [id]` | Inspect the pager process and compaction hold without consuming events. |
+| `recover` | `page recover <event-id>` | Inspect an uncertain event. |
+
+Main flags: `page` takes `--raw` and `--no-mutate`. `run` takes `--session <id>` and `--no-mutate`. `arm` takes `--max-wait <seconds>`. `status` takes `--json`. `recover` takes `--session <id>` and `--acknowledge`.
+
+Example:
+
+```bash
+flint orbh page status
+```
+
+See [Page and Jobs](/orbh/modules/page-and-jobs).
+
+### job
+
+`flint orbh job` runs and inspects background jobs for a session. It self-targets through `ORBH_SESSION_ID`.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `run` | `job run <command>` | Run a shell command as a background job. |
+| `list` | `job list` | List the jobs of the session. |
+| `show` | `job show <id>` | Print the whole record of one job. |
+| `result` | `job result <id>` | Print the full captured output of a job. |
+| `wait` | `job wait <id>` | Block until a job reaches a terminal state, then print its output. |
+| `cancel` | `job cancel <id>` | Cancel one running job and delete its retained output. |
+| `clear` | `job clear` | Remove terminal jobs from the Page and delete their outputs. |
+
+Main flags: `run` takes `--group <g>`, `--agent <target>` to dispatch a subagent, `--account <name>`, `--timeout <seconds>`, and `--session <id>`. `wait` takes `--poll <ms>`. The other verbs take `--session <id>`.
+
+Example:
+
+```bash
+flint orbh job run "pnpm test" --group checks
+```
+
+See [Page and Jobs](/orbh/modules/page-and-jobs).
+
+### compact
+
+`flint orbh compact` runs agent-authored compaction in three verbs. `start` prints the handoff contract and the path to write it to. `handoff` is turn-ending: it validates the handoff, ends the context, and relaunches the same session. `finish` runs in the relaunched context after it reads the handoff. `abort` backs out before handoff.
+
+Main flags: `handoff` takes `--into <runtime/profile>` to relaunch under another profile, and `--account <name>` with `--into`.
+
+Example:
+
+```bash
+flint orbh compact start
+```
+
+See [Compaction](/orbh/modules/compaction).
+
+### profiles
+
+`flint orbh profiles [target]` inspects and syncs Orbh runtime profiles. With a target it inspects one runtime or runtime/name target.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `switch` | `profiles switch <target>` | Move this session onto another profile of the same runtime, keeping its conversation. |
+| `default` | `profiles default` | Show the default target list and the target a launch with no target selects. |
+| `update` | `profiles update` | Pull the latest shared default profiles. |
+| `push` | `profiles push` | Publish the local defaults to the shared profiles repo. Maintainers only. |
+
+Main flags: the base command takes `--wide`.
+
+Example:
+
+```bash
+flint orbh profiles default
+```
+
+See [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters).
+
+### auth
+
+`flint orbh auth` manages isolated harness login accounts.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `list` | `auth list [runtime]` | List configured harness accounts. |
+| `add` | `auth add <runtime> <name>` | Create an isolated account home and run the harness login flow. |
+| `default` | `auth default <runtime> [name]` | Set or clear a default account. |
+| `migrate` | `auth migrate <account>` | Move a session to another account of the same runtime. |
+| `rename` | `auth rename <runtime> <old> <new>` | Rename an isolated account home. |
+| `remove` | `auth remove <runtime> <name>` | Remove an isolated account home. |
+| `usage` | `auth usage [runtime] [name]` | Report live quota windows per account. Read-only. |
+| `refresh` | `auth refresh [runtime] [name]` | Re-authenticate accounts with an expired token. |
+| `account` | `auth account <runtime> <name> [args...]` | Run the harness CLI under an isolated account home. |
+| `ccusage` | `auth ccusage [args...]` | Run ccusage against Orbh account homes. |
+
+Example:
+
+```bash
+flint orbh auth list
+```
+
+See [Accounts](/orbh/modules/accounts).
+
+### orchestrator
+
+`flint orbh orchestrator` inspects and controls the per-machine Orbh orchestrator. `orch` is the short form. The orchestrator supervises managers and reaps ungraceful deaths.
+
+| Verb | Syntax | Purpose |
+| --- | --- | --- |
+| `status` | `orchestrator status` | Show the orchestrator singleton and the supervised manager roster. |
+| `managers` | `orchestrator managers` | List managers in the orchestrator registry (`ls` is the alias). |
+| `processes` | `orchestrator processes` | List the machine-wide auxiliary-process registry (`ps` is the alias). |
+| `launcher` | `orchestrator launcher` | Inspect and declare the machine-canonical launcher. |
+| `ensure` | `orchestrator ensure` | Ensure the orchestrator singleton runs (`start` is the alias). |
+| `stop` | `orchestrator stop` | Stop the orchestrator singleton. |
+| `reap` | `orchestrator reap` | Reap dead managers now. |
+
+Main flags: `status` takes `--json`.
+
+Example:
+
+```bash
+flint orbh orchestrator status
+```
+
+See [Orchestrator](/orbh/modules/orchestrator).
+
+### close
+
+`flint orbh close [id]` closes a session. It records closed retention, terminates the harness, and closes the bound terminal tab. Inside a harness it self-targets through `ORBH_SESSION_ID`.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--no-leaf` | Leave the bound terminal tab open at a shell prompt. |
+| `--force` | Close even when descendant sessions still run. They keep running without a parent. |
+
+Example:
+
+```bash
+flint orbh close
+```
+
+### park
+
+`flint orbh park [id]` awaits further activity for a session. It records awaiting retention, pins the session to `orbh c`, ensures the orchestrator wake sweep, terminates the current harness turn, and closes the bound terminal tab. Inside a harness it self-targets through `ORBH_SESSION_ID`.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--until-group <group>` | Await until every job in this group reaches a terminal state, then resume with the results. |
+| `--barrier-timeout <seconds>` | With `--until-group`: force-resolve the barrier after this time. |
+| `--no-leaf` | Leave the bound terminal tab open at a shell prompt. |
+| `--force` | Allow parking a confirmed-live run or a session with running descendants. |
+
+Example:
+
+```bash
+flint orbh park --until-group checks
+```
+
+### discard
+
+`flint orbh discard [id]` discards a session. It tombstones the entry, hides it from `orbh list`, terminates the harness, and closes the bound terminal tab. It asks for no confirmation. Inside a harness it self-targets through `ORBH_SESSION_ID`.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--no-leaf` | Leave the bound terminal tab open at a shell prompt. |
+
+Example:
+
+```bash
+flint orbh discard a1b2c3
+```
+
+### kill
+
+`flint orbh kill [id]` kills a running session process and its process group. It refuses while descendant sessions still run, unless `--force` is set. Inside a harness it defaults to `ORBH_SESSION_ID`.
+
+Main flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--force` | Kill even when descendant sessions still run. They keep running without a parent. |
+
+Example:
+
+```bash
+flint orbh kill a1b2c3
+```

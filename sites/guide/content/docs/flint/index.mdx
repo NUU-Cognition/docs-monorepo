@@ -1,0 +1,122 @@
+---
+title: "Introduction"
+---
+
+Flint is a local-first system for thinking, planning, and documentation. It keeps your notes, your references, and your agent workflows in one structured folder. That folder is a Flint.
+
+## What a Flint Is
+
+A Flint is one folder. It has three parts.
+
+The content layer holds your durable thinking. Notes, plans, and decisions live in `Mesh/` as markdown. Images and other files live in `Media/`.
+
+The capability layer holds shards. Each shard is a cognitive program. It gives agents repeatable instructions, workflows, and templates.
+
+The CLI manages the folder. It creates Flints, installs shards, and reconciles the files with their declarations.
+
+A Flint is intentionally bounded. It covers one coherent area of work. Your own thinking stays separate from outside material. Copies of external sources live in `Sources/`. Active repository checkouts live in `Workspace/Repos/`. Local state lives in `.flint/`.
+
+## Who Flint Is For
+
+Flint serves three kinds of work.
+
+Software projects need durable notes next to real code. Flint holds architecture notes, migration plans, and investigation logs. It points at codebases without mixing notes with code.
+
+Research and writing need a clean split between input and thinking. Flint keeps raw source material in `Sources/`. Your interpretation grows in `Mesh/`.
+
+Agent-assisted work needs a stable starting point. Flint gives each agent the same entrypoint and the same structure. The agent loads shards, resolves sources, and writes durable results back to `Mesh/`.
+
+## The Shape of a Flint
+
+Each new Flint starts with this structure:
+
+```text
+(Flint) My Project/
+├── flint.toml
+├── flint.json
+├── .flint/
+├── .obsidian/
+├── Mesh/
+├── Media/
+├── Shards/
+├── Sources/
+└── Workspace/
+```
+
+| Area | Purpose |
+|------|---------|
+| `Mesh/` | Your durable thinking: notes, plans, decisions |
+| `Media/` | Images, PDFs, and other files |
+| `Shards/` | Installed cognitive programs for agents |
+| `Sources/` | Read-only copies of external material |
+| `Workspace/` | Active repositories and working surfaces |
+| `.flint/` | Local state, such as references and sync records |
+| `.obsidian/` | The Obsidian payload and settings |
+
+## Your First Path
+
+A new person follows five steps.
+
+Set up the machine first. Run one command:
+
+```bash
+flint setup
+```
+
+Setup asks for your name. It checks your tools. It makes your Computer Flint. Read [Setting Up a Machine](/flint/guide/setting-up-a-machine) for the full sequence.
+
+Create a Flint next:
+
+```bash
+flint create "My Notes"
+```
+
+The command makes the folder, the Mesh, and the Git repository. Read [Creating a Flint](/flint/guide/creating-a-flint) for presets and options.
+
+Add shards next. Browse what you can install:
+
+```bash
+flint shard browse
+```
+
+Install the shards that fit your work:
+
+```bash
+flint shard install @org/name
+```
+
+Read [Shards](/flint/modules/shards) for the shard model.
+
+Sync the Flint next:
+
+```bash
+flint sync
+```
+
+Sync makes the files match the lock and the declarations. Run `flint plan` to preview the sync without changes. Read [Sync](/flint/modules/sync) for details.
+
+Work with agents last. Start an interactive agent session in the Flint:
+
+```bash
+flint orbh i
+```
+
+The agent reads the Flint init note. It loads the relevant shards. It writes results back to `Mesh/`. Read [Agent Sessions](/flint/modules/agent-sessions) for the session model.
+
+## Where to Go Next
+
+If you are new to Flint, read in this order:
+
+1. [Quick Start](/flint/guide/quick-start)
+2. [Core Concepts](/flint/guide/core-concepts)
+3. [Creating a Flint](/flint/guide/creating-a-flint)
+
+You need no NUU account and no org. To share Flints with an org, read [Join Your Org](/flint/guide/join-your-org). To write your notes in Obsidian, read [Using Obsidian](/flint/guide/using-obsidian).
+
+If you already understand the basic model and want to do real work:
+
+- [Tutorial Project Planning](/flint/guide/tutorial-project-planning)
+- [Tutorial Research Notes](/flint/guide/tutorial-research-notes)
+- [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration)
+
+To look up commands and settings, read [CLI Commands](/flint/reference/cli-commands) and [Configuration](/flint/reference/configuration).

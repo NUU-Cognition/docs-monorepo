@@ -1,0 +1,148 @@
+---
+title: "Doctor and Fix"
+---
+
+Two commands keep your machine and your Flints healthy. `flint doctor` checks the machine and the current Flint. It changes nothing and starts no agent. `flint fix` starts an agent that repairs the last failure of a Flint command.
+
+## Check With `flint doctor`
+
+Run the doctor when something feels wrong, or after a change to the machine:
+
+```bash
+flint doctor
+```
+
+The doctor prints one row per check. A passed row shows `✓`. A failed row shows `✘` and one `Next:` command. Run each `Next:` command as printed from the working folder. The run ends with a count of the failed checks.
+
+The doctor writes nothing, with one exception. A failed check that needs judgement shows `Next: flint fix`. Then the doctor writes one failure record and ends with `Or: flint fix`. The next section explains the record.
+
+The exit code is 0 when each check passes, else 1.
+
+### The rows of the machine
+
+| Row | What it checks | Typical `Next:` when it fails |
+|---|---|---|
+| Identity | Your Name and the machine identity | `flint setup` |
+| NUU home | The version, the machine id, and the entries of the NUU home | `flint fix` |
+| Git | The Git install | The install command |
+| Node.js | The Node.js install | The install command |
+| Obsidian | The Obsidian install | The install command |
+| Terminal PATH | The shell of the Obsidian terminal finds `node` and `flint` | A command that repairs the PATH |
+| Terminal font | The font of the Obsidian terminal is installed | A command that installs the font |
+| python3 | The `python3` install | The install command |
+| Agent | The default target list of Orbh gives one available target | The install command of the target |
+| Launcher | The launcher record that starts the background services | `flint setup` |
+| Computer Flint | This machine has its Computer Flint, and no other Flint uses the reserved name | `flint setup computer`, or a rename |
+| Flint registry | The roster entries, and each root still exists | `flint registry check` or `flint registry rebuild` |
+| Flint version | The version of this CLI, and a newer release when one exists | None: a newer release never fails the row |
+| Orbh profiles | The Orbh home holds the synced profiles | `flint orbh profiles update` |
+
+### The rows of a Flint
+
+Inside a Flint, the doctor adds five rows:
+
+| Row | What it checks | Typical `Next:` when it fails |
+|---|---|---|
+| Lock | `flint.json` reads, and each declared shard is installed | `flint shard install` |
+| flint.toml | The file uses the compact layout (one inline line per record) | `flint fix` |
+| Sync plan | No migration is pending, and `flint plan` has no change to apply | `flint migrate run` or `flint sync` |
+| Git | A repository exists, and no sync is halted | `flint git init` or `flint fix` |
+| Obsidian payload | The payload of the Flint is installed and healthy | `flint sync` in that Flint, or `flint fix` |
+
+When `flint.toml` cannot be read, the Lock row fails with `flint fix`. The rows that need the file then say `Not checked` with `flint fix`.
+
+### Check another Flint
+
+```bash
+flint doctor -p <dir>
+```
+
+With `-p <dir>`, the doctor checks the Flint at that path. Each `Next:` of a Flint row acts on that Flint. When the folder is not inside a Flint, the doctor refuses with `Next: flint list` and prints no row.
+
+### Machine-readable output
+
+```bash
+flint doctor --json
+```
+
+With `--json`, the doctor prints one JSON value. It holds `ok`, `kind` (`doctor`), `code` and `reason` when a check fails, the Flint (or `null` outside a Flint), one entry per check (`id`, `label`, `ok`, `detail`, `scope`, `next`), the `next` commands, `warnings`, and `failureRecord` when the doctor wrote a record.
+
+## The Failure Record
+
+When a Flint command fails for a state failure, Flint writes one failure record. These commands write one:
+
+- `flint sync`
+- `flint create` (`init`)
+- `flint git sync`
+- `flint shard install`
+- `flint setup` (and its subcommands)
+- `flint tinderbox sync`
+- `flint doctor` (only for a failed check that needs judgement)
+
+The output then ends with the line `Or: flint fix` after the `Next:` lines. With `--json`, the envelope holds the path of the record in `failureRecord`, and no line names `flint fix`.
+
+Some failures write no record. An input refusal writes none: the command line is wrong (an unknown flag, a bad value, a name in use, not in a Flint), or the identity is missing (no Name, no Git author). A stop (Ctrl-C) writes none either. The `Next:` of such a failure is the whole answer.
+
+The record lives at `<NUU home>/flint/failures/<id>.json`. The file is private (mode 600). Each record holds:
+
+- `command` and `args`: the command that failed
+- `exitCode`, `code`, and `reason`: how it failed
+- `next`: the `Next:` commands of the failure (`flint fix` is not one of them)
+- `stderrTail` and `stdoutTail`: the last 40 lines of each stream
+- `flintVersion`, `flintPath`, `cwd`, and `time`: the context of the run
+
+Flint removes the secrets before it writes the record: credentials in URLs, token forms, secret `name=value` pairs, and the values of secret flags. Flint keeps the newest 20 records. Older records go away with their prompt files.
+
+## Repair With `flint fix`
+
+When a command prints `Or: flint fix`, run:
+
+```bash
+flint fix
+```
+
+`flint fix` starts a **repair session**: an interactive Orbh session on the default target. The session reads the failure record and repairs the failure with you.
+
+### Where the session runs
+
+The session runs in the first Flint of this order that can hold it:
+
+1. The Computer Flint of this machine.
+2. The failed Flint.
+3. The Flint of the working folder.
+
+With no Computer Flint, `flint fix` prints `Later: flint setup computer`. When a Flint cannot select the agent, the plan shows a `Fallback:` row with the reason. When no Flint reads its target list, the list of this machine selects the target, and the plan shows a `Target:` row. See [Setting Up a Machine](/flint/guide/setting-up-a-machine) for the Computer Flint.
+
+The plan also names the prompt file. It sits beside the record and holds the record, the failed Flint, and the repair steps.
+
+### What the agent does
+
+The agent loads the Flint shard and follows its repair skill. It works in this order:
+
+1. It reads the failure record and tells you what failed.
+2. It reads the state with commands that write nothing (`flint doctor`, `flint plan`).
+3. It reproduces the failure with a command that writes nothing.
+4. It finds the cause and proposes the repair. It prefers the `next` commands of the record.
+5. It asks you before each change to the Git history, the lock, or `flint.toml`.
+6. It does the repair and runs the failed command again.
+7. It writes one **repair note** in the Computer Flint.
+
+The note title names the failed command, for example `Repair - flint sync - 2026-10-01 1430`. It has four sections: what failed, the cause, what changed, and the commands that ran.
+
+### List and pick a record
+
+```bash
+flint fix --list              # the records, the newest first
+flint fix --list --json       # the same list as one JSON value
+flint fix <n|id|file>         # repair an older record
+```
+
+The argument is a number of `--list` (1 is the newest), a record id (or the start of one id), or a record file. With no argument, `flint fix` repairs the newest record.
+
+When no record exists, `flint fix` refuses with `Next: flint doctor`. When no record matches, it refuses with `Next: flint fix --list`.
+
+## Next Steps
+
+- [Troubleshooting](/flint/reference/troubleshooting) — common failures and their repairs
+- [CLI Commands](/flint/reference/cli-commands) — the full command list
+- [Setting Up a Machine](/flint/guide/setting-up-a-machine) — the Computer Flint and the machine identity

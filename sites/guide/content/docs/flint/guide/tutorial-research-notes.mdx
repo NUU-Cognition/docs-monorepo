@@ -1,0 +1,95 @@
+---
+title: "Tutorial: Research Notes"
+---
+
+This tutorial builds a Flint for research. You gather source material into the Flint, and you write your own interpretation in `Mesh/`. The rule is simple: sources are input, and `Mesh/` holds your notes.
+
+## Prerequisites
+
+- Flint runs on this machine, and `flint setup` has finished.
+
+## Step 1: Create the Research Flint
+
+Create a Flint with the notes preset:
+
+```bash
+flint create "Model Research" --preset quarry
+cd "(Flint) Model Research"
+```
+
+The `quarry` preset installs the Notepad shard with the core shards. Notepads hold the working notes of the research.
+
+## Step 2: Bring in External Material the Right Way
+
+When the source material sits in a Git repository, declare it as a source repo:
+
+```bash
+flint source repo add "Transformer Notes" https://github.com/example/transformer-notes.git
+flint sync
+```
+
+The `add` command only declares the repository in `flint.toml`. `flint sync` clones a shallow copy into `Sources/Repos/Transformer Notes/` and removes its `.git` folder. Check the result:
+
+```bash
+flint source repo list
+```
+
+Use source repos for documentation repos, reference text, and example code that you read but do not change. Do not annotate the copy in place. (An old Flint can also declare a bundle of another Flint; see [Sources](/flint/modules/sources).)
+
+## Step 3: Write Your Thinking in Mesh
+
+Create one notepad for the first research question:
+
+```bash
+flint helper artifact create Notepad --title "Transformer comparison"
+```
+
+You see a `Created` line with the new file:
+
+```text
+Created Mesh/Types/Notepads/(Notepad) 001 Transformer comparison.md
+```
+
+Open the file in Obsidian and write under numbered section headings (`# 1`, `# 2`, and so on). Each section holds one exchange: your note, then the finding. Typical notepads hold source summaries, concept comparisons, question lists, and synthesis notes.
+
+`Sources/` is input. `Mesh/` is where the research becomes yours.
+
+## Step 4: Use Media for Attachments and Figures
+
+Put PDFs, screenshots, diagrams, and figures in `Media/`. Reference them from the Mesh notes. Keep binary files out of the rest of the Flint.
+
+## Step 5: Write Toward One Synthesis Note
+
+Create one root note that gathers the research, such as a report, a literature review, or an internal brief. Link the supporting notepads beneath it as you write. Build the root note early instead of assembling everything at the end.
+
+## Step 6: Refresh Sources Deliberately
+
+Re-fetch a source repo when its upstream changes:
+
+```bash
+flint source repo update "Transformer Notes"
+```
+
+When you add or remove a declaration in `flint.toml`, run:
+
+```bash
+flint sync
+```
+
+Refresh on purpose. Do not mix fresh source material with your long-term notes without noticing.
+
+## A Good Research Pattern
+
+1. Gather material into `Sources/`.
+2. Write rough interpretation notes in `Mesh/`.
+3. Refine those notes into synthesis notes.
+4. Keep supporting assets in `Media/`.
+5. Link the synthesis notes under one root note.
+
+## Next Steps
+
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Artifacts and Types](/flint/concepts/artifacts-and-types)
+- [Mesh](/flint/modules/mesh)
+- [Sources](/flint/modules/sources)
+- [Media](/flint/modules/media)

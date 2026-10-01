@@ -12,6 +12,8 @@
     "onyx",
     "ncm",
     "mesh",
+    "flint",
+    "orbh",
     "vessel"
   ]
 }

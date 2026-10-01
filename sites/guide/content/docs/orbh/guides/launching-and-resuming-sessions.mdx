@@ -1,0 +1,187 @@
+---
+title: "Launching and Resuming Sessions"
+---
+
+Start a session when work must survive beyond one terminal process. Resume a session when earlier work must continue.
+
+## Prerequisites
+
+- You have the Flint CLI and at least one harness runtime.
+- You know the session model in [Sessions and Runs](/orbh/concepts/sessions-and-runs).
+- You know how targets work in [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters).
+
+## Choose a Target
+
+A target names the harness that runs the session. It uses the `runtime/profile` form, for example `codex/review`.
+
+```bash
+flint orbh profiles --wide
+flint orbh runtimes --wide
+```
+
+If you omit the target, Orbh uses the first available target of the default target list. If you give a bare runtime such as `codex`, Orbh uses the first list entry for that runtime. An explicit target such as `codex/review` never falls back.
+
+## Start an Interactive Session
+
+Use `i` to open an interactive terminal session. In a terminal it runs detachable by default: you can detach and the agent keeps running.
+
+```bash
+flint orbh i <runtime/profile> "Start here."
+flint orbh i "Start here."
+```
+
+Continue an existing session interactively:
+
+```bash
+flint orbh i -c <session-id> "Resume here."
+```
+
+Useful flags:
+
+```bash
+flint orbh i <runtime/profile> --detached "Start here."
+flint orbh i <runtime/profile> --no-detach "Start here."
+flint orbh i <runtime/profile> --model <model> --account <name> "Start here."
+```
+
+`--detached` starts the session and returns at once. It prints the session id and the attach command. `--no-detach` runs in legacy foreground mode instead. `--close-after <seconds>` closes the runtime after N seconds for a bounded run.
+
+## Attach to a Session and Detach from It
+
+Use `attach` to open a detachable interactive session from any terminal:
+
+```bash
+flint orbh attach <session-id>
+flint orbh attach
+```
+
+With no id, `attach` opens a picker. With no id, `--print` and `--json` render the detached-session listing instead.
+
+Detach with `Ctrl-\`, or detach the active client from another terminal:
+
+```bash
+flint orbh detach <session-id>
+```
+
+The agent keeps running after a detach. Attach takes over automatically when another client holds the session.
+
+## Start a Headless Session
+
+Use `launch` for a session that runs without a terminal. It creates a new session, starts a run, and returns control to you.
+
+```bash
+flint orbh launch <runtime/profile> "Review the current diff and return findings."
+flint orbh launch "Review the current diff and return findings."
+```
+
+Useful flags:
+
+```bash
+flint orbh launch <runtime/profile> "Prompt" \
+  --title "Short title" \
+  --description "Visible session description" \
+  --model <model> \
+  --account <name> \
+  --max-turns <turns> \
+  --budget <usd>
+```
+
+`--continues <session-id>` links the new session as a continuation of another session. It does not continue the same session.
+
+## Ask One Question
+
+Use `ping` for one unattended turn when you want a single answer and no managed session:
+
+```bash
+flint orbh ping <runtime/profile> "Summarise this file in one sentence."
+flint orbh ping "Summarise this file in one sentence."
+```
+
+`ping` prints the returned string. `--json` prints the session id with the result, and `-c <session-id>` continues a returned ping in a new spool.
+
+## Resume a Session Later
+
+Use `resume` when you know the session id. The prompt is required: a headless turn is an instruction, and there is no default.
+
+```bash
+flint orbh resume <session-id> "Continue working."
+```
+
+If the session already has a live run, `--steal` terminates the live non-detachable run before resuming. Prefer `--steal` over `--force`.
+
+Use `continue` (alias `c`) to pick a session interactively. It continues the session on the profile it started with.
+
+```bash
+flint orbh continue
+flint orbh c --status working --runtime codex --search docs
+```
+
+Filters include `--status`, `--runtime`, and `--search`. `continue` needs an interactive terminal.
+
+## Move a Session to the Other Mode
+
+Use `switch` to move a session between interactive and headless mode. It ends the run, not the session, and both landings come up live.
+
+```bash
+flint orbh switch interactive <session-id>
+flint orbh switch headless <session-id>
+```
+
+Direction flags: `--here` and `--no-launch` apply only to interactive; `--await` and `--resume "<prompt>"` apply only to headless. `--force` adopts a subagent out from under a live collector (interactive only).
+
+## Name a Session from Inside
+
+Inside a harness that Orbh launched, `ORBH_SESSION_ID` is set and core actions self-target, so you omit the id:
+
+```bash
+flint orbh session register "Audit docs" "Checking Orbh command docs against source"
+flint orbh session set phase source-verification
+flint orbh session get phase
+```
+
+`register` takes a title and a description. `set` and `get` read and write free-form keys such as `phase`, `progress`, and `blockers`. To move the session to another account, see [Accounts](/orbh/modules/accounts).
+
+## Return a Result from Inside
+
+Every headless turn ends with `session return`. It stores the payload on the current run.
+
+```bash
+flint orbh session return --finish "Finished result payload"
+flint orbh session return --await "Partial result; more to follow"
+```
+
+`--finish` ends the session duty and is the default. `--await` leaves the session dormant and wakeable for follow-up. For wake scheduling with `--wake-at` and `--until-group`, see [Page and Jobs](/orbh/modules/page-and-jobs).
+
+## End a Session
+
+Lifecycle verbs are separate from `session return`:
+
+```bash
+flint orbh end --result "Done"
+flint orbh close <session-id>
+flint orbh park <session-id>
+flint orbh discard <session-id>
+flint orbh kill <session-id>
+```
+
+`end` (alias `x`) finishes the session and closes or terminates the live harness. It stores `--result` on the current run. `close` records closed retention and terminates the harness. `park` records awaiting retention so the session stays wakeable; with `--until-group` it awaits a job-group barrier (see [Page and Jobs](/orbh/modules/page-and-jobs)). `discard` tombstones the entry and hides it from the list. `kill` kills the running process and its process group, and it refuses while descendant sessions still run unless you pass `--force`.
+
+`close`, `park`, and `discard` close the bound terminal tab; `--no-leaf` leaves the pane open at a shell prompt. All five verbs self-target through `ORBH_SESSION_ID` when you run them inside the session.
+
+## Launch and Wait for a Result
+
+To launch a session and block until its turn returns, use `request`. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents).
+
+## Inspect Running Work
+
+To watch output, read results, and wait on sessions, see [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit).
+
+## Next Steps
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters)
+- [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Compaction](/orbh/modules/compaction)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

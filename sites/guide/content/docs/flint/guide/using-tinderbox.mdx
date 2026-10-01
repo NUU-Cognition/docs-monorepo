@@ -1,0 +1,450 @@
+---
+title: "Using Tinderbox: Many Flints as One Box"
+---
+
+A Tinderbox (the box) holds many Flints as one unit. You declare the members of the box in one file. `flint tinderbox sync` is the local sync of the box. `flint tinderbox git sync` is the transport of the box.
+
+Use this guide when one Flint is no longer enough, and you want one repeatable way to manage a set of related Flints.
+
+## What a Tinderbox Is
+
+A box is a folder with the name `(Tinderbox) <name>`. The box is not a Flint. Each Flint of the box is a member. A Flint is a member of at most one box.
+
+```text
+(Tinderbox) NUU Flints/
+├── tinderbox.toml          the intent
+├── tinderbox.json          the record
+├── .tinderbox/             the facts of this machine (not in Git)
+├── .gitignore
+├── Repos/
+│   └── main-app/           an owned repo
+├── (Flint) NUU Flint/      an owned member
+└── (Flint) NUU Mesh/       an owned member
+```
+
+The box has three files, as a Flint has `flint.toml`, `flint.json`, and `.flint/`.
+
+`tinderbox.toml` is the intent of the box: the name, the members, the repos, the connections. `tinderbox.json` is the record of the box: its id, its type, its version, its org, and its members with their ids. `.tinderbox/` holds the facts of this machine: the local version, the last sync, the Git journal, the lock, and the backups. No fact lives in two files.
+
+You edit `tinderbox.toml`, or a command writes it. Only the commands write `tinderbox.json` and `.tinderbox/`. `.tinderbox/` is not in the box repo.
+
+The box folder is a Git repository: the box repo. It tracks `tinderbox.toml`, `tinderbox.json`, and `.gitignore`. Each member and each repo is its own Git repository, so `.gitignore` of the box lists their folders.
+
+Each `flint tinderbox` command (except `init` and `start`) walks up to the nearest `tinderbox.toml`. So you can run it from the box root or from any folder in a member.
+
+## Before You Start
+
+Two kinds of members exist:
+
+- An **owned member** has a Git source: a source that `git clone` accepts. Examples are an `https://`, `ssh://`, or `file://` URL, SCP syntax with any user (`git@host:repo.git`), and an absolute path. A relative path is refused. The box owns the member: the local sync clones it into the box on each machine.
+- A **reference member** has `registry:<name>` as its source. It stays where it is on this machine. The local sync finds it in the roster of this machine (`~/.nuucognition/places.json`) and never clones, copies, or moves it.
+
+If you have not worked with the roster before, read [The Roster](/flint/guide/the-roster) first.
+
+## Step 1: Make a Box
+
+Choose one of three ways.
+
+Make a new empty box in the current folder:
+
+```bash
+flint tinderbox init "NUU Flints"
+```
+
+This makes `(Tinderbox) NUU Flints/` with `tinderbox.toml`, `tinderbox.json`, `.gitignore`, `.tinderbox/`, a Git repository, and a first commit.
+
+Or make a box around the Flint that you are in. The Flint becomes the first owned member. It must have a Git origin. A relative local origin is declared as its absolute path:
+
+```bash
+flint tinderbox start "NUU Flints"
+```
+
+Or clone a box that already exists. The command runs the local sync after the clone:
+
+```bash
+flint tinderbox init --from git@github.com:NUU-Cognition/nuu-flints.git
+```
+
+## Step 2: Declare the Members
+
+Declare a member with a command:
+
+```bash
+flint tinderbox add "NUU Mesh" https://github.com/NUU-Cognition/nuu-mesh.git   # an owned member
+flint tinderbox add "NUU Notes" "registry:NUU Notes"                           # a reference member
+```
+
+`add` declares the member without cloning or moving it. It writes the declaration to `tinderbox.toml` and refreshes `.gitignore`. It records the member in `tinderbox.json` when its id is known, for example a reference member that the roster has. It makes `.tinderbox/` and the roster row of the box when they are absent. The next local sync clones an owned member or references a roster member.
+
+To bring a Flint of the roster into the box, use `import`. It **moves** the Flint folder into the box and declares it as an owned member. It shows the move and asks first, unless you pass `--yes`. When a step fails, `import` undoes every completed step, and the Flint stays where it was:
+
+```bash
+flint tinderbox import "NUU Docs"
+```
+
+When the roster does not have the Flint, pass a source to declare it with no move:
+
+```bash
+flint tinderbox import "NUU Docs" https://github.com/NUU-Cognition/nuu-docs.git
+```
+
+You can also edit `tinderbox.toml` directly:
+
+```toml
+[tinderbox]
+name = "NUU Flints"
+
+[flints]
+required = [
+  { name = "NUU Flint", source = "git@github.com:NUU-Cognition/nuu-flint.git", mode = "own" },
+  { name = "NUU Mesh", source = "https://github.com/NUU-Cognition/nuu-mesh.git" },
+  { name = "NUU Notes", source = "registry:NUU Notes" },
+]
+optional = [
+  { name = "Private Research", source = "git@github.com:NUU-Cognition/private-research.git" },
+]
+
+[repos]
+required = [
+  { name = "Main App", source = "https://github.com/NUU-Cognition/main-app.git", exposed-to = "all" },
+]
+
+[connections]
+required = [
+  { interconnected = ["NUU Flint", "NUU Mesh"] },
+  { from = "NUU Flint", to = "NUU Notes" },
+]
+```
+
+What the fields mean:
+
+- `[flints].required` holds the members that the box needs.
+- `[flints].optional` has the same shape. A failed clone of an optional member is a warning, not a failure. Use it for a remote that some machines cannot reach.
+- `source = "registry:<name>"` declares a reference member. Every reference spelling works: the name, the folder form, and the address (for example `registry:@/flint/nuu-notes`).
+- A Git source (for example `source = "git@...git"` or `source = "https://..."`) declares an owned member.
+- `mode = "own"` is valid only with a Git source. `mode = "reference"` is valid only with `registry:<name>`. When `mode` is absent, the source sets it.
+- `type` (optional) is the Flint type of the member. It sets the folder prefix: `type = "computer"` gives `(Computer) <name>`.
+- `[repos].required` declares codebases that are not Flints. A Git source is cloned into `Repos/`. `path:<dir>` uses a folder where it is.
+- `exposed-to = "all"` gives each member a codebase reference to the repo. A list gives it to the named members only.
+- `interconnected` gives each listed member a reference to each other listed member.
+- `from` / `to` gives only the `from` member a reference.
+
+The declared `name` must be the `[flint].name` in `flint.toml` of the member.
+
+### Manage repos and connections with commands
+
+You can declare repos and connections with commands instead of editing the file:
+
+```bash
+flint tinderbox repo add "Main App" https://github.com/NUU-Cognition/main-app.git
+flint tinderbox repo list
+flint tinderbox repo remove "Main App"
+flint tinderbox connection add "NUU Flint" "NUU Notes"
+flint tinderbox connection add --group "NUU Flint" "NUU Mesh"
+flint tinderbox connection list
+flint tinderbox connection remove "NUU Flint" "NUU Notes"
+```
+
+`repo add` declares the repo and clones it into `Repos/`. A `path:<dir>` source references a folder where it is. `--exposed-to` is `all` or a comma-separated list of member names. `repo remove` strips the codebase reference from each member. `--purge` also deletes the clone under `Repos/`, and it asks first unless you pass `--yes`. `repo list` shows each repo and whether it is on this machine.
+
+`connection add` declares one direction (`from` `to`) or an interconnected group (`--group`), with an optional `--kind`. `connection remove` removes the declaration and strips the references that it wired. `connection list` shows each connection and whether the local sync wired it. `connections` is an alias of `connection`.
+
+## Step 3: Run the Local Sync
+
+First look at the plan. The dry run writes nothing:
+
+```bash
+flint tinderbox sync --dry-run
+```
+
+Then run it:
+
+```bash
+flint tinderbox sync
+```
+
+`flint tinderbox sync` is the local sync of the box. It makes the box match its intent on this machine. It clones a missing owned member, references a roster member, registers the members, wires the connections and the repos, and records the box. The clone is the one fetch: bytes that the intent names and that are absent, the same exception that `flint sync` has. Then it runs the local `flint sync` in each selected member. It never asks the shard registry, never moves a lock, and never touches the origin of a member. `--dry-run` shows the plan and writes nothing.
+
+The steps, in order:
+
+1. It reads and validates `tinderbox.toml`. A validation failure stops it before the first write.
+2. It makes the box repo when it is absent, and it refreshes `.gitignore` of the box.
+3. It clones each missing owned repo and each missing owned member.
+4. It finds each reference member in the roster.
+5. It registers the members in the roster. It registers no Obsidian vault: Obsidian registers a vault when it opens it.
+6. It wires the repos and the connections into `flint.toml` of the members.
+7. It records the box in `tinderbox.json`.
+8. It runs `flint sync` in each selected member.
+
+The local sync never moves or deletes a folder. A folder that is not declared stays where it is, and `check` reports it.
+
+The dry run names each change of the box: the box repo, `.gitignore`, `.tinderbox/`, the roster rows, the clones, the wiring, and `tinderbox.json`. A member that the run clones is `planned`, and its row says `would clone, then sync`.
+
+A `tinderbox.json` that a newer CLI wrote, or that is malformed, does not stop the local sync. The run does its other work, does not write `tinderbox.json`, and is `partial`. Every other write command refuses such a record before its first effect. Update the CLI, or repair the record.
+
+Select members with `--only <names...>` or `--skip <names...>`. The repos are synced only in a run with no `--only` and no `--skip`.
+
+### Read the Result
+
+The local sync reports as `flint sync` does. The rows of the members give the status, and `git sync` uses the same rule:
+
+| Status | Meaning | Exit code |
+|--------|---------|-----------|
+| `ok` | Each member is done, current, or skipped | 0 |
+| `partial` | Some members failed, and other members succeeded | 1 |
+| `failed` | Every member failed, or the command was refused | 1 |
+| `blocked` | A member or the box repo needs you to act first, and no member failed | 2 |
+
+A skipped row gives its reason in brackets, for example `skipped (optional, not on this machine)`.
+
+A problem gives a `Next` line with one command. Run that command. For example, a reference member that the roster of this machine does not have is `blocked`. Its next command is `flint create <name>`, or `flint register <path>` when the Flint is on disk. An owned member whose name the roster has at another path is `blocked` with `flint tinderbox import <name>`.
+
+`--json` prints one JSON value, also on a refusal: the report of the box with `members[]`.
+
+## Step 4: Inspect the Box
+
+Use `status` for a quick view. It writes nothing:
+
+```bash
+flint tinderbox status
+```
+
+It shows the box name, the org of the box (or `no org (local tier)`), and the last sync. Then it shows one row for each member: the mode, required or optional, on this machine, in the roster, and the connections that are wired. Then it shows the repos. When this CLI cannot read `tinderbox.json`, the title says `org not known (tinderbox.json cannot be read)`, and a warning gives the next step.
+
+Use `check` to find drift. It writes nothing:
+
+```bash
+flint tinderbox check
+```
+
+`check` reports:
+
+- Flints in the box that are not declared
+- renamed Flints
+- a member in a folder with the wrong name
+- members that are not on this machine
+- member folders with no `flint.toml`, and two folders with the same Flint name
+- roster rows that point at another path
+- connections that are not wired, and references of removed connections
+- repos that are not cloned or not wired
+- a member whose Git origin or type differs from its declaration
+- a required reference member that the roster does not have
+- in a box with an org, an owned member with no org or another org
+- a `tinderbox.json` that is malformed, or that a newer CLI wrote
+- an entry of the Obsidian vault registry under the box root whose folder is gone (the next command is `flint obsidian vaults repair`)
+
+Each finding has one `Next` line, and the count line counts each finding as failed. `check` exits 0 when it has no finding and 1 when it has one, so you can use it in scripts.
+
+## Step 5: Repair Drift with `heal`
+
+First look at the plan:
+
+```bash
+flint tinderbox heal --dry-run
+```
+
+The plan shows each repair and each effect of the local sync of the box. These effects include the record upgrade, `.tinderbox/`, and the roster rows. It names each finding that heal does not repair. Then run it:
+
+```bash
+flint tinderbox heal
+```
+
+`heal` backs up `tinderbox.toml` and `tinderbox.json` to `.tinderbox/backups/`. Then it can:
+
+- declare a Flint of the box that is not declared, with its Git origin as the source
+- update a renamed declaration, and give the member folder its canonical name
+- move a member folder with no `flint.toml` aside (it never deletes it), so that the local sync clones the member again
+
+Then it runs the local sync of the box, and `check` again. `heal` registers no vault. When it moves a member folder, it relocates the vault registry entry of that folder, also a pending change to it. The dry run names each relocation: `relocate the vault registry entry of <name> to <folder>`. When the vault of the member is open, `heal` keeps that folder, makes the other repairs, and warns. Close the vault, then run `heal` again.
+
+`heal` does not repair these findings:
+
+- a source drift or a type drift
+- two folders with the same name
+- a reference member that the roster does not have
+- a record that this CLI cannot read, and the org notices
+
+For these, run the `Next` command of `check`. `heal` and `heal --dry-run` exit 1 when a finding stays.
+
+## Step 6: Move History with `git sync`
+
+Run the transport:
+
+```bash
+flint tinderbox git sync
+```
+
+`flint tinderbox git sync` is the transport of the box. It exchanges the history of the box repo and of each member with origin, with the local sync in the middle. The order is the order of `flint git sync`: checkpoint, fetch, integrate, local sync, checkpoint, push. `--no-sync` is transport only. The Git journal and the lock of a run live in `.tinderbox/`. A reference member is `skipped (reference)`: its own Flint moves its history.
+
+The steps of a run:
+
+1. The box: checkpoint, fetch, integrate.
+2. The local sync of the box. A member that the pull declared for the first time is cloned here.
+3. The members, 4 at a time. Each member runs `flint git sync`: checkpoint, fetch, integrate, the local sync, checkpoint, push.
+4. The box: a second checkpoint for the writes of the local sync, then the push.
+
+An optional member that is not on this machine is `skipped (optional, not on this machine)`. With `--no-sync`, no local sync runs in the box or in the members. `--only <names...>` selects members; the box repo always syncs.
+
+When the box repo does not integrate, the run stops before the members. A conflict in the box repo aborts its rebase. Then fix the box repo with Git (`git pull --rebase`, resolve, `git rebase --continue`), and run `flint tinderbox git sync` again. A newer or malformed `tinderbox.json`, or a `.tinderbox` that is a link, stops the Git commands before any Git work. This applies to `git sync`, `git resume`, `git resolve`, and `git publish`. Nothing is written. Update the CLI, or repair the record first.
+
+A required member that the local sync of the box could not put on this machine is a failed row. When the roster lists the Flint at another path, the member is `blocked` with `flint tinderbox import <name>`.
+
+The run keeps a journal in `.tinderbox/git-sync-state.json` and a lock in `.tinderbox/git-sync.lock`. It keeps the lock until every started member ends. When a run stops in the middle, use these commands:
+
+```bash
+flint tinderbox git status             # the journal and the Git state of each member; writes nothing
+flint tinderbox git resume             # continue the last run: the box, then each member that it did not finish
+flint tinderbox git resolve "NUU Mesh" # fix one blocked member
+```
+
+`git resume` does the box first. Then it selects the members again, so a member that the pull declared is transported in the same run. A member that is not on this machine is a failed row with its next command, and the journal keeps its entry. `git resume` says `Nothing to resume` only when no entry is open and no member holds a rebase.
+
+A conflict in a member holds the rebase. The member is `blocked`, and the `Next` line is `flint tinderbox git resolve <member>`. Resolve the files in the member, then run that command to continue. Or run it with `--local` or `--remote` to take one side. After a remote history rewrite, use `--replay`.
+
+To publish a new box to a remote for the first time:
+
+```bash
+flint tinderbox git publish git@github.com:NUU-Cognition/nuu-flints.git
+```
+
+It sets origin of the box repo, names the branch `main`, commits pending changes, and pushes. It asks first, unless you pass `--yes`. It compares the configured URL of origin. So when origin already has this URL behind an `insteadOf` rule, it does not propose to change origin.
+
+Each Git command takes `--json`.
+
+## Step 7: Set the Org of the Box
+
+A box with no org is local. It works with no account and no org, and no command asks for one.
+
+To give the box and its owned members an org, look at the plan first, then apply it:
+
+```bash
+flint tinderbox org set nuucognition
+flint tinderbox org set nuucognition --apply
+```
+
+Pass `--id <uuid>` when this machine does not know the org yet. A reference member keeps its own org.
+
+To remove the org of the box and of each owned member:
+
+```bash
+flint tinderbox org set none --apply
+```
+
+In a box with an org, an owned member with no org or another org is a notice in `sync` and `check`. Its next command is `flint tinderbox org set <org> --id <uuid> --apply`. The local sync never changes the org of a member by itself.
+
+## Step 8: Change the Members
+
+```bash
+flint tinderbox remove "NUU Mesh"                    # undeclare it; keep its folder and its roster row
+flint tinderbox remove "NUU Mesh" --move-out ~/Flints # and move its folder out of the box
+flint tinderbox rename "NUU Mesh" "NUU Mesh Two"     # rename the member and its folder
+flint tinderbox rename --tinderbox "NUU Flints Two"  # rename the box
+```
+
+`remove` and `rename` update `tinderbox.json` at once. `rename` backs up `tinderbox.toml` and `tinderbox.json` first. `remove` writes no backup file. Each of these commands is one operation. When a step fails, it undoes every completed step, and the box is as it was.
+
+To stop using the box, preview first, then dissolve it:
+
+```bash
+flint tinderbox dissolve --dry-run
+flint tinderbox dissolve
+```
+
+`dissolve` backs up and removes `tinderbox.toml` and `tinderbox.json`, removes the roster row of the box, and strips the wiring. It keeps `.git`, the member folders, and `.tinderbox/` with the backups. When a member has uncommitted or unpushed work, the plan is `blocked` (exit 2), and nothing changes, unless you pass `--force`. With no terminal to ask, or with `--json`, it refuses unless you pass `--yes`. `--move-to <dir>` moves each member folder out of the box. `--json` prints the report as one JSON value. When a step fails, `dissolve` undoes every completed step, and the box stays.
+
+## Step 9: Move a Flint Cleanly
+
+To move one Flint to another folder, use:
+
+```bash
+flint move "NUU Mesh" ../archive/"(Flint) NUU Mesh"
+```
+
+or by path:
+
+```bash
+flint move "./(Flint) NUU Mesh" "../archive/(Flint) NUU Mesh"
+```
+
+`flint move` updates the roster after the move, and it prints `Roster updated: <name>`. It also relocates the vault registry entry of Obsidian, so that the vault keeps its vault id and its trust. It refuses when the vault is open in Obsidian. The wiring of the box and the fulfilment of references need the right paths. When the Flint is a member of a box, `flint move` asks first; `--yes` skips the prompt. It removes the member from `tinderbox.toml`, so the next local sync does not clone it again.
+
+Use `--force` only when you want to overwrite the destination:
+
+```bash
+flint move "NUU Mesh" "../archive/(Flint) NUU Mesh" --force
+```
+
+## Obsidian in a Box
+
+The box and Obsidian meet at three points.
+
+**No vault registration.** `flint tinderbox init`, `import`, `sync`, and `heal` register no Obsidian vault. Obsidian registers a vault when it opens it. `--no-open` on `sync`, `heal`, and `init` is not needed any more. It does nothing and prints `--no-open is not needed: …`. `import` still opens the imported Flint in Obsidian after the move, unless you pass `--no-open`.
+
+**Movers.** A command that moves a member folder first checks that its vault is closed in Obsidian. This applies to `flint move`, `flint rename`, `flint convert`, `start`, `import`, `rename`, `remove --move-out`, and `dissolve --move-to`. An open vault refuses the command before the first change. The refusal names the command to run again:
+
+```text
+"NUU Mesh" is open in Obsidian. Close it, then run the command again from a terminal outside Obsidian.
+```
+
+A command of the box checks every member first and refuses as one unit: `2 vaults are open in Obsidian: "NUU Mesh", "NUU Orbh". Close them, then run the command again …`. `heal` is different: it does not refuse. It keeps the folder of a member whose vault is open, makes the other repairs, and warns. After the move, the command relocates the vault registry entry and keeps its vault id, so the trust of the vault stays. When Obsidian runs, the registry change waits. Quit Obsidian, then run `flint obsidian vaults repair --yes`. The next `flint sync` or `flint open` also completes it. With the machine choice `off`, the command moves the folders and prints one row for the run: `Obsidian: skipped. Obsidian is off on this machine (<config path>).`
+
+**The Obsidian payload of each member.** Each member pins its own release of the Obsidian payload. The local sync runs `flint sync` in each member, and `flint sync` installs the pin of that member. It never moves a pin. To update every member, and to see the result:
+
+```bash
+flint obsidian update --tinderbox --dry-run
+flint obsidian update --tinderbox
+flint obsidian update --tinderbox --only "NUU Orbh"
+flint obsidian status --tinderbox
+```
+
+`update --tinderbox` prints one row for each member. An open vault blocks only its member, and the other members go on:
+
+```text
+  NUU Flint   0.7.0 → 0.7.1 · backup <id>
+  NUU Orbh    blocked: Close "NUU Orbh" in Obsidian, then run: flint obsidian update --tinderbox --only 'NUU Orbh'
+```
+
+A row names a command of one member with `-p <member folder>`, for example `flint obsidian -p '<member folder>' repair --replace --dry-run`.
+
+`status --tinderbox` prints one row for each member, for example `NUU Flint   payload 0.7.0 · pinned 0.7.0 · open · plugin ready   ok`. A member that is not on this machine is one row, `not on this machine`, not a failure. Then run `flint tinderbox git sync` to commit and push the new pin of each member. See [Using Obsidian](/flint/guide/using-obsidian).
+
+## Safety Rules
+
+- `flint tinderbox sync` never moves or deletes a folder.
+- These commands move a folder: `start`, `import`, `rename`, `heal`, `remove --move-out`, and `dissolve --move-to`.
+- A command that moves a folder refuses a member whose vault is open in Obsidian. Close the vault first. `heal` does not refuse: it keeps the folder of that member and warns.
+- One command deletes: `repo remove --purge` deletes a repo clone under `Repos/`.
+- Run `--dry-run` first where it exists: `sync`, `heal`, `dissolve`.
+- A write command refuses a newer or malformed `tinderbox.json` before its first effect. Only `flint tinderbox sync` reports it and goes on (`partial`).
+- `import`, `add`, `remove`, `rename`, and `dissolve` undo every completed step when a step fails.
+- A command in any folder under a box acts on that box. Run scripts and tests in a scratch box.
+
+## A Practical Tinderbox Loop
+
+For day-to-day work with many Flints:
+
+1. change the members (`add`, `import`, `remove`, or an edit of `tinderbox.toml`)
+2. run `flint tinderbox sync --dry-run`, then `flint tinderbox sync`
+3. run `flint tinderbox status`
+4. work inside the members
+5. run `flint tinderbox git sync` to move the history of all of them
+6. run `flint tinderbox check` before you call the box clean
+
+## When Tinderbox Is the Right Tool
+
+Use a box when:
+
+- many Flints need stable references to each other
+- you want one declaration for a set of Flints on each machine
+- you clone, wire, and repair the same set of Flints by hand again and again
+
+Do not use it when one Flint with a few external references is enough. A box adds structure, and that is useful only when the problem is real.
+
+## Related Pages
+
+- [The Roster](/flint/guide/the-roster)
+- [Global Configuration](/flint/guide/global-configuration)
+- [Using Obsidian](/flint/guide/using-obsidian)
+- [References](/flint/modules/references)
+- [CLI Commands](/flint/reference/cli-commands)
+- [Configuration](/flint/reference/configuration)

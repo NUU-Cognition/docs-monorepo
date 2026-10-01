@@ -1,0 +1,72 @@
+---
+title: "Workspace"
+---
+
+`Workspace/` is the active work surface of a Flint. It holds repositories that you edit, run, inspect, and commit as part of daily work. Each repository lives in `Workspace/Repos/<name>/`.
+
+## Overview
+
+A workspace repository is a full Git checkout. Flint keeps its `.git` folder. Commits and branches behave normally. The Mesh holds the reasoning. The workspace repository holds the implementation.
+
+You declare workspace repositories in `flint.toml` under `[workspace]`. The declaration is the source of truth. Sync clones each missing declared repository. Sync reports each extra local folder as drift. Sync never deletes an extra folder, and it never touches your uncommitted changes.
+
+## Workspace Repositories
+
+Manage them with the `workspace` command group:
+
+```bash
+flint workspace create "App" git@github.com:me/app.git
+flint workspace clone "App" git@github.com:me/app.git
+flint workspace register "App"
+flint workspace list
+flint workspace update "App"
+flint workspace remove "App"
+```
+
+Each command behaves as follows:
+
+- `create` records the declaration in `flint.toml`. It clones nothing. Run `flint sync` to clone the repository.
+- `clone` records the declaration and clones the remote now.
+- `register` records a folder that already exists under `Workspace/Repos/`. The folder must be a Git repository with an `origin` remote. Flint reads the remote from `origin`.
+- `list` shows each declared repository and whether its folder exists. It accepts `--wide` for full-width output.
+- `update` pulls the latest changes into the repository. When the folder is missing, it clones the repository.
+- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question.
+
+## Sync Behavior
+
+`flint sync` clones each missing declared repository with a full clone. It aligns `.gitignore` with the current declarations. It writes marker notes so each repository stays visible from the Mesh metadata layer.
+
+After the clone step, sync fetches each workspace repository that has an `origin` and that the run did not clone. The fetch moves only the remote-tracking refs. Sync never pulls, merges, or checks out. Each repository gets one result: up to date, ahead, behind, diverged, skipped, or fetch failed. A repository that is behind, diverged, or failed produces one notice. A repository with uncommitted changes produces one notice, and sync keeps the changes. When the declared URL differs from the `origin` URL of the folder, sync reports the mismatch and changes nothing.
+
+`flint plan` and `flint sync --dry-run` show the same plan and change nothing. They fetch nothing. They only name the repositories that sync fetches.
+
+## Configuration
+
+```toml
+[workspace]
+repositories = [
+  { name = "App", url = "git@github.com:me/app.git" },
+]
+```
+
+Each name must be one folder name. A bad name produces one report row. Sync still processes each valid declaration.
+
+## Workspace/Bench
+
+`flint create` also makes the folder `Workspace/Bench/`. No command manages it. Use it as a scratch surface when a workspace needs one.
+
+## Workspace, Sources, and References
+
+Three mechanisms connect a Flint to outside material. Each one serves a different need.
+
+- Use `Workspace/Repos/` when you want to work in a repository: edit, run, and commit. The copy is a full Git checkout.
+- Use `Sources/` when you want Flint to copy external material into the Flint for reading only. See [Sources](/flint/modules/sources).
+- Use a reference when you need only a named pointer to a codebase or to another Flint, with no copy. See [References](/flint/modules/references).
+
+If a repository is part of the active execution environment of this Flint, it belongs in `Workspace/Repos/`.
+
+## Related
+
+- [Sources](/flint/modules/sources)
+- [References](/flint/modules/references)
+- [Sync](/flint/modules/sync)

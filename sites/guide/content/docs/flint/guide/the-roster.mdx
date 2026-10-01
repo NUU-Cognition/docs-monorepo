@@ -1,0 +1,228 @@
+---
+title: "The Roster"
+---
+
+The **roster** is the list of Flints that this machine knows. Flint uses it to find a Flint by its name.
+
+## Where the Roster Is
+
+The roster is one file in the NUU home:
+
+```text
+~/.nuucognition/places.json
+```
+
+(With `NUU_HOME` set, the file is `$NUU_HOME/places.json`.) The file `~/.nuucognition/flint/registry.json` is a copy that Flint makes from the roster; do not edit it. The command `flint registry` manages this roster copy, not the shard registry. `flint registry rebuild` makes the copy again.
+
+Each row of the roster has the path and the kind of a Flint. Flint reads the id and the name from the files of the Flint. The copy `flint/registry.json` holds the id, the name, the type, and the path. The roster is local to this machine. It is not a cloud service, and no Flint holds it.
+
+The roster is not the shard registry. The shard registry is the NUU service that lists the published shards.
+
+## Why the Roster Matters
+
+These commands find a Flint by its name through the roster:
+
+- `flint open <name>` and `flint cd <name>`
+- `flint move <name> <destination>` and `flint delete <name>`
+- `flint reference flint "<name>"`
+- `flint sync`, for a bundle declared as `"<Flint>/<Bundle>"` in `[sources].bundles`
+- `flint list`, which shows the roster
+
+A reference can use the name in any letter case, a local name, an alias, the id, or the address of the Flint. If a name matches two Flints, Flint refuses and shows both. If a name matches none, Flint refuses and names `flint list`.
+
+## `flint create` Adds the Flint
+
+`flint create "<name>"` adds the new Flint to the roster. `flint create --from <git url>` adds the clone too. Most of the time, you do not touch the roster.
+
+You touch it when:
+
+- you moved or copied a Flint folder by hand
+- you have a Flint that another machine made
+- a path changed and the row is out of date
+
+## The Name Rule
+
+The name of a Flint is unique on this machine. Two Flints cannot have names with the same slug, in any case and in any folder: `My Notes` and `my notes` are one name. `flint create` checks the name before it writes anything. When the name is in use, it stops and prints the next command.
+
+A Flint name uses the letters A to Z, the digits 0 to 9, spaces, and the characters `- ' , . ! & + ; @`. It has at most 100 characters. It does not end with a space or a dot. The word `computer` is reserved: it always names the Computer Flint, and no other Flint can take it.
+
+The rule keeps `flint open <name>`, `flint reference flint "<name>"`, and the bundle names of `flint sync` clear.
+
+## The Flint Types
+
+Each Flint has one type. The type shows in the `TYPE` column of `flint list` and in the folder name in parentheses, for example `(Guide) NUU Cognition`. The four types are:
+
+- `flint` — a normal Flint. Most Flints have this type.
+- `computer` — the Computer Flint. It is the home of this machine. One machine has one. It comes from `flint setup computer`.
+- `guide` — a Guide about an entity. Its visibility is public. An agent answers questions from its Mesh. `flint create --type guide --about <address>` makes one.
+- `member` — the Member Flint of one person about one org. Its visibility is private and it cannot change. The org cannot read it. One person has one Member Flint per org. `flint create --type member --regarding <org>` makes one.
+
+`flint convert` changes the type of a Flint that already exists. See Change the Type below.
+
+## List the Roster
+
+```bash
+flint list
+```
+
+`ls` is an alias of `list`. The table shows the type, the name, the org, and the path of each Flint.
+
+Useful flags:
+
+```bash
+flint list --status      # Show whether each path still exists
+flint list --json        # One JSON value
+flint list --full-path   # Show the full paths
+flint list --group       # Group the Flints by tag
+flint list --tag docs    # Only the Flints with the tag docs
+flint list --search notes
+```
+
+`flint list` hides a row whose path does not exist. `flint list --status` shows each row as valid or broken. Use `--status` first when a name does not resolve.
+
+## Browse the Roster
+
+```bash
+flint browse
+```
+
+`flint browse` shows the roster in an interactive list. Pick a Flint to open the Orbh cockpit in it. `flint browse --all` also shows the entries whose folder is missing on disk.
+
+## Open a Flint in Obsidian
+
+```bash
+flint open "My Notes"
+flint open guide "NUU Cognition"
+flint open computer
+```
+
+`flint open` opens or focuses the Flint in Obsidian. Give a name, or a type and a name when two Flints share one name. The word `computer` opens the Computer Flint of this machine.
+
+To print the folder without opening Obsidian:
+
+```bash
+flint open "My Notes" --no-launch
+```
+
+## Go to a Flint in the Terminal
+
+```bash
+flint cd "My Notes"
+flint cd guide "NUU Cognition"
+```
+
+`flint cd` takes its arguments exactly as `flint open` does. It prints the folder of the Flint. With the shell integration, it changes the folder of your shell. Without the integration, use its output:
+
+```bash
+cd "$(flint cd "My Notes")"
+```
+
+To install the integration, run `flint setup shell-integration`.
+
+## Add a Flint to the Roster
+
+To add a Flint that is on disk:
+
+```bash
+flint register /path/to/flint
+```
+
+In the Flint, the path is not needed:
+
+```bash
+flint register
+```
+
+`flint register` reads the name and the type from `flint.toml` of the Flint. Run it again after you move a Flint folder by hand, or after you change the name in `flint.toml`: the row then takes the new path, name, and type. It refuses when the path is not a Flint.
+
+## Move a Flint
+
+To move a Flint, prefer `flint move <name> <destination>`. It moves the folder and updates the roster in one step:
+
+```bash
+flint move "My Notes" ~/notes
+```
+
+It also relocates the vault registry entry of Obsidian, so the vault keeps its vault id and its trust. It refuses when the vault is open in Obsidian: close the vault, then run the command again from a terminal outside Obsidian. When Obsidian runs during the move, the change of the vault registry waits. Quit Obsidian, then run `flint obsidian vaults repair --yes`. `flint move --force` overwrites a destination that already exists.
+
+A move by hand does not change the vault registry of Obsidian. Its entry then names the old folder, which is missing. Quit Obsidian, then clean the vault registry:
+
+```bash
+flint obsidian vaults repair          # the preview
+flint obsidian vaults repair --yes    # remove the entries whose folder is missing
+```
+
+Obsidian registers the new folder when it opens it, and it asks for the trust click again. After a move by hand, run `flint register` in the new folder.
+
+## Rename a Flint
+
+In the Flint, run:
+
+```bash
+flint rename "New Name"
+```
+
+`flint rename` renames the Flint that holds the current folder. It renames the folder too, so the folder name matches the new name and the type. It refuses before any write when the new name is taken in any letter case, breaks the name rule, or is the reserved word `computer`.
+
+In the Computer Flint, the rename also renames the machine: the machine display name takes the new name. The machine word of addresses stays the same.
+
+## Change the Type
+
+```bash
+flint convert "My Notes" --to guide --about "@org/entity"
+flint convert "My Notes" --to member --regarding my-org
+```
+
+`flint convert` changes the type of a Flint: `flint`, `computer`, `guide`, or `member`. The id does not change. A conversion to `member` needs `--regarding <org>`: the org that the Flint regards. A conversion to `guide` can take `--about <address>`: the entity that the Guide is about.
+
+To see the plan without changes:
+
+```bash
+flint convert "My Notes" --to guide --dry-run
+```
+
+If a conversion stops part way, `flint convert "My Notes" --abort` returns it to its start.
+
+## Remove a Flint from the Roster
+
+To remove the row and keep the files:
+
+```bash
+flint unregister /path/to/flint
+```
+
+In the Flint:
+
+```bash
+flint unregister
+```
+
+`flint unregister` asks for a confirmation. `--yes` (or `--force`) skips the question. `--json` asks no question, so it needs `--yes`.
+
+To remove the row and the folder, use `flint delete <name>`. It deletes the files. It also:
+
+- asks you to type the name of the Flint to confirm; `--force` skips the question;
+- refuses when the vault is open in Obsidian, and names the command to run again;
+- exports the Obsidian backups of the Flint before it deletes the folder: it copies them into the `deleted` scope of the backup store. When the export fails, it deletes nothing. It prints `<n> Obsidian backups kept in the deleted scope. See: flint obsidian backups list --scope deleted`;
+- removes the vault registry entry of Obsidian. When Obsidian runs, the change waits until you run `flint obsidian vaults repair --yes` with Obsidian quit.
+
+## Check and Repair
+
+When a name does not resolve:
+
+1. Run `flint list --status`.
+2. Find the broken or missing row.
+3. If the Flint folder exists, run `flint register <path>`.
+4. Run `flint registry check` to compare the roster and the copy. It writes nothing. Run `flint registry rebuild` if the copy is out of date. `flint registry rebuild --dry-run` shows the plan without writes.
+5. Run `flint sync` in the Flint.
+
+## The Roster Is Not Your Name
+
+The roster lists Flints. It does not hold your Name. `flint setup` sets your Name and the machine names; `flint config name "<Name>"` changes your Name only; `flint whoami` shows them. Your Name is in the NUU config (`~/.nuucognition/config.toml`), and it is the same for every Flint on this machine.
+
+## Related
+
+- [Quick Start](/flint/guide/quick-start)
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Join Your Org](/flint/guide/join-your-org)
+- [Using Obsidian](/flint/guide/using-obsidian)

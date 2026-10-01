@@ -1,0 +1,136 @@
+---
+title: "Profiles and Harness Adapters"
+---
+
+A profile names a model and its launch settings under one short target. A harness adapter runs that target with its native agent command.
+
+## Overview
+
+Each agent session runs on one target. A target has the form `runtime/profile`, for example `claude/o55h`. The runtime names the agent CLI. The profile names a bundle of model, reasoning effort, and launch args.
+
+Orbh resolves the target to a profile, and the adapter of the runtime turns the session into native commands. The adapter launches the agent, resumes it later, finds its transcript, and reports if its CLI is missing. Profiles and adapters separate cleanly: profiles choose what runs, and adapters know how to run it.
+
+## Profile Layers
+
+Orbh builds the effective profile set from three layers, lowest first:
+
+| Layer | File | Role |
+| --- | --- | --- |
+| Built-in | (in the code) | Only the profiles of the shipped default target list (`claude/o55h` and `codex/a6h`). A new machine can start an agent before it has `default.json`. |
+| Synced defaults | `~/.nuucognition/orbh/default.json` | Shared profiles, pulled from a public repository. |
+| User overrides | `~/.nuucognition/orbh/profiles.json` | Personal profiles. Entries override lower layers by profile key. |
+
+The profile config groups entries by runtime and then profile name. A profile can include `title`, `description`, `version`, `args`, `model`, and runtime-specific fields. A key named `//` is a comment key, and Orbh skips it.
+
+Only a pull writes `default.json`. The pull clones the public repository `NUU-Cognition/orbh-profiles` into a temporary folder, checks that its `default.json` is a valid profile config, copies it, and removes the clone. Each Git call has a limit of 60 seconds and never asks for a credential. Two commands run the pull:
+
+| Command | When |
+| --- | --- |
+| `flint orbh profiles update` | Any time. It gets the newest `default.json`. |
+| `flint setup` (step 4) | Once: when the Orbh home has no `default.json`. With no network, the step skips the pull and names `flint orbh profiles update`. With `NUU_HOME` set and the Orbh home outside it, the step does not write. |
+
+Once a day, the release check of the flint CLI compares the `default.json` of the repository with the local file (a temporary clone in a background process; it writes nothing in the Orbh home). When they differ, a later command in a terminal prints `Newer Orbh profiles are available. Next: flint orbh profiles update`, and with no local file `This machine has no Orbh profiles. Next: flint orbh profiles update`. `flint doctor` has the row Orbh profiles: it fails with `Next: flint orbh profiles update` when the Orbh home has no `default.json`.
+
+No command writes `profiles.json`. You edit it by hand for personal profiles. When a profile does not exist and the Orbh home has no `default.json`, the Next of Orbh is `flint orbh profiles update`; with a `default.json`, the Next lists the profiles of the runtime.
+
+## Target Syntax
+
+A launch target takes one of three forms:
+
+```text
+(no target)      the default target list applies
+runtime          for example: claude
+runtime/profile  for example: claude/o55h
+```
+
+With no target, Orbh takes the first available target of the default target list. A bare runtime takes the first entry of the list for that runtime. When the list has no entry for that runtime, the bare runtime stays as it is, with its `default` profile when one exists and no profile args otherwise.
+
+Profile names are exact. There is no fuzzy match. An unknown profile name errors, and the error lists the profiles that exist.
+
+Model selection follows this order:
+
+1. The `--model` flag of the launch command.
+2. The `model` field of the profile.
+3. The default behavior of the harness.
+
+## The Default Target List
+
+The shipped list is `claude/o55h`, then `codex/a6h`. A launch with no target takes the first available entry. A target is available when its runtime CLI is installed, its profile exists, and the account of the launch is present and usable. The command prints `Target: <target> (default list)` and one `<target> skipped: <reason>` line for each entry before it. When no entry is available, the launch refuses and names the fix for the first entry.
+
+Three layers own the list. The highest layer with a list applies, and it replaces the lower list:
+
+| Layer | Where |
+| --- | --- |
+| Flint | `[orbh] default = [...]` in `flint.toml` |
+| Machine | `defaultTargets` in `~/.nuucognition/orbh/settings.json` (`ORBH_SETTINGS_PATH` overrides the file) |
+| Shipped | `claude/o55h`, `codex/a6h` |
+
+```bash
+flint orbh profiles default                              # The list, the layer, the state of each target, the selected target
+flint orbh profiles default set codex/a6h claude/o55h    # Write the machine layer, in order
+flint orbh profiles default set --flint claude/o55h      # Write the Flint layer of this Flint
+flint orbh profiles default unset [--flint]              # Remove one layer; the output names the list that applies then
+```
+
+An explicit target never falls back. When it is not available, the launch refuses before it makes a session. The selection happens once, when the session launches. A running or resumed session keeps its target.
+
+## Profile Commands
+
+```bash
+flint orbh profiles                    # List all profiles, grouped by runtime
+flint orbh profiles claude             # Filter to one runtime
+flint orbh profiles claude/o55h        # Show one profile in full
+flint orbh profiles --wide             # Full-width table output
+flint orbh profiles update             # Pull the newest shared default.json; profiles.json stays untouched
+flint orbh profiles push --message "Update profiles"   # Publish the local default.json to the shared repo (maintainers)
+```
+
+The profile set changes as model families ship. Always confirm the live set with `flint orbh profiles` before you pick a target.
+
+## Changing the Profile of a Live Session
+
+`profiles switch` moves the current session to another profile of the same runtime. It keeps the conversation. It closes the run at a turn boundary and resumes the same native session under the new model and effort.
+
+```bash
+flint orbh profiles switch claude/o5mx
+```
+
+In an interactive session, the pane swaps its child in place and you keep talking. In a headless session, Orbh relaunches a continuation of the same session on the new profile. The command runs inside the session it switches. A bare runtime is refused: the target must be an explicit `runtime/profile`.
+
+A conversation cannot cross runtimes. A cross-runtime target is refused, and the refusal names the correct move: compact the session into the other runtime. See [Compaction](/orbh/modules/compaction).
+
+## Runtimes
+
+`flint orbh runtimes` lists the runtimes that Orbh knows and shows which ones are installed on the machine. Nine runtimes exist:
+
+| Runtime | Native command |
+| --- | --- |
+| `agy` | `agy` |
+| `claude` | `claude` |
+| `codex` | `codex` |
+| `cursor` | `cursor-agent` |
+| `droid` | `droid` |
+| `grok` | `grok` |
+| `kimi` | `kimi` |
+| `muse` | `muse` |
+| `opencode` | `opencode` |
+
+```bash
+flint orbh runtimes          # Each runtime with its command, resolved path, version, and availability
+flint orbh runtimes --wide  # Full-width table output
+```
+
+## Harness Adapters
+
+Each runtime has one harness adapter, and each adapter lives in its own package. One manifest registers all nine adapters, so every command sees the same runtime list.
+
+For the user, an adapter does four things. It builds the native launch command from the profile. It resumes a native session later. It finds and reads the native transcript. It reports whether the native CLI is installed. You never call an adapter directly. You pick a target, and Orbh uses the adapter of its runtime.
+
+## Related
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Compaction](/orbh/modules/compaction)
+- [Accounts](/orbh/modules/accounts)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

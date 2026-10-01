@@ -1,0 +1,173 @@
+---
+title: "Watching Sessions in the Cockpit"
+---
+
+This guide shows how to watch Orbh sessions. It covers the session list, the cockpit, and the one-session viewers.
+
+## Open the Session List
+
+`list` opens the Sessions cockpit in a terminal. `active` opens the Active cockpit with subagents nested under their parents.
+
+```bash
+flint orbh list
+flint orbh active
+```
+
+For plain output without the cockpit, use `--print` or `--json`:
+
+```bash
+flint orbh list --print --wide
+flint orbh active --print
+flint orbh list --json
+```
+
+Inside an Orbh session, `--json` is the default. Pass `--print` when a script needs the table form.
+
+Filter the list by work state, runtime, or text:
+
+```bash
+flint orbh list --status awaiting
+flint orbh list --runtime codex --search docs
+flint orbh list --detached
+```
+
+Useful extra flags: `--wide` prints the full-width table, `--subagents` flattens dispatch trees into top-level rows, `-s` adds token and turn stats, and `-a` includes hidden Special sessions. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions) to start the sessions that appear here.
+
+## Open the Full Cockpit
+
+`tui` opens the full-screen tabbed cockpit. `v` opens the vertical split-pane cockpit.
+
+```bash
+flint orbh tui
+flint orbh tui --view active
+flint orbh v
+```
+
+`--view` selects the initial view, such as `sessions` or `active`. `--mode` selects `full` or `vertical`. The cockpit holds more tabs for other features.
+
+## Read the Session Rows
+
+The list groups sessions into sections such as Awaiting and Working. Awaiting rows show how long each session waits and what last woke it. Working rows show the run duration.
+
+Each row starts with a status glyph:
+
+| Glyph | Work state |
+|---|---|
+| ● (green) | working |
+| ● (yellow) | needs-input |
+| ◌ | awaiting |
+| ○ | finished |
+| ⊘ | abandoned |
+| ? | unknown |
+
+The activity column shows `● busy`, `○ idle` (sometimes with a duration), or `-` when the session has no live activity. See [Sessions and Runs](/orbh/concepts/sessions-and-runs) for the meaning of each work state.
+
+The title starts with a mode prefix:
+
+| Prefix | Mode |
+|---|---|
+| (I) | interactive |
+| (H) | headless |
+| (S) | subagent |
+| (P) | ping |
+
+A status tag follows the prefix, then the raw title. Tags include `[Parked]`, `[Closed]`, `[Finished]`, `[Error]`, and `[Killed]`. A typical row reads `(S) [Finished] Docs F16 - Module - Sync`.
+
+A session that is mid-compaction shows `[Compacting...]` instead of the normal tag. The marker stays until the relaunched context declares itself ready. See [Compaction](/orbh/modules/compaction) for the full flow. Two sibling markers exist for short transitions: `[Migrating...]` and `[Switching...]`.
+
+Subagents nest under their parent as dispatch trees with `└` markers. A `(+n)` count marks hidden tree rows. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents) for how these trees form. A session that stays awaiting past 7 days shows a warning that suggests retiring it.
+
+## Move in the Cockpit
+
+The main keys of the cockpit:
+
+| Key | Action |
+|---|---|
+| 1–7 | switch cockpit tabs |
+| ↑/↓ or j/k | move selection |
+| g / G | jump to top / bottom |
+| ←/→ or h/l | collapse / expand Active tree nodes |
+| Space | toggle an Active tree node |
+| Tab | move focus between cockpit panes |
+| enter | open the selected session |
+| a | open the session actions menu |
+| Z | toggle preview zoom |
+| / | incremental search in lists and transcripts |
+| 1-5 / [ ] | switch or cycle detail scenes (inspect, prompt, transcript) |
+| s | toggle sort: recent / status |
+| S | cycle the work-state filter |
+| R | cycle the runtime filter |
+| d | show detached-interactive sessions only |
+| x | show hidden Special sessions |
+| esc | go back, or clear the search |
+| ? | show or hide the keymap |
+| q | quit |
+
+Press `?` inside the cockpit to see the full keymap, including mouse support.
+
+## Inspect One Session
+
+`inspect` shows full detail for one session: state, launch profile, lineage, interface keys, context window, spool facts, runs, and the last turn. The id accepts a full or partial session id.
+
+```bash
+flint orbh inspect 073d8886
+flint orbh inspect 073d8886 --results
+```
+
+`--results` adds the run results to the output.
+
+`peek` shows a compact status block instead: identity, work state, subagent counts, interface keys, activity, pending messages, and the result head. It reads projections only, so it stays cheap.
+
+```bash
+flint orbh peek 073d8886
+flint orbh peek 073d8886 --json
+```
+
+## Read the Transcript
+
+`watch` opens the session transcript fullscreen in a terminal.
+
+```bash
+flint orbh watch 073d8886
+flint orbh watch 073d8886 --verbose
+flint orbh watch 073d8886 --stream
+```
+
+`--verbose` shows full thinking blocks and tool output. `--stream` forces streaming output instead of the fullscreen viewer.
+
+## Check Tokens and Context
+
+`stats` shows turns, token usage, tool counts, and touched files for one session.
+
+```bash
+flint orbh stats 073d8886
+flint orbh stats 073d8886 --files
+```
+
+`--files` shows full file paths.
+
+`context` shows the token context-window occupancy for one session. It self-targets inside a session, so the id is optional there.
+
+```bash
+flint orbh context 073d8886
+flint orbh context --json
+```
+
+## Reconstruct the History
+
+`timeline` rebuilds a read-only chronological event list for a session tree.
+
+```bash
+flint orbh timeline 073d8886 --markdown
+```
+
+Inside an Orbh session the default output is JSON. `--markdown` forces the narrative form. Useful filters:
+
+```bash
+flint orbh timeline 073d8886 --since 2h --classes runs,messages
+flint orbh timeline 073d8886 --depth 2 --full
+```
+
+`--since` and `--until` accept ISO times or relative ages such as `2h` or `3d`. `--depth` limits the dispatch-tree depth. `--classes` selects event classes such as runs, messages, jobs, or notes. Long same-session spans collapse by default; `--full` disables the collapsing. With `--room`, the timeline covers all participants of a room instead of one tree. See [Rooms and Messages](/orbh/modules/rooms-and-messages) for rooms.
+
+For the full flag list of every command in this guide, see [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh).

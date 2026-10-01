@@ -1,0 +1,143 @@
+---
+title: "Sync"
+---
+
+Sync keeps the files of the Flint true to its declarations and its shared history. Three commands do three jobs.
+
+## Overview
+
+Each command has one job. No command does the job of another.
+
+| Command | Job |
+|---------|-----|
+| `flint sync` | Make the files match the lock and the declarations. |
+| `flint shard install` | Make the lock match the specs in `flint.toml`. |
+| `flint shard update` | Move the lock inside the range of each spec. |
+| `flint git sync` | Exchange history with origin. |
+
+In package terms, `flint sync` is `pnpm install --frozen-lockfile`. `flint shard install` is `pnpm install`. `flint shard update` is `pnpm update`.
+
+## The Local Sync
+
+`flint sync` makes the files of this Flint match its lock (`flint.json`) and its declarations (`flint.toml`). It runs two steps: `Resolve Flint` and `Reconcile content`.
+
+It fetches only bytes that the lock or a declaration names and that are absent or differ. It checks out the pin of each shard repository. It fetches a pinned commit only when the commit is absent.
+
+Its one write to the lock removes a stale lock line. A stale lock line is a line that `flint.toml` does not declare and that has no folder under `Shards/`.
+
+`flint sync` never asks the shard registry. It never writes a shard version and never writes a pin. It never touches the origin of the Flint: no fetch of the Flint repository, no integration of incoming commits, no commit, and no push.
+
+### Workspace Repositories
+
+After the two steps, sync fetches each workspace repository. It runs `git fetch origin` in each repository root that has an origin and that the run did not clone. See [Workspace](/flint/modules/workspace).
+
+The fetch moves only the remote-tracking refs. Sync never pulls, never merges, and never checks out. It changes no branch and no working tree of the repository.
+
+Each repository gets one result against its base: `up to date`, `ahead`, `behind`, `both`, `skipped`, or `fetch failed`. A repository that is behind, diverged, or failed gives one notice. The notice for a behind repository names `git pull --ff-only` in its folder. The fetch changes no count and no status of the report.
+
+When the branch holds commits that the cached `origin/<branch>` ref does not hold, sync gives one notice. It names `flint git sync`. A branch with no `origin/<branch>` ref gives no notice.
+
+### Blocks
+
+Three states block the run with exit 2.
+
+- A halted rebase blocks the run. The next command is `flint git sync --continue`.
+- A held merge, cherry-pick, or revert blocks the run. Finish it with `git <kind> --continue` or stop it with `git <kind> --abort`. Then run `flint sync` again.
+- A `flint.toml` that does not parse blocks the run. Correct the file. Then run `flint sync` again.
+
+The halted rebase and the held operation block `--dry-run` too. A `flint sync` that ends `ok` exits 0. A failed or partial run exits 1.
+
+## Preview
+
+`flint sync --dry-run` shows the plan and writes nothing. It fetches nothing and opens no socket. It names the repositories that a real sync fetches.
+
+`flint plan` shows the same preview as `flint sync --dry-run`. A repeat sync with no new drift writes nothing.
+
+```bash
+flint sync --dry-run    # Show the plan; write nothing
+flint plan              # The same preview
+flint sync              # Make the files match the lock and the declarations
+```
+
+## The Lock
+
+`flint shard install` makes the lock match the specs. It resolves each spec that the lock does not satisfy. It leaves a satisfied lock alone.
+
+A new or changed spec in `flint.toml` needs this command. `flint sync` reports a spec with no lock line as not current. It names `flint shard install` as the next command.
+
+`flint shard install <spec>` installs one package and writes its record. `flint shard install --dry-run` shows the plan and the registry answers. It writes nothing.
+
+`flint shard update` moves the lock of each shard to the highest version inside its range. It updates every installed shard, or one shard by its alias, shorthand, or id. It skips a build that comes from a source. See [Shards](/flint/modules/shards).
+
+```bash
+flint shard install                       # Make the lock match the specs
+flint shard install @org/name@^1.1        # Install one package
+flint shard install --dry-run             # Show the plan; write nothing
+flint shard update                        # Move each lock inside its range
+flint shard update <alias>                # Move one lock inside its range
+```
+
+## The Transport
+
+`flint git sync` exchanges history with origin. It runs these steps in order: checkpoint the local work, fetch, integrate, run the local sync, checkpoint the writes of the sync, and push.
+
+It makes no commit and no push when nothing changed. It commits the writes of the local sync as a second checkpoint only when the local sync writes. When the fetch changes `flint.toml`, the local sync of the same run reads the new file, and the same push publishes its writes.
+
+### Conflicts
+
+A conflict halts the run before the local sync. It exits 2 and reports the conflict under `Failed`.
+
+Resolve the files by hand, or take one side whole:
+
+```bash
+flint git resolve --local [paths...]    # Take your side of each file whole
+flint git resolve --remote [paths...]   # Take the remote side of each file whole
+```
+
+Paths are relative to the working directory. With no paths, the command resolves every conflicted file. It needs no marker editing. It works for binary files.
+
+Then re-run `flint git sync`, or run `flint git sync --continue`. It finishes the integration, runs the local sync, and pushes. `flint git sync --abort` stops the held rebase and restores the branch. It runs no sync.
+
+`--continue` refuses `--replay`, `--force-remote`, and `--force-local`.
+
+### Remote History Rewrite
+
+When the remote history was rewritten, sync realigns automatically when no local-only commits exist. When local-only commits exist, sync halts and asks for `--replay`. `--replay` puts the local commits on the new tip.
+
+### Force Flags
+
+`--force-remote` takes the remote as truth. Local commits that replay cleanly stay. Overlapping changes resolve in favour of the remote. Anything that still does not merge is discarded. A backup ref keeps the old tip.
+
+`--force-local` is the mirror image. Overlapping changes resolve in favour of the local commits. The remote history is never rewritten.
+
+The force flags refuse before any change when a nested repository holds uncommitted work.
+
+### More Transport Commands
+
+`flint git sync --no-sync` is transport only. It runs no local sync. It still writes the managed block of `.gitignore` and pushes.
+
+`flint git merge` is `flint git sync` with no push. It checkpoints, fetches, integrates, runs the local sync, and commits the writes of the sync. Its conflict halt names `flint git merge`. After a remote history rewrite, run `flint git merge --replay`.
+
+```bash
+flint git sync                # Checkpoint, fetch, integrate, sync, checkpoint, push
+flint git sync --no-sync      # Transport only: no local sync
+flint git sync --continue     # Continue a sync halted on a conflict
+flint git sync --abort        # Stop the held rebase and restore the branch
+flint git sync --replay       # Replay local commits after a remote rewrite
+flint git merge               # Integrate and sync, with no push
+```
+
+### Failure Rules
+
+When the local sync fails, the push still sends the integrated history as it is. It makes no second fetch. When origin moved during that sync, the push is rejected, and the next `flint git sync` sends it.
+
+A held merge, cherry-pick, or revert refuses `sync` and `merge` with exit 2. The run changes nothing. Finish the held operation in Git first.
+
+One Git run at a time holds the run lock of the repository. The lock is `<git dir>/flint-git-sync.lock`. `sync`, `merge`, `--continue`, `--abort`, and `resolve` take it. When the wait for the lock times out after 60 seconds, the report is `blocked` with exit 2.
+
+## Related
+
+- [Shards](/flint/modules/shards)
+- [Workspace](/flint/modules/workspace)
+- [Sources](/flint/modules/sources)
+- [CLI Commands](/flint/reference/cli-commands)

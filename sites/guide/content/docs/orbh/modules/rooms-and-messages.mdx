@@ -1,0 +1,193 @@
+---
+title: "Rooms and Messages"
+---
+
+Orbh sessions coordinate through two surfaces: direct messages and rooms.
+
+A direct message travels from one session to one other session. A room gives many sessions one shared message stream and one shared context. Both surfaces are durable. Both can wake an awaiting session. See [Sessions and Runs](/orbh/concepts/sessions-and-runs) for the session lifecycle.
+
+## Overview
+
+Use a direct message when one session must tell one other session something. Use a peer request when the sender must wait for the answer. Use `interrupt` when a working session must stop and read a message now. Use a room when several sessions share status and background over a longer task.
+
+Messages and room activity reach the target through the Page. The [Page and Jobs](/orbh/modules/page-and-jobs) shows pending messages and notices. The [Orchestrator](/orbh/modules/orchestrator) wakes awaiting sessions when new activity arrives.
+
+## Direct Messages
+
+Send a message to one session:
+
+```bash
+flint orbh message send <session-id> "Message text"
+```
+
+The command accepts a full session id or a short prefix. It works from a terminal and from inside a session. From inside a session the sender is that session. From a terminal the sender is the operator.
+
+List the message history of a session:
+
+```bash
+flint orbh message list <session-id> --wide
+```
+
+Read the full output of `message send`. It names the delivery path of the message. It warns when nothing will read the message.
+
+### Delivery
+
+Each message wakes an awaiting target. The orchestrator sweep resumes the target with the message. No extra flag is needed.
+
+A working target with an armed pager receives the message during its run. A working target without an armed pager keeps the message until its next Page read or turn boundary.
+
+An ended target keeps the message in its history, but nothing wakes the target. Add `--revive` to resume an ended session with the message:
+
+```bash
+flint orbh message send <session-id> "Message text" --revive
+```
+
+`--revive` only resumes ended headless sessions. It cannot resume an interactive session. It does nothing extra for a target that already runs or awaits.
+
+The `--wake` flag remains for compatibility only. It changes nothing: every message already wakes an awaiting target.
+
+## Peer Requests
+
+A peer request asks a question and waits for the answer:
+
+```bash
+flint orbh message request <session-id> "Question"
+```
+
+Answer a peer request from the target session:
+
+```bash
+flint orbh message respond <request-id> "Answer"
+```
+
+Both commands run only inside an Orbh session. They need `ORBH_SESSION_ID` for the sender identity.
+
+`message request` blocks until the target answers. Limit the wait with `--timeout`:
+
+```bash
+flint orbh message request <session-id> "Question" --timeout 120
+```
+
+A timeout leaves the request pending. It does not cancel the request. Cancel a pending request that you created:
+
+```bash
+flint orbh message request --cancel <request-id>
+```
+
+When the target ends before it answers, the request stays unresolved. The command then prints the liveness notice with its reason and guidance.
+
+For collector-backed delegation to a subagent, use the top-level `request` command instead. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents).
+
+## Liveness Notices
+
+A liveness notice reports that a peer request target can no longer answer. Reasons include `exited`, `failed-unreturned`, `killed`, `awaiting-input`, and provider errors. Each notice carries a trust grade and guidance.
+
+Notices appear in the NOTICES section of the Page. A blocked `message request` also prints the notice when the request cannot resolve.
+
+Follow the guidance in the notice. A `killed` notice means the target was cancelled on purpose. Do not re-send the request after a `killed` notice.
+
+## Interrupt
+
+Interrupt stops the live run of a working session and resumes it with your message:
+
+```bash
+flint orbh interrupt <session-id> "Stop and read this"
+```
+
+Use `interrupt` only for a working session that must react now. An ordinary message waits for the next Page read. `interrupt` does not wait.
+
+Against an awaiting target, `interrupt` behaves as a wake. Against an ended target, it only queues the message. It does not revive an ended session. Use `message send --revive` or resume the session instead. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+## Rooms
+
+A room is a durable shared space with a message stream and a shared context. Rooms outlive their participants. Sessions join a room, post status, read the stream, and keep joint background in the room context.
+
+List rooms:
+
+```bash
+flint orbh rooms --wide
+flint orbh room list
+```
+
+Create a room:
+
+```bash
+flint orbh room create planning --topic "Planning work"
+```
+
+Join a room from inside a session:
+
+```bash
+flint orbh room join planning --notify mentions
+```
+
+`join` and `leave` run only inside an Orbh session. They need `ORBH_SESSION_ID` for the member identity. The default notify policy is `all`.
+
+Leave a room:
+
+```bash
+flint orbh room leave planning
+```
+
+Post a message to a room:
+
+```bash
+flint orbh room post planning "Status update"
+```
+
+`post` works from a terminal and from inside a session. From inside a session the author is that session. From a terminal the author is the operator.
+
+Read a room:
+
+```bash
+flint orbh room read planning
+flint orbh room read planning --since-cursor
+flint orbh room read planning --since-cursor --no-advance
+```
+
+`--since-cursor` shows only messages after your subscription cursor. It needs `ORBH_SESSION_ID` and a room subscription, so join the room first. A normal read advances your cursor. `--no-advance` reads without advancing it.
+
+### Room Context
+
+Each room keeps one shared context text with revisions. Show it:
+
+```bash
+flint orbh room context show planning
+```
+
+Append background:
+
+```bash
+flint orbh room context append planning "Shared background"
+```
+
+Replace one snippet:
+
+```bash
+flint orbh room context edit planning --search "old text" --replace "new text"
+```
+
+The edit replaces exactly one match. It fails when the search text occurs zero times or more than once.
+
+## Notify Policies
+
+Each room subscription carries a notify policy:
+
+| Policy | Wake behaviour |
+| --- | --- |
+| `all` | Wake for each new room message and context change. |
+| `mentions` | Wake only for messages that mention the session. |
+| `mute` | Do not wake for room activity. |
+
+A mention is `@` plus the session id prefix (minimum six characters) or `@` plus the session title. A session never wakes for its own posts and edits.
+
+An awaiting subscribed session wakes through the orchestrator sweep when qualifying activity arrives. A muted subscription never wakes the session.
+
+## Related
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Orchestrator](/orbh/modules/orchestrator)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

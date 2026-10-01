@@ -1,0 +1,243 @@
+---
+title: "Setting Up a Machine"
+---
+
+`flint setup` prepares a machine in seven steps. Run it once per machine. It needs internet access.
+
+```bash
+flint setup
+```
+
+## Prerequisites
+
+You need:
+
+- a terminal
+- internet access
+- no NUU account and no org (both stay optional)
+
+## The Network Check
+
+Setup checks the network before the first step. With no network, it stops. It asks nothing and writes nothing.
+
+```text
+Flint setup needs internet access. Connect to the internet, then run flint setup again.
+```
+
+## The Seven Steps
+
+Each step prints a header, such as `Step 2 of 7 - Git author`. A summary ends the run.
+
+### Step 1: Identity
+
+Setup asks two questions: your Name and the machine display name. Press Enter to keep a default.
+
+- **Your Name** is how you appear as the author of notes on this machine.
+- **The machine display name** is the name that people read, such as "Ada Laptop".
+- **The machine name** is the short word for this machine in addresses. It comes from the display name.
+- **The branch prefix** comes from the hostname. `flint setup --machine-name <word>` changes it.
+
+The answers go into the NUU config (`config.toml` in the NUU home, `~/.nuucognition`). Every NUU CLI reads them.
+
+```bash
+flint setup --name "Ada Lovelace" --machine-proper-name "Ada Laptop"
+```
+
+### Step 2: Git Author
+
+Setup shows the Git author. When Git has no email, it asks for one.
+
+Each new Flint is a Git repository with a first commit. Git needs an author for that commit.
+
+```bash
+flint setup --git-email "ada@example.com"
+```
+
+The flag answers the email question. Git keeps an email that it has.
+
+### Step 3: Environment
+
+Setup checks the tools of this machine: Git, Node.js, Obsidian, and the agent CLI of each target of the default target list.
+
+A missing tool shows `✘` with its install command. A missing tool never stops the setup.
+
+### Step 4: Agent Default
+
+Setup copies the Orbh profiles first. When the Orbh home has no `default.json`, setup copies it from the shared profiles repository. Setup never writes `profiles.json`, the file of the person. With no network, it skips with `Later: flint orbh profiles update`.
+
+Then setup shows the default target list and the target that Orbh selects now. In a terminal, you can put another target first. Setup writes that order to the machine layer.
+
+### Step 5: Computer Flint
+
+Setup makes the Computer Flint when it is missing. It asks no question.
+
+When setup cannot make the Computer Flint, the run fails. The screen names the repair command.
+
+### Step 6: Guide
+
+Setup clones the Guide of NUU Cognition into the home folder, beside the Computer Flint. The Guide is a public Flint. You ask it Flint questions with an agent.
+
+Setup asks `Clone the Guide?` The answer "yes" is the default. Setup skips the clone in four cases:
+
+- with `--no-guide`
+- when you answer "no"
+- with no terminal and neither `--guide` nor `--yes`
+- with no network
+
+Each skip prints `Later: flint setup guide`.
+
+### Step 7: Open and Onboarding
+
+Setup opens the Computer Flint in Obsidian on every run. The first open of a machine has one trust click ("Trust author and enable plugins"). Obsidian then reloads once, and the onboarding session starts in a terminal tab after that reload.
+
+A later run resumes the recorded onboarding session. The session explains Flint and helps you make the first Flint.
+
+- With `--no-open`, with Obsidian off, or with no Obsidian, the session runs in the terminal after the summary.
+- With `NUU_HOME` set, the step opens nothing.
+- With `--json` or no terminal, setup starts no session. The summary names `flint setup onboard`.
+
+## The Flags
+
+| Flag | What it does |
+|---|---|
+| `--name <name>` | Your Name, with no question |
+| `--machine-proper-name <name>` | The machine display name, with no question. It renames the Computer Flint too |
+| `--machine-name <word>` | The branch prefix of this machine |
+| `--git-email <email>` | The email of the Git author, with no question |
+| `--guide` | Clone the Guide with no question |
+| `--no-guide` | Skip the Guide (later: `flint setup guide`) |
+| `--no-open` | Do not open Obsidian. The onboarding session runs in the terminal |
+| `-y, --yes` | Ask no question. Each open input takes its default, and setup clones the Guide |
+| `--json` | Print one JSON result envelope on stdout. Ask no question. Start no session |
+
+```bash
+flint setup --yes
+flint setup --no-guide --no-open
+```
+
+The flags `--computer` and `--no-computer` are retired. Each prints one line, and the run continues. Setup always makes the Computer Flint.
+
+## A Second Run
+
+A second run asks nothing that is stored. It keeps the Computer Flint and the Guide. It opens the Computer Flint and resumes the onboarding session.
+
+Only three things fail a run: step 1, step 5, and a stop (Ctrl-C). Each other step gives a warning and a `Later:` line.
+
+## The Computer Flint
+
+The Computer Flint is the home of this machine. One machine has one. It is a Flint of the type `computer`.
+
+It holds the "Start here" note, its system note, and the repair notes of `flint fix`. See [Doctor and Fix](/flint/guide/doctor-and-fix).
+
+### Where It Lives
+
+Its folder is `(Computer) <Machine Display Name>` in the home folder, for example `~/(Computer) Ada Laptop`. With `NUU_HOME` set, it lives in the folder above the NUU home.
+
+It is a local Git repository with no remote. It is private to this machine.
+
+### The Reserved Word
+
+The word `computer` names the Computer Flint. It works from any folder.
+
+```bash
+flint open computer
+flint cd computer
+```
+
+No other Flint can take the word as its name, local name, or alias. With no Computer Flint, the word refuses with `Next: flint setup computer`.
+
+### Make It Alone
+
+```bash
+flint setup computer
+```
+
+The command makes the Computer Flint alone. It never converts a Flint that exists. `--dry-run` says what it would do and changes nothing.
+
+### Rename the Machine
+
+The machine display name and the name of the Computer Flint are one name. Two commands rename both together:
+
+```bash
+flint rename "<name>"                        # In the Computer Flint
+flint setup --machine-proper-name "<name>"   # From any folder
+```
+
+The rename moves the folder, the roster row, and the Obsidian vault entry together. The machine word of addresses stays the same.
+
+### Move It
+
+```bash
+flint move computer "<new path>"
+```
+
+The command moves the Computer Flint and updates the roster. The claim follows, so Flint still finds it. Do not move the folder by hand.
+
+## The Guide Alone
+
+```bash
+flint setup guide
+```
+
+The command clones the Guide of NUU Cognition alone. A present Guide stays. To update it, run `flint git sync` in the Guide.
+
+## The Onboarding Session Alone
+
+```bash
+flint setup onboard
+```
+
+The command starts or resumes the onboarding session in the Computer Flint. It opens in an Obsidian terminal tab when Obsidian can open. Else it runs in the terminal.
+
+```bash
+flint setup onboard --print     # Show the plan and write nothing
+flint setup onboard --no-open   # Run in the terminal, with no Obsidian
+```
+
+With no Computer Flint, the command refuses with `Next: flint setup`.
+
+## The Daily Release Check
+
+Once a day, a command in a terminal starts one background check. It asks the npm registry for the newest Flint. It compares the shared Orbh profiles with the local file. The command never waits for the network.
+
+A later command prints one line for each newer item, at most once a day:
+
+```text
+Flint 0.8.0 is available (this machine has 0.7.0). Next: flint update
+Newer Orbh profiles are available. Next: flint orbh profiles update
+```
+
+Nothing installs by itself. No check runs in a pipe, with `--json`, in CI, in an agent session, for `flint update` and `flint setup`, or on a machine that is not set up.
+
+To turn the check off:
+
+```bash
+flint config set update-check off
+```
+
+`FLINT_NO_UPDATE_CHECK=1` turns it off too.
+
+## Update Flint
+
+```bash
+flint update
+```
+
+The command installs the newest release of Flint. It compares versions, so it never installs an older version.
+
+```bash
+flint update --check           # Name the newest release; install nothing
+flint update --check --json    # The same, as one JSON value
+```
+
+A Flint that is a build of a checkout installs nothing. Update the checkout, then build it.
+
+## Next Steps
+
+- [Quick Start](/flint/guide/quick-start) — from the install to the first Flint
+- [Join Your Org](/flint/guide/join-your-org) — log in, set your org, and share Flints
+- [Creating a Flint](/flint/guide/creating-a-flint) — presets, org, and options
+- [The Roster](/flint/guide/the-roster) — the list of Flints on this machine
+- [Using Obsidian](/flint/guide/using-obsidian) — the Obsidian payload and trust
+- [Doctor and Fix](/flint/guide/doctor-and-fix) — check the machine and repair failures
+- [CLI Commands](/flint/reference/cli-commands) — the full command list

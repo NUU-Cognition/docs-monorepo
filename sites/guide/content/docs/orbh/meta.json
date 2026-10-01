@@ -1,0 +1,13 @@
+{
+  "title": "Orbh",
+  "root": true,
+  "icon": "orbh",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "concepts",
+    "guides",
+    "modules",
+    "reference"
+  ]
+}
