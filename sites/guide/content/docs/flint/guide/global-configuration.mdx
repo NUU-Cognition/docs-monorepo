@@ -1,0 +1,184 @@
+---
+title: "Global Configuration"
+---
+
+Flint keeps three configuration layers:
+
+- the configuration of each Flint in `flint.toml`
+- Flint-specific machine-wide configuration in `~/.nuucognition/flint/config.toml`
+- the identity of this machine in the NUU config, `~/.nuucognition/config.toml`
+
+This guide shows the two machine-wide layers. It shows where each value lives, how to read it, and how to change it.
+
+## Prerequisites
+
+- Flint is installed and this machine is set up. See [Setting Up a Machine](/flint/guide/setting-up-a-machine).
+
+## The NUU Home
+
+The NUU home holds everything that belongs to this machine. The default path is:
+
+```text
+~/.nuucognition
+```
+
+It holds the NUU config, the Flint CLI config, the roster of Flints, the credential files, and the machine records.
+
+The variable `NUU_HOME` selects another home. A command that runs with `NUU_HOME=<dir>` reads and writes its home in `<dir>` and leaves the real home alone. So a test can use a home of its own:
+
+```bash
+NUU_HOME=/tmp/test-home flint whoami
+```
+
+## The NUU Config
+
+The NUU config is the shared file:
+
+```text
+~/.nuucognition/config.toml
+```
+
+Every NUU CLI reads it. `flint setup` writes it once per machine. It holds the identity of this machine:
+
+- `name`: your Name. It is the author of your notes.
+- `machine-display-name`: the machine display name. It is the name that people read, such as "Ada Laptop".
+- `machine-slug`: the short word of this machine in addresses. It comes from the display name. A rename keeps it.
+- `machine-name`: the branch prefix of this machine. When it is not set, the hostname is the default.
+- `default-org` and `default-org-id`: the org of this machine. Each new Flint gets it.
+
+A NUU account and an org are optional. Flint works with no NUU account and no org.
+
+### How to Read the Identity
+
+Show the full identity of this machine:
+
+```bash
+flint whoami
+```
+
+Read one value:
+
+```bash
+flint config name
+flint config machine-name
+flint config org show
+```
+
+Each command with no value shows the stored value. `flint config name` and `flint config machine-name` accept `--json` for script use.
+
+### How to Change the Identity
+
+Set the whole identity of this machine:
+
+```bash
+flint setup
+```
+
+Change your Name only:
+
+```bash
+flint config name "Your Name"
+```
+
+Change the branch prefix only:
+
+```bash
+flint config machine-name "main"
+```
+
+Each command accepts `--unset` to remove the stored value. After `flint config machine-name --unset`, the hostname is the default again.
+
+Change the display name by renaming the Computer Flint. `flint setup --machine-proper-name "<name>"` renames it too.
+
+Set the org of this machine:
+
+```bash
+flint config org set <slug>
+```
+
+The id comes from `--id <uuid>`, from the enrollment of this machine, or from a Flint of that org on this machine. When this machine knows the org, `--id` is not needed. Remove the org of this machine:
+
+```bash
+flint config org unset
+```
+
+After the unset, new Flints are local. The Flints, the enrollment, and the account do not change. See [Creating a Flint](/flint/guide/creating-a-flint).
+
+## The Flint CLI Config
+
+The Flint CLI config file is:
+
+```text
+~/.nuucognition/flint/config.toml
+```
+
+A dev build of the CLI uses `~/.nuucognition/flint-dev/config.toml`. If the file does not exist yet, Flint falls back to in-memory defaults.
+
+The file is a free key-value TOML file. Flint reads these keys:
+
+- `update-check`: the daily release check. `on` is the default. `off` stops the check and its notice on this machine.
+- `obsidian`: the machine choice of Obsidian. `on` is the default. `off` says that this machine does not use Obsidian.
+- `obsidian-trust`: community-plugin trust. `auto` is the default: `flint open` trusts a Flint that passes the trust check. `ask` shows the trust screen of Obsidian for each new vault.
+
+### How to Inspect the Flint CLI Config
+
+Show the whole config:
+
+```bash
+flint config
+```
+
+Read a single value:
+
+```bash
+flint config get obsidian
+flint config get update-check
+flint config get obsidian-trust
+```
+
+`flint config get` prints `on` or `off` for `obsidian` and `update-check`, and `auto` or `ask` for `obsidian-trust`. For a key that is not set, it prints `<key> is not set`.
+
+Open the file in your editor:
+
+```bash
+flint config open
+```
+
+### How to Change the Flint CLI Config
+
+Set a value:
+
+```bash
+flint config set update-check off
+flint config set obsidian on
+flint config set obsidian-trust ask
+```
+
+`obsidian` takes only `on` or `off`. `obsidian-trust` takes only `auto` or `ask`. `update-check` takes only `on` or `off`.
+
+`flint config set` reads the value as JSON when it can, else as text. A dotted key is a nested table. The command keeps every other key and every comment of the file.
+
+`flint config set` refuses every key under `obsidian.` and names the command to use instead. The machine choice goes through `flint config set obsidian on|off`. The trust setting goes through `flint config set obsidian-trust auto|ask`. See [Using Obsidian](/flint/guide/using-obsidian).
+
+## What Belongs Where
+
+Use global config for:
+
+- how Flint behaves on your machine
+- whether this machine uses Obsidian
+- your Name, the machine names, and the org of this machine, through the NUU config commands
+
+Use `flint.toml` for:
+
+- what the Flint is
+- what the Flint depends on
+- what the Flint publishes
+
+If another person cloning the Flint needs the setting, it almost certainly belongs in the Flint config, not the global one. See [Configuration](/flint/reference/configuration).
+
+## Next Steps
+
+- [Setting Up a Machine](/flint/guide/setting-up-a-machine)
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Using Obsidian](/flint/guide/using-obsidian)
+- [Configuration](/flint/reference/configuration)

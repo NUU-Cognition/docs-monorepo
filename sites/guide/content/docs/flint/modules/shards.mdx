@@ -1,0 +1,175 @@
+---
+title: "Shards"
+---
+
+Shards are the capability layer of Flint. They are packages of instructions, templates, workflows, and knowledge that agents load inside the Flint.
+
+Without shards, a Flint is a directory structure and some configuration. With shards, it becomes an environment where an agent performs repeatable forms of work and produces consistent artifacts.
+
+## Overview
+
+This is the core mental model:
+
+- Flint is the execution environment.
+- Shards are the cognitive programs available in that environment.
+- Mesh is where the results of those programs become durable knowledge.
+
+Declaring a shard is not just adding a plugin. It adds a reusable mode of working. The shards you choose define what your Flint can do.
+
+Shards are packages. The install commands follow the package manager model: `flint shard install` makes the lock match the specs (like `pnpm install`), `flint shard update` moves versions inside their ranges (like `pnpm update`), and `flint sync` makes the files match the lock (like `pnpm install --frozen-lockfile`). See [Sync](/flint/modules/sync).
+
+## Source and Shard
+
+A shard has two entities. The folder name says which one a folder holds:
+
+| Entity | Folder | Purpose |
+|--------|--------|---------|
+| The shard (the build) | `Shards/<Name>/` | The package that agents load. Read-only: the next build or install overwrites it. |
+| A remote source | `Shards/(Source Remote) <Name>/` | The files that a person edits. It has its own repository with a remote. |
+| A local source | `Shards/(Source Local) <Name>/` | The files that a person edits. It has no repository of its own. |
+
+`flint shard build <alias>` makes the shard from its source in this Flint. A remote source is ignored by the Git repository of the Flint, because it has its own repository.
+
+The Flint keeps the shard state in three records:
+
+| Record | File | Committed | Holds |
+|--------|------|-----------|-------|
+| The intent | `flint.toml` `[shards]` | Yes | What a person wants: the spec, and `git`, `from`, `use`. |
+| The lock | `flint.json#shards[<shard id>]` | Yes | What is here: the version, the state (`published`, `snapshot`, or `edited`) with its proof, the request, and where the build came from. |
+| The local facts | `.flint/shards.json` | No | The facts of this machine: the local setup state and the Git state of a source. |
+
+The state says how the build came to be. `published` means the build came from a released version. `snapshot` means the build came from a source at one commit. `edited` means the build came from a source with local changes.
+
+## The Package Spec
+
+A reference to a shard is a package spec: `@org/name[@version][#place]`.
+
+- `@version` is an exact version (`@0.4.0`), a caret range (`@^1.1`), or a tilde range (`@~1.1.3`).
+- `#place` is a Flint on this machine (its slug) or a machine name. It says where to take the shard from instead of the shard registry.
+
+Without `#place`, the install asks this Flint first, then this machine, then the shard registry.
+
+## Declaring Shards
+
+`flint.toml` declares the shards under `[shards]`. Each shard has one intent record. The key is the alias of the shard in this Flint:
+
+```toml
+[shards]
+notepad = "@nuucognition/notepad@^1.1"                                                      # a package from the shard registry
+plan = { source = "@nuucognition/plan@0.4.0", git = "NUU-Cognition/shard-plan" }            # a package from Git
+tasks = "@nuucognition/tasks#demo-maker"                                                     # a package from a place (a Flint of this machine)
+oracle = { source = "@nuucognition/oracle", from = "source" }                                # build the shard from its source here
+seer = { source = "@nuucognition/seer", git = "NUU-Cognition/shard-oracle", from = "source" }  # a remote source with its Git location
+```
+
+A string value is a spec. A table value has these fields:
+
+| Field | Purpose |
+|-------|---------|
+| `source` | The spec of the package. A path (`./Shards/(Source Local) X`) also parses. |
+| `git` | The Git location (`owner/repo`) that a person chose. |
+| `from` | `"source"`: build the shard from its source in this Flint. |
+| `use` | `reference` (the loader reads the folder in its place; no build) or `none` (a source with no build here). |
+
+The alias is the key of the record, not an id. The shard id lives in the manifest of the shard (`shard.yaml#id`) and in the lock record. `flint.toml` holds no id. Use the CLI to add a record: `flint shard install <spec>` writes it.
+
+The **core shards** are Flint (`@nuucognition/shard/flint`) and Orbh (`@nuucognition/shard/orbh`). Every new Flint gets them. When `flint shard list` has no row for one of them, run `flint shard install --core`. It installs each missing core shard and leaves the present ones alone.
+
+## Finding Shards
+
+Three commands answer what is here and what you can install. They write nothing.
+
+```bash
+flint shard list                 # One row per shard: id, package, shorthand, version, state
+flint shard status <ref>         # One shard: its row, the lock state, the Git state of its source, dependencies, pending migrations
+flint shard browse [query]       # What this Flint can install: the shard registry and the shard sources of this machine
+flint resolve <spec>             # Where one package is: this Flint, this machine, or the shard registry
+```
+
+A `<ref>` names one shard of this Flint. It accepts the alias, the shorthand, the address (`@org/<slug>` or `@org/shard/<slug>`), or the id. `info` is an alias of `status`. `search` is an alias of `browse`. `list` accepts `--sources` to show only the records of `flint.toml`, and `browse` accepts `--available` and `--installed` to filter the catalog.
+
+Each row of `browse` shows the address, the version, where it comes from, its state here, the spec that installs it, and the next command. A row from the registry installs with `@org/<slug>`. A row from a Flint of this machine installs with `@org/<slug>#<flint slug>`.
+
+`flint shard start <ref>` prints the manifest that loads the shard: its init file, required reading, skills, workflows, templates, and knowledge. When the source changed after the build, `start` prints a notice with `flint shard build <alias>` and loads the build anyway.
+
+## Installing Shards
+
+```bash
+flint shard install                              # No argument: make the lock match the specs of flint.toml
+flint shard install @org/name[@range][#place]    # Install one package: from the shard registry, or from a place
+flint shard install --from-git <owner/repo[#ref]>  # Install from a Git location: a tag, a branch, or a commit after #
+flint shard install --from-path <dir>            # Install from a folder on this machine
+flint shard install --core                       # Install each missing core shard (Flint, Orbh)
+```
+
+With no argument, `install` reads every record of `flint.toml`. It installs or builds each record that the lock does not satisfy. It does not move a record that the lock satisfies. It installs the missing dependencies first. With `--dry-run`, it shows the plan and writes nothing.
+
+With a source, `install` writes the record `<alias> = "<spec>"` in `flint.toml`, the lock record in `flint.json`, and the local entry in `.flint/shards.json`. From the registry, it checks the shard id and the package hash of the version before any write. Useful flags:
+
+- `--alias <alias>`: install under another key. Use it for a second shard with the same slug.
+- `--reference`: install by reference. It writes no build under `Shards/`. The loader reads the source folder in its place.
+- `--no-deps`: install the shard alone. The CLI does not install its missing dependencies first.
+
+## Updating and Removing Shards
+
+```bash
+flint shard update [<ref>]       # Move the lock of each shard to the highest version inside its range
+flint shard build <ref>          # Build the shard from its source in this Flint
+flint shard reinstall [<ref>]    # Install the shard again from its record (a source record builds)
+flint shard broadcast <ref>      # Update the shard in each Flint of this machine that installs it from here
+flint shard uninstall <ref>      # Remove the build, its lock record, and its unchanged payload files
+flint shard versions <ref>       # List the versions of a shard: the registry versions, else the Git tags of its location
+```
+
+`update` with no argument updates every installed shard. It skips a build of a source: a source moves by editing and building, not by version. `update` accepts `--reinstall` to force a fresh download and reinstall of every installed shard.
+
+`broadcast` runs in the Flint that holds the source of a shard, after a change to the source. It updates each direct consumer on this machine: a Flint with a record `@org/<slug>#<this Flint>`. It installs no missing dependency, runs no migration, and makes no commit. With `--dry-run`, it prints the rows and writes nothing. With `--only <flint...>`, it limits the consumers.
+
+`uninstall` removes the build, its lock record, and the payload files that you did not change. It keeps each file that you changed. `reinstall` with no name reinstalls every installed shard.
+
+## Setup and Migrations
+
+Some shards need one-time setup. The manifest declares it with `setup: full | flint | local`. The `start` gate refuses to load the shard until setup is complete.
+
+```bash
+flint shard setup <ref>              # Show the setup state (the Flint layer and the local layer)
+flint shard setup <ref> --complete   # Mark setup complete
+flint shard setup <ref> --reset      # Back to required
+```
+
+A new version of a shard can bring migration steps. `status` shows the pending steps. The migrate commands manage them:
+
+```bash
+flint shard migrate list <ref>       # List the steps with their types and states
+flint shard migrate run <ref>        # Run the queued steps (it stops at an agent or manual step)
+flint shard migrate finish <ref>     # Mark the current agent or manual step done
+```
+
+## Note Templates
+
+A **note template** is a file that a shard installs for the Obsidian template picker. The shard installs it into `Shards/(Shards) Obsidian Templates/`. See [Using Obsidian](/flint/guide/using-obsidian).
+
+- An install of the shard writes each note template that is missing or unchanged since the last install. So a new version of the shard replaces an unchanged note template.
+- The install keeps a note template that you changed, and prints one warning:
+
+  ```text
+  Kept note template <path>: modified. It differs from the note template of <shard>. Next: flint shard reinstall <alias> --replace-note-templates
+  ```
+
+- To replace your changed copy, run the command of the warning:
+
+  ```bash
+  flint shard reinstall <alias> --replace-note-templates
+  ```
+
+  It saves your copy in `.flint/backups/shards/<shard>/<time>/` first (`<time>` is an ISO time). Then it installs the note template of the shard.
+
+## Authoring Shards
+
+The authoring commands (`create`, `release`, `fork`, and the other source commands) belong to the Knap shard: load Knap to create, build, and publish a shard.
+
+## Related
+
+- [Sync](/flint/modules/sync)
+- [Using Obsidian](/flint/guide/using-obsidian)
+- [CLI Commands](/flint/reference/cli-commands)

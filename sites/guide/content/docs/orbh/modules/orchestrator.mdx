@@ -1,0 +1,115 @@
+---
+title: "Orchestrator"
+---
+
+The Orbh orchestrator is a per-machine supervisor. It runs apart from any one agent harness. It supervises managers. It reaps dead processes. It wakes awaiting sessions. It plans no work.
+
+## Overview
+
+One orchestrator serves every session on the machine. Detached managers, awaiting sessions, messages, and job barriers outlive the shell that starts them. The orchestrator keeps that background state honest.
+
+A manager session plans work. It delegates to subagents. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents). The orchestrator never plans work. It never interrupts a live turn. It only supervises, reaps, and wakes.
+
+## Runtime Home
+
+The default runtime home is:
+
+```text
+~/.nuucognition/orbh
+```
+
+`ORBH_HOME` overrides that path. The orchestrator stores its lock, pid file, and manager registry below that home.
+
+| Path | Purpose |
+| --- | --- |
+| `orchestrator.lock` | Singleton lock and heartbeat. |
+| `orchestrator.pid` | Running orchestrator process id. |
+| `managers/` | Detached manager records. |
+
+The lock owner writes a heartbeat every second. The lock treats a heartbeat older than 30 seconds as stale. A new process then confirms the takeover. It assumes ownership.
+
+## Startup and Idle Shutdown
+
+Orbh starts the orchestrator lazily. The next interactive launch ensures it. On startup the orchestrator registers its process row. It then runs its first business tick.
+
+The orchestrator exits after five idle minutes. Idle means no live managers and no durable duties. Durable duties include awaiting sessions, barriers, and retry work. A new launch starts the orchestrator again.
+
+## Sweeps
+
+The orchestrator runs a business tick about every 15 seconds. Each tick runs the fast sweeps. Slower sweeps run on their own cadence.
+
+| Sweep | Cadence | What it does |
+| --- | --- | --- |
+| Lock heartbeat | every second | Holds the singleton lock. |
+| Manager supervision | every 15 seconds | Removes dead manager rows. |
+| Awaiting wake | every ~15 seconds | Resumes awaiting sessions with one digest. |
+| Dispatch | every ~15 seconds | Processes queued dispatch work. |
+| Barrier enforcement | every ~15 seconds | Fails timed-out jobs. It never resumes a session. |
+| Un-returned reaper | every ~15 seconds | Re-prompts runs that exit without a result. |
+| Stale job reap | every 60 seconds | Reaps dead job wrappers and expired jobs. |
+| Liveness | every 60 seconds | Reconciles stranded sessions and managers. |
+
+The wake digest covers one session at a time. It merges pending messages, child results, barrier completion, due scheduled wakes, terminal jobs, liveness notices, and request and room activity. See [Rooms and Messages](/orbh/modules/rooms-and-messages) and [Page and Jobs](/orbh/modules/page-and-jobs).
+
+New facts wait about six seconds before delivery. The sweep skips a session with a live page lease. It also skips a session that belongs to another machine. Scheduled wakes skip the wait. They fire on the first tick at or after the due time.
+
+## Recovery From Durable Facts
+
+The orchestrator reads only durable spool facts. A failure delays delivery. It never loses the fact. The next tick retries.
+
+A run that exits without a result gets a re-prompt. The reaper allows two attempts. It then marks the turn `failed-unreturned`. The session stays awaiting.
+
+The orchestrator never decides an interrupt. Interrupts stay with the session owner. Process exit never counts as success. An explicit session return stays the clean completion signal. See [Sessions and Runs](/orbh/concepts/sessions-and-runs).
+
+## Manager and Process Reaping
+
+A dead manager row leaves the registry. Its process group id stays on record. The orchestrator never signals that group. A dead process has no identity left to verify.
+
+Orphaned runtime groups are different. The process reaper signals them with `SIGTERM`. It escalates to `SIGKILL` when the row still needs reaping.
+
+A reaped interactive manager loses its session. The orchestrator marks that session abandoned. It ends the dead run as lost. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+## Commands
+
+Use these commands for visibility and manual control:
+
+```bash
+flint orbh orchestrator status
+flint orbh orchestrator status --json
+flint orbh orchestrator processes
+flint orbh orchestrator processes --json
+flint orbh orchestrator managers --wide
+flint orbh orchestrator managers --all --json
+flint orbh orchestrator launcher show
+flint orbh orchestrator ensure
+flint orbh orchestrator reap --json
+flint orbh orchestrator stop
+```
+
+- `status` shows the singleton, the lock, and the manager roster.
+- `processes` lists the auxiliary-process registry. It also reports unregistered ghosts.
+- `managers` lists the manager registry. `--all` includes dead rows.
+- `launcher` declares the machine-canonical launcher. `show` prints the record. `adopt` records the current launcher. `clear` removes the record.
+- `ensure` starts the orchestrator when it is down.
+- `reap` clears dead managers and orphaned runtime groups now.
+- `stop` stops the singleton. The next interactive launch starts it again.
+
+The launcher record names a launcher script. New auxiliary processes spawn through it. Without a record, each process inherits the launcher of its caller. See [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh).
+
+Aliases:
+
+| Command | Alias |
+| --- | --- |
+| `orchestrator` | `orch` |
+| `orchestrator managers` | `orchestrator ls` |
+| `orchestrator processes` | `orchestrator ps` |
+| `orchestrator ensure` | `orchestrator start` |
+
+## Related
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

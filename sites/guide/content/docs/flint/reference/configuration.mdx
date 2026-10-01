@@ -1,0 +1,282 @@
+---
+title: "Configuration Reference"
+---
+
+This page documents the configuration files and the state files of a Flint.
+
+## The Three Layers
+
+Flint configuration separates into three layers.
+
+- The committed declaration that a person edits (`flint.toml`).
+- The committed machine-managed identity of the Flint (`flint.json`).
+- The local fulfillment and runtime state of this machine (`.flint/`).
+
+A Flint declares what it is and what it needs. Each machine fills in its own paths and live state.
+
+## Main Files
+
+| File | Location | Purpose | Edit |
+|------|----------|---------|------|
+| `flint.toml` | Flint root | Human-edited declaration of the Flint | yes |
+| `flint.json` | Flint root | Machine-managed state of the Flint, tracked in git | usually no |
+| `.flint/references.json` | `.flint/` | Local fulfillment for reference-style resources | no |
+| `.flint/shards.json` | `.flint/` | The local records of the shards: the facts of this machine | no |
+| `.flint/sync.json` | `.flint/` | Last sync timestamp | no |
+| `.obsidian/` | Flint root | The Obsidian payload (release files), the settings files, and the runtime files of Obsidian | settings files only, in Obsidian |
+| `.flint/obsidian/` | `.flint/` | The records of the Obsidian payload on this machine: the installed state, the manifest, the resolved applied settings, the last applied result, and the profile receipt | no |
+| `.flint/backups/obsidian/` | `.flint/` | The Obsidian backups of this Flint | no |
+| `.orb/` | Flint root | Orbh session and event state | no |
+| `~/.nuucognition/config.toml` | global | The NUU config: your Name, the machine names, and the org of this machine | yes |
+| `~/.nuucognition/flint/config.toml` | global | The Flint CLI config of this machine (`flint-dev/config.toml` for a dev build) | yes |
+| `~/.nuucognition/places.json` | global | The roster: the Flints that this machine knows | no |
+| `~/.nuucognition/flint/registry.json` | global | The copy of the roster | usually no |
+
+## `flint.toml`
+
+`flint.toml` is the main declaration file for a Flint. It describes the environment that Flint materializes.
+
+```toml
+[flint]
+name = "My Notes"
+type = "flint"
+preset = "default"
+visibility = "private"
+tags = ["research"]
+description = "Example Flint"
+org = "nuucognition"
+
+[shards]
+flint = { source = "@nuucognition/flint" }
+projects = "@nuucognition/projects@^1.2"
+knap = { source = "@nuucognition/knap", git = "NUU-Cognition/shard-knap", from = "source" }
+
+[sources]
+repositories = [
+  { name = "Design System", url = "https://github.com/org/design-system" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+
+[workspace]
+repositories = [
+  { name = "App", url = "git@github.com:me/app.git" },
+]
+
+[references]
+codebases = [
+  { name = "Flint" },
+]
+flints = [
+  { name = "Research Hub" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+
+[obsidian.applied.appearance]
+enabledCssSnippets = { add = ["blockquote-tables"] }
+```
+
+### `[flint]`
+
+Identity fields of the Flint:
+
+| Key | Meaning |
+|-----|---------|
+| `name` | The name of the Flint. Required. |
+| `type` | The type slug of the Flint, for example `flint`. |
+| `preset` | The preset that made the shard list. Information only. |
+| `variant` | The old spelling of `preset`. Reads only. A writer removes it. |
+| `visibility` | `private`, `org`, or `public`. Absent means the default of the type. |
+| `tags` | A list of tags. |
+| `description` | A short description. |
+| `org` | The org slug that the Flint declares. |
+
+`flint.json#org` holds the org of the Flint with its id and its slug. `flint org set <org>` writes both. `flint org show` shows both.
+
+The `[flint]` table is the only section that Flint validates strictly at whole-file parse time. Feature-owned sections are tolerant: malformed entries stay for drift reporting instead of rejecting the whole file, and unknown sections and keys pass through.
+
+### `[shards]`
+
+`[shards]` declares the cognitive programs of the Flint. Each key is the alias of one shard in this Flint. See [Shards](/flint/modules/shards).
+
+A string value is a package spec: `@org/name[@range][#place]`. A table value holds these fields:
+
+| Field | Meaning |
+|-------|---------|
+| `source` | The package spec, a path, or a legacy source. |
+| `git` | The Git location (`owner/repo`) that a person chose. |
+| `from` | `"source"`: build the shard from its source in this Flint. |
+| `use` | `reference` (no build; the loader reads the folder in its place) or `none` (a source with no build here). Absent means a normal copy. |
+| `id` | The id of the package. The CLI writes it when it is known. A person may leave it out. |
+| `version` | A pinned version. |
+| `of` | The shard of a declaration that the merge keeps apart. |
+| `edit` | Legacy input. It means `from = "source"` plus `git = <source>`. |
+
+Every other field stays as it is and changes no meaning. `flint shard install <spec>` writes a record. `flint shard install` with no argument makes the lock match the records.
+
+A Flint of 0.6.0 has the old lists `installed`, `dev-remote`, and `dev-local`. `flint migrate run` rewrites them to records. Until then, `flint shard list`, `status`, and `start` read them with a notice, and every shard write is refused.
+
+### `[sources]`
+
+`[sources]` declares read-only material that `flint sync` fetches. See [Sources](/flint/modules/sources).
+
+| Key | Meaning |
+|-----|---------|
+| `repositories` | Reference repos. Each entry holds `name` and `url`. Sync clones each one shallowly into `Sources/Repos/`. |
+| `bundles` | Bundle entries. Each entry holds `source = "flint"` and `name` in slash form (`"Flint Name/Bundle Name"`). |
+
+A bundle entry names a bundle of a producer Flint. `flint sync` copies `Exports/(Bundle) <Bundle Name>/` of the producer Flint into `Sources/Bundles/<Bundle Name>/`. No command adds or removes a bundle source entry. A person edits it by hand.
+
+### `[workspace]`
+
+`[workspace]` declares full-cloned working repos. See [Workspace](/flint/modules/workspace).
+
+| Key | Meaning |
+|-----|---------|
+| `repositories` | Managed repos. Each entry holds `name` and `url`. Sync clones each one into `Workspace/Repos/`. |
+
+### `[references]`
+
+`[references]` declares names that resolve to paths on this machine. See [References](/flint/modules/references).
+
+| Key | Meaning |
+|-----|---------|
+| `codebases` | Codebase references. Each entry holds `name`. |
+| `flints` | Flint references. Each entry holds `name`. |
+| `bundles` | Bundle references. Each entry holds `source = "flint"` and slash-form `name`. |
+
+`flint reference codebase <name> <path>` writes the declaration and records the path in `.flint/references.json`. `flint reference flint <name>` and `flint reference remove <name>` write the declaration only. `flint fulfill` records a local path for a codebase reference. `flint sync` fulfills the references.
+
+### `[plates]`
+
+`[plates]` holds the plate declarations of Steel, keyed by plate name.
+
+### `[obsidian]`
+
+`[obsidian]` holds only `applied`: the Flint layer of applied settings. See [Using Obsidian](/flint/guide/using-obsidian).
+
+```toml
+[obsidian.applied.appearance]
+cssTheme = "Baseline"
+enabledCssSnippets = { add = ["blockquote-tables"], remove = ["old-snippet"] }
+
+[obsidian.applied.app]
+showLineNumber = true
+```
+
+The tables under `[obsidian.applied]` are `appearance` and `app`. A string, a boolean, or a number sets one key. `{ add = [...] }` and `{ remove = [...] }` change a list. `{ set = [...] }` sets a whole list. The Flint layer wins over the machine layer and the release layer. `flint obsidian applied set <file>.<key> <value>` and `flint obsidian applied unset <file>.<key>` write this table.
+
+## `flint.json`
+
+`flint.json` holds machine-managed state that travels with the Flint in git. Only `flint create` makes it. A writer never recreates a lost one.
+
+| Key | Meaning |
+|-----|---------|
+| `version` | The Flint release version of this file. |
+| `id` | The identity of the Flint. |
+| `type` | The type slug of the Flint. |
+| `created` | The creation time. |
+| `migrations` | The migration ledger: each migration id with its time. |
+| `pending` | The queued migrations. |
+| `shards` | The lock records, keyed by shard id. |
+| `repos` | The pins of the shard repositories: each repo name with its remote, ref, and sha. |
+| `org` | The org of the Flint: its id and its slug. The id is the truth. The slug is a cache. |
+| `features` | Per-feature lock slices, keyed by feature id. |
+| `obsidian` | The pin of the Obsidian payload: `release`, `commit`, and `manifest`. |
+
+Each lock record in `shards` holds the spec, the alias, the shorthand, the name, the address, the version, the payloads, the folders, the setup state, the migrations, and the state. The state is `published` (a registry version with its tag and hash), `snapshot` (a build of a commit with its sha), or `edited` (a build of an edited source).
+
+These commands write the Obsidian pin: `flint create` writes the recommended release for each new Flint, `flint obsidian update` moves the pin to the recommended release or to `--to`, a full backup restore writes the pin of the backup, and the conversion of a legacy payload writes a pin only when the Flint has none. `flint sync` never changes the pin.
+
+## Local State
+
+### `.flint/references.json`
+
+`.flint/references.json` holds the local fulfillment of the `[references]` declarations.
+
+```json
+{
+  "version": 2,
+  "codebases": [],
+  "flints": [],
+  "bundles": []
+}
+```
+
+Each fulfillment records `name`, `path`, and optional `fulfilled` (the time of fulfillment). Names match without case.
+
+### `.flint/shards.json`
+
+`.flint/shards.json` holds the local record of each shard, keyed by shard id. Each entry holds the setup state, the Git presence of a source (branch, sha, ahead, behind, dirty, last fetch time), the walk of this machine for the request (where the files came from and what the registry said), and the install and build times. It is not committed.
+
+### `.flint/sync.json`
+
+`.flint/sync.json` holds the last sync timestamp.
+
+```json
+{
+  "synced": "2026-07-07T00:00:00.000Z"
+}
+```
+
+## The NUU Config
+
+`~/.nuucognition/config.toml` (or `$NUU_HOME/config.toml`) is the NUU config. Every NUU CLI reads it. Flint reads and writes these keys:
+
+| Key | Meaning | Writer |
+|-----|---------|--------|
+| `name` | Your Name, the author of your notes. | `flint config name`, `flint setup` |
+| `machine-name` | The branch prefix of this machine. | `flint config machine-name`, `flint setup` |
+| `machine-display-name` | The name that people read, for example "Ada Laptop". | `flint setup`, `flint rename` in the Computer Flint |
+| `machine-slug` | The short word after `#` in an address. A rename keeps it. | `flint setup` |
+| `machine-id` | The identity of this machine. | `flint setup` |
+| `default-org` | The org of this machine. Each new Flint gets it. | `flint config org set` |
+| `default-org-id` | The id of the org of this machine. | `flint config org set` |
+
+`flint config org unset` makes new Flints local again. A NUU account and an org are optional. Flint works with no NUU account and no org.
+
+## The Flint CLI Config
+
+`~/.nuucognition/flint/config.toml` is the Flint CLI config of this machine. A dev build uses `~/.nuucognition/flint-dev/config.toml`. The build selects the file. The code reads these keys:
+
+| Key | Meaning |
+|-----|---------|
+| `obsidian` | The machine choice: `on` or `off`. `flint config set obsidian on\|off` writes it. `flint config get obsidian` prints it. No value means on. |
+| `obsidian-trust` | Community-plugin trust: `auto` or `ask`. No value means auto. |
+| `update-check` | The daily release check: `on` or `off`. No value means on. |
+| `[obsidian.applied]` | The machine layer of applied settings, for every Flint on this machine. It has the same form as `[obsidian.applied]` of `flint.toml`. `flint obsidian applied set <file>.<key> <value> --machine` writes it. |
+
+`flint config get <key>`, `flint config set <key> <value>`, and `flint config open` act on this file. `flint config set` writes a dotted key as a nested table, and it keeps every other key and comment of the file. It refuses a key under `obsidian.` and names the command to use instead. This file holds preferences of this machine, not the declaration of a Flint.
+
+```toml
+update-check = "on"
+
+[obsidian]
+choice = "on"
+trust = "auto"
+
+[obsidian.applied.appearance]
+cssTheme = "Tokyo Night"
+```
+
+## The Roster Files
+
+The roster is `~/.nuucognition/places.json`: the list of Flints that this machine knows. Each row holds the path and the kind of a Flint. `~/.nuucognition/flint/registry.json` is a copy of the roster: it holds the id, the name, the type, and the path. `flint registry rebuild` makes the copy again. `flint registry check` checks it without writes. See [The Roster](/flint/guide/the-roster).
+
+The roster is how Flint finds a Flint by its name: `flint open`, `flint list`, Flint references, and source bundles.
+
+## Environment Variables
+
+| Variable | Meaning |
+|----------|---------|
+| `NUU_HOME` | Overrides the NUU home (`~/.nuucognition`) in full. With it set, Flint does not contact a live Obsidian. |
+| `FLINT_NO_UPDATE_CHECK` | Set to `1` to turn the daily release check off. |
+| `FLINT_SHARD_REGISTRY_URL` | Replaces the shard registry and org endpoints together. |
+| `EDITOR`, `VISUAL` | The editor that `flint config open` uses. |
+| `NO_COLOR` | Set to any value to turn CLI colours off. |
+| `ORBH_SESSION_ID` | Marks an Orbh session. The release check never runs inside one. |
+
+The daily release check also stays off after `flint config set update-check off`, in a pipe, with `--json`, in CI, for `flint update` and `flint setup`, and on a machine that is not set up.

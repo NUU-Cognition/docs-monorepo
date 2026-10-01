@@ -1,0 +1,252 @@
+---
+title: "Artifacts and Types"
+---
+
+Artifacts are the concrete markdown files that make a Flint durable. The models framework explains why structure exists. Artifacts and types explain how that structure becomes something people and agents use.
+
+An artifact is more than a file on disk. It is a document with a title, metadata, body content, links, and conventions that tell Flint how to work with it.
+
+## From Model to Artifact
+
+Every artifact is a model with enough structure to be useful in a Flint.
+
+That structure comes from a few visible surfaces:
+
+- the filename
+- YAML frontmatter
+- tags
+- links
+- the markdown body
+- an optional template
+- an optional lifecycle
+
+Different artifacts use different amounts of structure. A quick note needs only an `id` and a tag. A task needs status, priority, parent links, and a lifecycle. A documentation page needs authors, source references, and a verification date.
+
+The rule is simple. Add structure when it helps a reader, an agent, or a command do something better.
+
+## Names Carry Shape
+
+Filenames communicate how a file reads.
+
+Typed artifacts follow this pattern:
+
+```text
+(Type) NNN Name.md
+```
+
+Examples include:
+
+```text
+(Task) 042 Implement source refresh.md
+(Plan) 007 Documentation cleanup.md
+```
+
+The type prefix names the pattern the artifact follows. The number gives the type a stable local sequence. The name describes the specific artifact.
+
+Some files use a type prefix without a number:
+
+```text
+(System) Flint Init.md
+(Dashboard) Backlog.md
+```
+
+Untyped notes carry no prefix at all:
+
+```text
+Context windows limit agent memory.md
+```
+
+That does not make them less important. It only means the note needs no typed operational pattern yet.
+
+## Numbers Come From a Helper
+
+Numbered artifacts reserve their number through a helper command:
+
+```bash
+flint helper artifact create Task --title "Implement auth"
+```
+
+The command reserves the next number and writes the file in one step. Two agents never receive the same number. A separate preview command only reads the next number:
+
+```bash
+flint helper type newnumber Task
+```
+
+The preview reserves nothing. Nobody names a file by hand from its output.
+
+Rename and delete also go through helpers. The rename helper rewrites every wikilink that points at the artifact. The delete helper strips every frontmatter link that points at it, and it archives instead of deleting when asked:
+
+```bash
+flint helper rename "(Task) 042 Old Title" "(Task) 042 New Title"
+flint helper delete "(Task) 042 Old Title" --archive
+```
+
+## Frontmatter Is the Machine-Readable Surface
+
+YAML frontmatter gives tools and agents a stable way to inspect an artifact without parsing the body.
+
+Most artifacts include:
+
+```yaml
+id: a stable UUID
+tags:
+  - "#doc/concept"
+```
+
+Other common fields include:
+
+```yaml
+status: in-progress
+template: "[[tmp-proj-task-v0.1]]"
+authors:
+  - "[[@Nathan]]"
+orbh-sessions:
+  - "[[session-id]]"
+last-verified: 2026-10-01
+```
+
+The `id` is the permanent identity. The title can change. The `id` never changes.
+
+Frontmatter stays purposeful. A field that no person, agent, or command reads is not worth adding.
+
+## Tags Express Useful Traits
+
+Tags are lightweight signals. They never need to express everything about an artifact.
+
+Each shard owns a tag namespace from its shorthand. Examples include `#proj/task` for project tasks and `#ntpd/notepad` for notepads. Notes share one flat `#note` tag. They carry no subtypes. Structure grows only when it pays off.
+
+A tag identifies a shard-owned pattern or a state that stays easy to query. Tags work best when they cost little to apply and help search.
+
+Tags are not a full ontology. They are handles for discovery and operations.
+
+## Templates Make Patterns Repeatable
+
+A template tells an agent how to create or edit a recurring kind of artifact.
+
+Templates define things like:
+
+- where the file lives
+- how the filename reads
+- which frontmatter fields belong
+- which sections the body contains
+- which lifecycle values are valid
+
+Agents treat templates as instructions, not as text to copy. A good generated artifact follows the intent of the template and replaces each placeholder with real content. Generated text keeps no brackets and no agent comments.
+
+Templates live in the `templates/` folder of a shard. The `template` field in frontmatter names the template stem:
+
+```yaml
+template: "[[tmp-proj-task-v0.1]]"
+```
+
+That link binds the artifact to its governing structure. Templates pay off when repeated artifacts need consistency. They are unnecessary when a one-off note needs only prose.
+
+## Types Package Affordances
+
+A type is a named composition that gives a recurring pattern a set of affordances.
+
+For example, a task type supports:
+
+- numbered task filenames
+- status transitions
+- project or increment links
+- backlog dashboards
+- archive behavior
+
+A record type supports:
+
+- stable capture notes
+- source-oriented titles
+- few lifecycle transitions
+- strong expectations around preserved content
+
+The important question is not "what category is this?" The important question is "what can Flint do with this structure?"
+
+If a type improves no creation, retrieval, validation, reporting, review, or automation, it should not exist yet.
+
+## Type Definitions Live in Metadata
+
+Shards install type definition files into:
+
+```text
+Mesh/Metadata/Types/
+```
+
+Those files describe the pattern for humans and agents. They document the tag, the naming convention, the storage location, the archive behavior, the lifecycle states, and the related templates.
+
+Each definition carries a shard qualifier in its filename:
+
+```text
+(Type) Task (Projects Shard).md
+```
+
+The qualifier prevents collisions. Two shards can define similar patterns without overwriting each other. The definition documents the pattern. It is not the artifact itself.
+
+## Types and Folders Are Separate
+
+A type does not imply a storage folder.
+
+One shard may define a type and also create folders such as:
+
+```text
+Mesh/Types/Tasks/
+Mesh/Archive/Tasks/
+```
+
+Another shard may define a type with no dedicated folder at all.
+
+This separation keeps Flint explicit. Type definitions describe meaning and behavior. Folder declarations describe storage. The relation between them is intentional rather than automatic.
+
+## Lifecycles Are Part of the Model
+
+Some artifacts carry lifecycle states because their role changes over time.
+
+A task moves through:
+
+```text
+draft -> todo -> in-progress -> review -> done
+```
+
+A document moves through:
+
+```text
+draft -> working -> verified -> retired
+```
+
+A record carries little or no lifecycle. Its value comes from preserved capture.
+
+Lifecycle fields are not decoration. They help dashboards, agents, and humans decide what action comes next.
+
+## Sessions and Authors Stay Visible
+
+Every substantive change leaves a trace. Agents append their session id to `orbh-sessions` when they create or edit an artifact. All agent types share that one field.
+
+```yaml
+orbh-sessions:
+  - "[[previous-session-id]]"
+  - "[[your-current-session-id]]"
+```
+
+The `authors` field names the people behind the work:
+
+```yaml
+authors:
+  - "[[@Nathan]]"
+```
+
+Authors are always people, never agents. Agents act on behalf of a person. Each person owns a marker file under `Mesh/People/`, and the marker appears on first use. Sessions track agent involvement. Authors track human attribution.
+
+## When to Add More Structure
+
+Use the lightest structure that serves the work.
+
+Add a tag when you need grouping or discovery. Add frontmatter when tools must read a field. Add a template when a pattern repeats. Add a type when the pattern deserves named operations and lifecycle rules.
+
+This is how the models framework turns practical. Flint starts with plain markdown. It adds just enough structure for the Flint to think and act reliably.
+
+## Further Reading
+
+- [The Models Framework](/flint/concepts/the-models-framework)
+- [Core Concepts](/flint/guide/core-concepts)
+- [Mesh](/flint/modules/mesh)
+- [CLI Commands](/flint/reference/cli-commands)

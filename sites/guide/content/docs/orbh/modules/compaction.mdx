@@ -1,0 +1,141 @@
+---
+title: "Compaction"
+---
+
+Compaction replaces the context of a session, not its identity. The session keeps its id, inbox, jobs, rooms, and links. Only the run gets a fresh context window.
+
+## Overview
+
+Each run consumes context as it works. A long run fills its context window and needs a fresh start. Compaction ends the current run and relaunches the same session with a new run.
+
+The agent writes its own handoff. No tool distills the old context. The agent is alive and holds the full context at the moment it compacts, so it writes the successor note itself. The system validates the handoff while the agent can still fix it.
+
+Compaction is always self-compaction. No other session and no operator compacts a session from outside. To compact a session, ask the session to compact itself.
+
+## Context Occupancy and the 80 Percent Guidance
+
+The `CONTEXT` line of the [Page and Jobs](/orbh/modules/page-and-jobs) is the source of truth for occupancy. It reports used tokens, the maximum, and the percentage.
+
+```bash
+flint orbh page
+flint orbh context
+flint orbh context <session-id> --json
+```
+
+`flint orbh context` reads the same number without rendering the Page. An armed pager fires an advisory when occupancy reaches 80 percent.
+
+80 percent is guidance, not a gate. Nothing blocks the verbs below it, and nothing runs them for the agent above it. The agent starts compaction at or near 80 percent, so that enough context remains to write a good handoff. The agent also compacts earlier when the operator asks or when a natural seam makes a clean handoff cheap.
+
+## The Three Verbs
+
+Compaction spans two contexts, so it takes three verbs. Two run on the way out, and one runs on the way in.
+
+```bash
+flint orbh compact start
+flint orbh compact handoff
+flint orbh compact finish
+```
+
+`compact start` prints the handoff contract, the exact path to write the handoff to, and the live Page. It records nothing, claims nothing, and kills nothing. It runs again safely at any occupancy. Its one durable effect is to hold the pager, so that nothing interrupts the critical section. The hold also marks the session `[Compacting...]` on every title surface: the pane title, the session list, the cockpit, and attached views. Events that land during the hold stay pending, and none are lost.
+
+The agent then writes the handoff to that path with its own tools.
+
+`compact handoff` is a turn-ending verb. It validates the handoff while the agent is still alive, then ends the context and relaunches the same session from the handoff. The agent plans no work after it.
+
+`compact finish` runs in the relaunched context. The new context reads the handoff and every path in its `FILES` list, then runs `finish`. That clears `[Compacting...]` and releases the pager hold. A successor that never runs `finish` leaves the marker up, which correctly shows that the new context never confirmed its handoff.
+
+To back out between `start` and `handoff`, the agent runs:
+
+```bash
+flint orbh compact abort
+```
+
+`compact abort` releases the pager hold and clears the marker. Ending the turn with a normal return also releases the hold. Arming the pager does not release it.
+
+## The Handoff File
+
+The handoff lives in the scratch directory of the session spool. Scratch is keyed to the session id, so the file survives the relaunch by the same construction that keeps the inbox and jobs valid. The file name is keyed to the run under compaction, so a handoff never passes as the handoff of another run.
+
+The handoff opens with `COMPACTION_ARTIFACT_V1` on line one, then three sections in fixed order:
+
+```text
+COMPACTION_ARTIFACT_V1
+## SUMMARY
+A long, precise account of the session identity, mission, commitments,
+decisions and their reasons, current phase, learned constraints,
+completed work, and every active thread.
+
+## FILES
+Every file the next context reads directly. One per line: absolute path,
+then ` :: `, then a one-line reason.
+/absolute/path/to/file :: why this file is required
+
+## OPEN OBLIGATIONS
+Every unanswered request with its id and question, every parked job-group
+barrier, every room membership and cursor, every promised follow-up, and
+every other live obligation. Write `- none` only when none exist.
+```
+
+The `FILES` section needs at least one absolute path with a reason. The successor reads each listed file directly before it acts. The `SUMMARY` orients the successor, but it never replaces the files.
+
+`OPEN OBLIGATIONS` comes from the Page that `compact start` prints, not from memory. The successor collects only what the handoff lists. Each obligation names the command that collects it, for example `flint orbh wait <id>` for a dispatched subagent or `flint orbh job result <job-id>` for a job. See [Delegating to Subagents](/orbh/guides/delegating-to-subagents) for dispatch collection.
+
+## Refusals
+
+Every refusal leaves the authoring context alive. The agent fixes the problem and retries.
+
+`compact handoff` refuses when the handoff file is missing, when it breaks the contract, when it belongs to another run, when a dispatch claim has no materialized child yet, or when another compaction already owns the session. Each refusal prints `Your context will NOT end.`
+
+A failed relaunch still leaves the session recoverable. The handoff was written and validated before anything ended, so the replacement always exists on disk.
+
+## Dispatched Subagents Survive Compaction
+
+In-flight dispatches do not block compaction. `compact start` detaches the process-scoped collector stamps while the subagents keep running. The successor inherits them as durable obligations and re-collects each result:
+
+```bash
+flint orbh wait <child-session-id>
+```
+
+Only a dispatch that was claimed but not yet launched blocks `handoff`. Its child session does not exist yet, so there is nothing to hand off. The agent waits a moment for it to materialize, then retries.
+
+## The Relaunched Context
+
+The relaunched run wakes with its normal launch prompt plus a pointer to the handoff path. It runs `flint orbh page` first, so that messages, job results, and notices from the relaunch window surface. It then reads the handoff and every path in its `FILES` list. It then runs `flint orbh compact finish` and resumes the duty, starting with the open obligations.
+
+Messages and job results that land during the relaunch window stay durable in the same spool. They reach the fresh context through its first Page read.
+
+## Compacting Into Another Runtime or Profile
+
+`compact handoff` accepts an optional relaunch target:
+
+```bash
+flint orbh compact handoff --into <runtime/profile>
+flint orbh compact handoff --into <runtime/profile> --account <name>
+```
+
+`--into` takes a profile registry key, the same target form that launch accepts. Cross-runtime targets are allowed. `--account` selects the harness account for the fresh run, and it requires `--into`. Both flags validate before the context ends, and a bad target refuses with `Your context will NOT end.`
+
+The session id, spool, inbox, jobs, rooms, and links stay unchanged. Only the fresh run uses the new runtime, profile, and account.
+
+For a profile change inside the same runtime, compaction is the wrong tool. `flint orbh profiles switch <target>` keeps the conversation and resumes it under the new model. Use `--into` only when the runtime changes, because a native conversation cannot survive that boundary. See [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters).
+
+## Interactive Sessions
+
+In an interactive session, the pane manager owns the whole pipeline. It ends the harness child, shows a compacting state in the pane, and starts the fresh child in the same pane. The person watches the succession live. Sockets, pane title, attach clients, and session id all persist.
+
+An attached view follows the session across the relaunch. After a completed compaction, this command attaches to the relaunched run:
+
+```bash
+flint orbh i --continue <session-id>
+```
+
+A pane whose manager predates the compact verb refuses loudly, and the context survives. The person exits the pane, relaunches the session with `flint orbh resume <id>`, and the agent retries. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+
+## Related
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

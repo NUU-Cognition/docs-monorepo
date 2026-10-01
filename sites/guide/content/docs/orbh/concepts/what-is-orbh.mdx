@@ -1,0 +1,127 @@
+---
+title: "What Is Orbh"
+---
+
+Orbh is a meta-harness. It launches, tracks, supervises, and coordinates agent harnesses such as Claude Code, Codex, Muse, Cursor, and the other runtimes in `flint orbh runtimes`.
+
+A harness knows how to run one agent. Orbh knows how to run many agents as durable sessions. It gives every harness the same control plane for sessions, turns, lifecycle state, messages, rooms, jobs, and supervision.
+
+Orbh is not a model runtime. It is not a transcript format. A harness still owns how it talks to its native agent. Orbh owns the durable session record, the launch and resume workflow, the observed lifecycle state, and the coordination surfaces around the harness.
+
+## One Session, Many Harnesses
+
+Each harness keeps its own transcript and its own command line. Orbh adds one shared envelope around that work:
+
+- One stable session identity across launches and resumes.
+- One lifecycle model with five states: `working`, `needs-input`, `awaiting`, `finished`, and `abandoned`.
+- One result stream per session, one result per turn.
+- One set of coordination tools: messages, rooms, jobs, and the Page.
+- One supervisor: the per-machine orchestrator.
+
+Harness adapters translate Orbh launch intent into native commands, environment variables, and transcript parsing. A session can move between profiles of one runtime, and compaction can relaunch a session into a fresh context on another runtime.
+
+The current adapters cover these runtimes:
+
+```text
+agy, claude, codex, cursor, droid, grok, kimi, muse, opencode
+```
+
+Run `flint orbh runtimes` to see which runtimes this machine has installed.
+
+## Durable Sessions and Turns
+
+The durable unit is the session. A session has one stable id, a title, a description, a runtime, a profile, a mode, and a free-form key/value interface.
+
+A turn is one harness invocation inside a session. Each headless turn ends with an explicit return:
+
+```bash
+flint orbh session return --finish "<result>"
+flint orbh session return --await "<result>"
+```
+
+`--finish` ends the work. `--await` parks the session in a dormant but wakeable state. A parked session wakes when a message, a child result, a room event, or a scheduled time arrives.
+
+Orbh stores each session as an event-sourced spool: an append-only event log plus a materialized snapshot. The snapshot is the fast read path. The log is the source of truth. Maintenance commands can rebuild the snapshot from the log.
+
+## Modes
+
+Orbh records a mode on each session. Interactive terminals, autonomous launches, and delegated subagents have different lifecycle expectations.
+
+| Mode | Meaning |
+| --- | --- |
+| `interactive` | A person is present at a terminal. Orbh observes terminal activity instead of treating a quiet shell as abandoned. |
+| `headless` | A standalone autonomous session with no parent. It must return an explicit result for a clean finish. |
+| `subagent` | A headless session spawned by another session. Its return payload is the deliverable to its parent. |
+
+## The Cockpit
+
+The cockpit is the operator surface. It shows sessions, their states, their dispatch trees, and their activity.
+
+```bash
+flint orbh list --print        # Static session table
+flint orbh active --print      # Active tree with nested subagents
+flint orbh tui                 # Full-screen cockpit
+```
+
+In a terminal, `list` and `active` open an interactive cockpit. `--print` gives a static table. `--json` gives machine-readable output.
+
+## The Page and Delivery
+
+The Page is the introspection surface of one session. It shows unread coordination, jobs, wake state, context occupancy, and hygiene warnings. An agent reads it at the seams of its work: on resume, before it ends a long turn, and after a batch of subagents.
+
+Delivery has two paths. During a live turn, a manager with a harness connection submits each Page natively, or the agent arms a one-shot pager that fires on the first new event. Between turns, the machine orchestrator wakes a parked session with one digest of everything pending. No event is ever lost: without a live pager, events wait as durable state until the next Page read or turn boundary.
+
+## Subagents
+
+A subagent is a session with a parent. A manager dispatches work with `request`, keeps working, and collects the correlated result with `wait` or `result`:
+
+```bash
+flint orbh request -q claude/o55h "Summarise the auth module"
+flint orbh wait <id>
+flint orbh result <id>
+```
+
+The parent waits for the Orbh result, not for child process output. The child shares no context with the parent, so each dispatch prompt must be complete and self-contained.
+
+## Messages and Rooms
+
+Sessions talk to each other with direct messages. A message lands in the target inbox and can wake a parked session. Rooms give a group of sessions one shared channel. Each session keeps its own read cursor, so a room works as a durable broadcast log.
+
+## Compaction
+
+A long session fills its context window. Compaction lets the agent write its own handoff and relaunch the same session id with a fresh context:
+
+```bash
+flint orbh compact start    # Print the handoff contract and hold the pager
+flint orbh compact handoff  # Validate the handoff and relaunch this session
+flint orbh compact finish   # Run by the relaunched context after it reads the handoff
+```
+
+Inbox, jobs, rooms, and collector anchors carry over by construction. Compaction changes the context, never the session identity.
+
+## The Orchestrator
+
+The orchestrator is a per-machine supervisor. It tracks live managers, reaps stale processes, reconciles dead runs, and owns the wake sweep for parked sessions. It runs lazily: the next interactive launch ensures it when it is down.
+
+```bash
+flint orbh orchestrator status
+```
+
+## Orbh Inside a Flint
+
+Orbh ships with Flint and runs as `flint orbh`. Inside a Flint workspace, Orbh resolves its session store under the workspace. Outside a Flint, it falls back to machine-level storage. The Flint guide covers Flints, shards, and the Mesh. This guide covers Orbh.
+
+## Further Reading
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-cockpit)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [Compaction](/orbh/modules/compaction)
+- [Orchestrator](/orbh/modules/orchestrator)
+- [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters)
+- [Accounts](/orbh/modules/accounts)
+- [Server and SDK](/orbh/modules/server-and-sdk)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

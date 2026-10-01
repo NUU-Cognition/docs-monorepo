@@ -1,0 +1,278 @@
+---
+title: "Using Obsidian"
+---
+
+A Flint is plain Markdown, so it needs no editor. Obsidian is the editor that Flint supports. This guide shows how to open a Flint, how Flint keeps the Obsidian files of a Flint, and what to do when a command names a next step.
+
+Flint installs one set of released files into `.obsidian/` of each Flint. Flint calls this set the Obsidian payload. Pure machinery of the Obsidian commands lives in [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands).
+
+## Prerequisites
+
+- Flint is installed on this machine.
+- Obsidian is installed on this machine.
+- You work inside a Flint, or you name one with `-p <folder>`.
+
+## The Model
+
+Each Flint pins one release of the Obsidian payload in `flint.json`. Flint calls this release the pin. `flint sync` installs the pin. `flint obsidian update` moves the pin to a newer release.
+
+Each file in `.obsidian/` has one owner:
+
+| Class | Owner | Examples |
+|---|---|---|
+| Release file | Flint | `plugins/nuu-flint/main.js`, `snippets/blockquote-tables.css`, `themes/Baseline/theme.css` |
+| Settings file | You | `app.json`, `appearance.json`, `hotkeys.json`, `plugins/<id>/data.json` |
+| Runtime file | Obsidian or a plugin | `workspace.json`, `graph.json`, a plugin or a theme that you add |
+
+Flint verifies each release file by its hash. Flint copies the initial settings of a settings file once, only when the file is absent. After that, Flint never changes the file unless you ask or a named settings migration runs. Flint never writes a runtime file.
+
+Flint saves each file that it replaces or removes, before the write. Flint never deletes a backup by itself. A backup stays on this machine.
+
+## Open a Flint
+
+Open a Flint with Flint, not from inside Obsidian:
+
+```bash
+flint open "My Notes"
+```
+
+When the vault is closed, `flint open` completes a waiting install first. Then it launches Obsidian. When the vault is open, it raises the window.
+
+`flint open` trusts a Flint that passes the trust check, so Obsidian does not ask. The check passes when the payload is installed, the plugin files are the release files, and `.obsidian/plugins` holds no other plugin. Obsidian still asks once ("Trust author and enable plugins") at the first open of the Computer Flint, when the check fails, and when no vault is open and this machine has no Computer Flint. After the click, the plugin reloads Obsidian one time.
+
+To let Obsidian ask for each new vault instead, set the trust setting to `ask`:
+
+```bash
+flint config set obsidian-trust ask
+flint config set obsidian-trust auto
+```
+
+`flint obsidian status` shows the setting and the check on the line `Trust`.
+
+## Check the State
+
+Look at the state first. `flint obsidian status` writes nothing:
+
+```bash
+flint obsidian status
+```
+
+```text
+Obsidian payload
+  Pinned     : 0.7.0 (<commit>)
+  Installed  : 0.7.0 · 63 release files verified
+Vault
+  Obsidian   : closed
+```
+
+Use `--check` to also probe each running plugin for the old 0.6.x plugin. It exits 2 when an error or a warning is present. Use `--tinderbox` for one row per member of a Tinderbox. Use `--json` for the status as JSON.
+
+## Sync and Update
+
+`flint sync` installs the pinned release. It never moves the pin. The pin is a fact of the Flint, and Git shares it. Only `flint obsidian update` moves the pin.
+
+When `flint sync` finds the vault open, it records a pending install and exits 0. This is a normal state, not a failure. The plugin shows a notice in the vault. To complete the install, close the vault in Obsidian. Then open it with Flint:
+
+```bash
+flint open "My Notes"
+```
+
+`flint obsidian update` pins the recommended release and installs it in one step. It writes the pin last. It keeps every settings file. After an update, commit `flint.json`, for example with `flint git sync`. Each other machine installs the new pin at its next `flint sync`.
+
+```bash
+flint obsidian update --dry-run     # print the plan; write nothing
+flint obsidian update               # pin the recommendation and install it
+```
+
+| Flag | Use |
+|---|---|
+| `--to <release>` | Install this release, for example `--to 0.7.1`. |
+| `--allow-downgrade` | With `--to`: allow a release that is older than the pin. |
+| `--replace` | Replace each changed release file, after a backup. |
+| `--tinderbox` | Update each member of the Tinderbox. `--only <names...>` selects members. |
+| `--dry-run` | Print the plan and write nothing. |
+
+`flint obsidian update` needs a closed vault. On an open vault, it refuses with exit 2 and writes nothing. To see the plan as text, run `flint obsidian update --dry-run`.
+
+### A Changed Release File
+
+A changed release file is a release file that something changed outside Flint. Do not edit the release files in `.obsidian/`. An install stops before the first write and lists each changed path:
+
+```text
+Blocked: 1 release file changed outside Flint.
+    plugins/terminal/main.js
+  No files were changed.
+```
+
+Look at the plan first. Then replace the file. The replace saves your version in a backup first:
+
+```bash
+flint obsidian repair --replace --dry-run
+flint obsidian repair --replace
+```
+
+A missing release file is not a change. `flint sync` installs it again.
+
+## Repair
+
+`flint obsidian repair` restores the release files of the pinned release. It installs each missing release file again.
+
+| Command | What it does |
+|---|---|
+| `flint obsidian repair` | Install the missing release files of the pin. |
+| `flint obsidian repair --replace` | Also replace each changed release file, after a backup. |
+| `flint obsidian repair --reset-settings` | Replace each settings file with its initial settings, after a backup. |
+| `flint obsidian repair --reset-settings --file <path>` | Reset only this settings file, for example `hotkeys.json`. |
+
+Run each form with `--dry-run` first.
+
+Repair works on an open vault. When a live plugin can reload the vault, repair writes the files and then reloads Obsidian. When a terminal tab runs a process, repair refuses before any write and names each such tab. Then run the same command with `--yes`. When no live plugin answers, repair refuses and names the close step.
+
+`flint obsidian reset`, `flint obsidian push`, and `flint obsidian patches` are removed. Each prints the new command.
+
+## Backups and Restore
+
+List the backups, newest first:
+
+```bash
+flint obsidian backups list
+flint obsidian backups show <id>
+```
+
+A restore has three forms:
+
+| Command | What it does |
+|---|---|
+| `flint obsidian backups restore <id>` | A full restore: each saved file and the records. It backs up the current files first. It needs a closed vault. |
+| `flint obsidian backups restore <id> --file <path>` | Restore one path. The pin stays. |
+| `flint obsidian backups restore <id> --to <empty-dir>` | Copy the saved files into an empty folder. Nothing in the Flint changes. |
+
+To delete old backups, look at the preview first:
+
+```bash
+flint obsidian backups prune --keep 5            # the preview: each backup to delete, and the size
+flint obsidian backups prune --keep 5 --yes      # delete them
+```
+
+Prune always keeps the newest backup of each scope. Use `--scope flint|registry|deleted|all` to select a scope. Use `--older-than 4w` to delete by age.
+
+## Applied Settings
+
+Applied settings are keys of `appearance.json` and `app.json` that the NUU Flint plugin applies each time it loads. Use an applied setting for a value that must stay the same, for example one theme for every Flint on your machine. To change one, use `flint obsidian applied set`, not an edit of the settings file. When you change an applied key in Obsidian, your change holds until the next load of the plugin. Then the declared value comes back.
+
+Applied settings have three layers. A later layer wins:
+
+| Layer | Where |
+|---|---|
+| Release | The installed release. It holds only NUU standards. |
+| Machine | `[obsidian.applied]` in the Flint CLI config of this machine. |
+| Flint | `[obsidian.applied]` in `flint.toml`, shared through Git. |
+
+The allowed keys of `appearance` are `cssTheme`, `theme`, `translucency`, `enabledCssSnippets`, `showRibbon`, `accentColor`, `baseFontSize`, `interfaceFontFamily`, `textFontFamily`, and `monospaceFontFamily`. The allowed keys of `app` are editor and file keys, for example `showLineNumber`, `vimMode`, `readableLineLength`, `tabSize`, and `userIgnoreFilters`. Flint refuses a key that is not in the list.
+
+```bash
+flint obsidian applied                                          # each key: the value, the layer, and the last result
+flint obsidian applied set appearance.cssTheme Baseline         # the Flint layer (flint.toml)
+flint obsidian applied set appearance.cssTheme "Tokyo Night" --machine
+flint obsidian applied set appearance.enabledCssSnippets --add blockquote-tables
+flint obsidian applied unset appearance.cssTheme
+flint obsidian applied apply                                    # send the set to the open vault now
+```
+
+- `set` takes a value, or `--add` and `--remove` for a list key. It reads the value as JSON when it can (`true`, `16`), else as text.
+- `unset` removes the key from its layer. Obsidian keeps the last value until you change it in Obsidian.
+- `apply` sends the resolved set to the open vault at once. No reload is necessary. On a closed vault, it waits for the next open.
+
+## Appearance Profiles
+
+An appearance profile is a set of appearance keys that you activate and deactivate as one unit. List the profiles of the installed release first. One profile ships with the release: `baseline-transparent`. It sets the Baseline theme, window translucency, and one snippet. It is macOS only for now.
+
+```bash
+flint obsidian profiles list
+flint obsidian profiles activate baseline-transparent
+flint obsidian profiles deactivate
+```
+
+On an open vault, the plugin sets the keys at once. No reload is necessary. On a closed vault, Flint writes `appearance.json` after a backup. Deactivation restores only the keys that you did not change since the activation. It keeps your later changes and names them.
+
+An appearance profile cannot set a key that an applied setting holds. The activation then refuses as a whole and names the key. In the same way, `flint obsidian applied set` refuses a key that the active profile holds. Deactivate the profile first.
+
+## Reload and Terminal Tabs
+
+A reload of Obsidian restarts its window and stops every terminal tab. So no Flint command reloads Obsidian by itself, except `flint obsidian repair` on an open vault. To reload, ask for it:
+
+```bash
+flint obsidian reload
+```
+
+When a tab runs a process, reload refuses and lists the tabs. Then run the same command with `--yes`.
+
+To open a terminal tab in Obsidian and start an agent session in it, use `flint obshn`:
+
+```bash
+flint obshn <orbh-profile> [prompt]
+```
+
+It takes `-p <flint>` for another Flint, `--at <scope>` for the session store, and `--account <name>` for the harness account.
+
+## The Vault Registry
+
+Obsidian keeps a registry of vaults on this machine. Flint moves the registry entry when a Flint command moves or renames a Flint, so the trust stays with the vault. When entries point at missing folders, clean them. Quit Obsidian first. Then run the preview, then the write:
+
+```bash
+flint obsidian vaults repair
+flint obsidian vaults repair --yes
+```
+
+It never removes an entry on a volume that is not mounted.
+
+## Turn Obsidian Off on This Machine
+
+A server, or a machine with no Obsidian, can turn the Obsidian layer off:
+
+```bash
+flint config set obsidian off
+flint config get obsidian          # prints on or off
+flint config set obsidian on
+```
+
+With the choice `off`, an explicit Obsidian command refuses and names the on command. `flint create`, `flint sync`, and the move, delete, and Tinderbox commands skip Obsidian and print one row. Reads such as `flint obsidian status` still work. To skip Obsidian for one run only, use `flint create "<name>" --no-obsidian`. It never writes the config. See [Global Configuration](/flint/guide/global-configuration).
+
+## Upgrading from 0.6.x
+
+In a Flint of 0.6.x, `.obsidian/` is a Git clone of the payload source. Flint 0.7.0 changes it into a plain install of the pinned release. Each machine runs this conversion once for each Flint. Until the conversion, `flint sync` stops and names the conversion command.
+
+For each Flint, close its vault in Obsidian. Then look at the plan, then run it:
+
+```bash
+flint migrate run --dry-run
+flint migrate run
+```
+
+The step keeps every settings file, every runtime file, and the vault registry entry. It saves each replaced file in one backup. When the step wrote the pin, commit `flint.json`. Then open the Flint with `flint open "<name>"`.
+
+`flint obsidian update` and `flint obsidian repair` convert a legacy payload too. When the vault is open or the fetch fails, the conversion waits. Close the vault, then run `flint open "<name>"` or `flint sync`.
+
+## Troubleshooting
+
+| You see | Do this |
+|---|---|
+| `The Obsidian payload is not installed.` | Run `flint sync`. |
+| `Obsidian payload 0.7.1 pending: the vault is open.` | Close the vault. Then run `flint open "<name>"`. |
+| `Blocked: 1 release file changed outside Flint.` | Run `flint obsidian repair --replace --dry-run`, then run it with no `--dry-run`. |
+| `open · NUU Flint plugin 0.6.x · unprotected` | Close the vault. Then run `flint open "<name>"`. |
+| `NUU Flint is not running in "<name>".` | If Obsidian asks, click "Trust author and enable plugins". Else enable "NUU Flint" in Settings, Community plugins. |
+| `.obsidian in <name> is a legacy Git payload.` | Close the vault. Then run `flint migrate run`. |
+| `Obsidian is off on this machine` | Run `flint config set obsidian on`. |
+
+More cases are in [Troubleshooting](/flint/reference/troubleshooting).
+
+## Next Steps
+
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Using Tinderbox](/flint/guide/using-tinderbox)
+- [Global Configuration](/flint/guide/global-configuration)
+- [CLI Commands](/flint/reference/cli-commands)
+- [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands)
+- [Configuration](/flint/reference/configuration)
+- [Troubleshooting](/flint/reference/troubleshooting)

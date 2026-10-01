@@ -1,0 +1,41 @@
+---
+title: "Media"
+---
+
+`Media/` is the asset layer of a Flint. It holds the files that support the work but do not fit Markdown form.
+
+## Overview
+
+Every new Flint gets a `Media/` folder next to `Mesh/`. It is part of the content layer. Typical contents include images, screenshots, PDFs, diagrams, and recordings.
+
+The Mesh stays readable because it holds only Markdown. Media files stay close by in `Media/`. A Mesh note references a media file with a link. The note carries the meaning. The media file carries the raw asset.
+
+## What Belongs in Media
+
+Put a file in `Media/` when it supports the knowledge of the Flint but is not Markdown. Examples:
+
+- images embedded in Mesh notes
+- screenshots from reviews
+- PDFs and reference documents
+- diagrams and attachments
+- audio and video recordings
+
+Keep copied external material in `Sources/` instead. See [Sources](/flint/modules/sources) for that rule. Keep active repository checkouts in `Workspace/Repos/`. See [Workspace](/flint/modules/workspace) for that rule.
+
+## Working Pattern
+
+Keep the file in `Media/`. Keep the explanation in `Mesh/`.
+
+In practice:
+
+- `Media/` stores the raw asset
+- `Mesh/` stores the note that interprets, links, or explains it
+
+This split keeps the Flint readable for people and agents. It also keeps the supporting material in a predictable place.
+
+## Related
+
+- [Mesh](/flint/modules/mesh)
+- [Sources](/flint/modules/sources)
+- [Workspace](/flint/modules/workspace)
+- [Using Obsidian](/flint/guide/using-obsidian)

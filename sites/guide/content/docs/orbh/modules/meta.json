@@ -1,0 +1,12 @@
+{
+  "title": "Modules",
+  "pages": [
+    "orchestrator",
+    "page-and-jobs",
+    "rooms-and-messages",
+    "compaction",
+    "profiles-and-harness-adapters",
+    "accounts",
+    "server-and-sdk"
+  ]
+}
