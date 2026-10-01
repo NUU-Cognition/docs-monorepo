@@ -1,0 +1,470 @@
+---
+title: "Troubleshooting"
+---
+
+This page lists common problems with the exact message and the fix.
+
+## Start Here: Doctor and Fix
+
+Run `flint doctor` first. It checks this machine and the current Flint. It gives one next command for each problem. It starts no agent. It exits 0 when each check passes, else 1. [Doctor and Fix](/flint/guide/doctor-and-fix) explains each check.
+
+```bash
+flint doctor
+flint doctor -p <dir>
+```
+
+When `flint sync`, `flint create`, `flint git sync`, `flint shard install`, `flint setup`, or `flint tinderbox sync` fails, Flint writes one failure record. The output then ends with `Or: flint fix`. Run `flint fix` to start a repair session for the newest record. The session runs in the Computer Flint. An input refusal (a wrong command line) and a stop (Ctrl-C) write no record.
+
+```bash
+flint fix --list
+flint fix
+flint fix <n>
+```
+
+## “Not inside a Flint workspace.”
+
+Many commands detect the Flint from the current folder. Move into the Flint root, or pass the Flint path where the command supports it (usually `-p <dir>` or `--path <dir>`).
+
+## “Unknown command”
+
+```text
+✘ Unknown command: heal
+  Next: flint --help
+```
+
+Old names such as `flint heal`, `flint repair`, `flint agent`, `flint code`, and `flint export` print this. Run `flint --help` to see the current commands. Use `flint orbh` for agent sessions.
+
+Some removed commands print the command that replaces them instead. For example, `flint obsidian reset` prints `flint obsidian repair --replace --reset-settings --dry-run`, and `flint open --no-plugin` prints its replacement. [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands) lists the removed Obsidian commands.
+
+## Sync Blocks
+
+[Sync](/flint/modules/sync) explains the sync model. `flint sync` never asks the shard registry. It never touches the origin of the Flint.
+
+### A Halted Git Sync Has Unresolved Conflicts
+
+```text
+A halted Git sync has unresolved conflicts.
+```
+
+`flint sync` writes nothing into a conflicted tree. It stops with exit 2. Resolve the conflicted files, then continue the Git sync:
+
+```bash
+flint git sync --continue
+```
+
+To take one side of each file whole during the halt, run `flint git resolve --local [paths...]` or `flint git resolve --remote [paths...]`. The paths are relative to the working folder. To stop the held rebase and restore the branch, run `flint git sync --abort`.
+
+### A Git Merge, Cherry-Pick, or Revert Is in Progress
+
+```text
+A Git merge is in progress.
+```
+
+Finish it with `git <kind> --continue`, or stop it with `git <kind> --abort`. Then run `flint sync` again.
+
+### The Flint File Does Not Parse
+
+A `flint.toml` that does not parse blocks the run with exit 2. Correct the file, then run `flint sync` again.
+
+### The Shard Has No Lock Line
+
+```text
+The shard <alias> has no lock line. Run flint shard install.
+```
+
+The spec in `flint.toml` is new or changed. `flint sync` does not move the lock. Run the named command:
+
+```bash
+flint shard install
+flint sync
+```
+
+### Local History Is Ahead of Origin
+
+```text
+Local history is N commits ahead of origin. Run flint git sync.
+```
+
+This is a notice, not a failure. Run `flint git sync` to send the commits.
+
+### Retired Sync Flags
+
+The flags `--no-git` and `--no-update` are retired. Each prints one line that names the new command, and the sync runs.
+
+## Git Sync Halts and Conflicts
+
+`flint git sync` checkpoints the local work, fetches, integrates, runs the local sync, checkpoints the writes of the sync, and pushes.
+
+### A Conflict Halts Before the Local Sync
+
+Resolve the conflict markers in the affected files. Then continue:
+
+```bash
+flint git sync --continue
+```
+
+A bare re-run of `flint git sync` also continues. The local sync runs after the conflict is resolved, before the push. To restore the branch instead, run `flint git sync --abort`.
+
+### A Held Merge, Cherry-Pick, or Revert Refuses the Sync
+
+`flint git sync` and `flint git merge` refuse with exit 2 and change nothing. Finish the held operation with `git <kind> --continue` first. Then run the command again.
+
+### The Remote History Was Rewritten
+
+When no local-only commits exist, the sync realigns automatically. When local-only commits exist, the sync halts and asks for `--replay` to carry them over the new history:
+
+```bash
+flint git sync --replay
+```
+
+### Force One Side
+
+`--force-remote` takes the remote as truth: it keeps local work that merges and discards what does not. `--force-local` takes the local side as truth: overlapping changes resolve in favour of local commits. `--continue` with `--replay`, `--force-remote`, or `--force-local` is refused.
+
+### The Push Runs Even When the Local Sync Fails
+
+When the local sync fails, the push still sends the integrated history as it is. The writes of the failed local sync stay uncommitted. When origin moved during that sync, the push is rejected, and the next `flint git sync` sends it.
+
+### The Run Lock Is Blocked
+
+One Git run at a time holds the run lock of the repository. When the wait for the lock times out (60 seconds), the report is `blocked` with exit 2. Wait for the other run to finish, then run the command again.
+
+## Shard Install Refusals and Stale Builds
+
+### An Install Refuses Before the First Write
+
+`flint shard install` runs every refusal of the root shard before the first write, also before the dependency installs. It refuses when the alias or the shorthand is taken, the shard is already present, a present dependency is outside its range, or the id or the hash differs from the registry. Nothing is written. Fix the named conflict, then run the install again. To install under another key, pass `--alias <alias>`.
+
+When the shard registry does not answer, an install from Git or from a path goes on and the lock says `registry: unchecked`. A no-argument install then prints `The registry did not answer. The answers were not recorded.`
+
+### The Build Is Stale
+
+```text
+The build of <alias> is stale: its source changed after the build. Next: flint shard build <alias>
+```
+
+The source moved past its build. `flint shard start` prints this notice and loads the build anyway. `flint sync` builds a stale build of a source again. To rebuild by hand, run:
+
+```bash
+flint shard build <alias>
+```
+
+### Shards Are Installed but the Flint Still Feels Broken
+
+The Flint declaration and the local shard state have drifted apart. Inspect one shard, then repair:
+
+```bash
+flint shard list --sources
+flint shard status <ref>
+flint shard reinstall <shorthand>
+flint sync
+```
+
+For all installed shards, make the lock match the specs first, then make the files match the lock:
+
+```bash
+flint shard install
+flint sync
+```
+
+`flint shard update` moves the lock of each shard to the highest version inside the range of its spec. On a Flint with the 0.6.0 shard records, every shard write is refused with the next command `flint migrate run`. [Shards](/flint/modules/shards) explains the shard model.
+
+## A Missing Name or Git Author
+
+### The Git Author Is Missing
+
+`flint create` refuses before any write when Git cannot commit on this machine:
+
+```text
+Git has no author name (user.name) and no author email (user.email) on this machine. The first commit of the Flint needs a name and an email. flint setup sets them. Nothing was written.
+```
+
+Run `flint setup`. It shows the Git author and asks the email when Git has none. To create with no Git repository instead, pass `--no-git`.
+
+### The Machine Has No Name
+
+`flint setup` sets your Name in its first step. `flint config name "<Name>"` changes your Name only. `flint whoami` shows your Name, this machine, its org, and the NUU account. With no Name, artifact creation leaves `authors` out.
+
+## No Network During Setup
+
+```text
+Flint setup needs internet access. Connect to the internet, then run flint setup again.
+```
+
+Setup checks the network before the first step. With no network it stops with exit 1. It asks nothing and writes nothing. Connect to the internet, then run `flint setup` again.
+
+A later step that needs the network skips with a `Later:` line instead of failing the run. The Guide step skips with `Later: flint setup guide`. The agent default step skips the profile pull with `Later: flint orbh profiles update`.
+
+## The Computer Flint Claim
+
+One machine has one Computer Flint. When another Flint tries to take the role, the claim refuses:
+
+```text
+One machine has one Computer Flint. The Flint <id> at <path> holds the claim (<claim path>, made <time>). Convert that Flint to another type first. If that Flint is gone, run: flint setup computer --show-claim
+```
+
+`flint setup computer --show-claim` shows the claim of this machine: held or stale. A stale claim names a Flint that is gone:
+
+```text
+No Flint at <path> and no Flint of the roster has the id <id>. If that Flint is gone, release the claim: flint setup computer --release-stale-claim
+```
+
+Release it with the named command. It prints `The stale claim is released.` A claim that a Computer Flint holds is never released.
+
+The word `computer` is reserved for the Computer Flint. `flint open computer` resolves to it from any folder. No other Flint can take the word as its name. Do not move the Computer Flint by hand: the claim then names a missing folder and goes stale. Move it with `flint move computer "<new path>"` so the claim follows.
+
+## Agent Profile Errors
+
+### Orbh Has Only Its Built-In Profiles
+
+```text
+No <path>: Orbh has only its built-in profiles.
+```
+
+The Orbh home has no synced `default.json`. `flint doctor` fails this row with the next command:
+
+```bash
+flint orbh profiles update
+```
+
+This pulls the latest shared default profiles into the Orbh home. It leaves your own profiles file untouched. When newer profiles are available later, Flint prints `Newer Orbh profiles are available. Next: flint orbh profiles update`.
+
+### No Target of the Default Target List Is Available
+
+```text
+No target of the default target list (<list>) is available. <reasons>
+```
+
+`flint doctor` fails the Agent row when no target can launch. The next command is the install command of the missing runtime, or `flint fix` when the repair needs judgement. To see the layers of the list and the target that a launch selects, run:
+
+```bash
+flint orbh profiles default
+flint orbh runtimes
+```
+
+Make sure the target runtime is installed. For example, Claude sessions need Claude Code installed, and Codex sessions need Codex installed.
+
+## A Flint Does Not Appear in `flint list`
+
+Register it:
+
+```bash
+flint register /path/to/flint
+```
+
+If the roster row is stale, register the Flint again. A registered Flint takes the name and type of `flint.toml` again. Then inspect the status:
+
+```bash
+flint list --status
+```
+
+## A Declared Codebase Reference Is Still Unfulfilled
+
+Declare it with a path, or fulfil an existing declaration:
+
+```bash
+flint reference codebase "Flint" /path/to/flint
+```
+
+```bash
+flint fulfil codebase "Flint" /path/to/flint
+flint reference list
+```
+
+`flint fulfil` supports `codebase` resources only. `flint sync` fulfils Flint references from the roster.
+
+## A Flint Reference Will Not Resolve
+
+Make sure the target Flint is registered locally:
+
+```bash
+flint list
+flint register /path/to/target-flint
+```
+
+Then run:
+
+```bash
+flint sync
+```
+
+A reference to a Flint that is not on this machine is one report row, not a failure.
+
+## A Flint Bundle Does Not Sync
+
+Sync finds the producer Flint through the roster. Register the producer Flint first, then run `flint sync`. When the producer has no bundle, sync reports:
+
+```text
+The producer Flint has no bundle <name>.
+```
+
+Make the bundle in the producer Flint. To drop the reference instead, run `flint reference remove <name>`.
+
+## A Workspace Repository Is Declared but Missing on Disk
+
+Check status and then restore it:
+
+```bash
+flint workspace list
+flint workspace update "<name>"
+```
+
+`flint workspace update` pulls the latest changes, or clones the repository when it is missing.
+
+## A Source Repository Is Declared but Missing on Disk
+
+Check status and refresh it:
+
+```bash
+flint source repo list
+flint source repo update "<name>"
+```
+
+`flint source repo update` re-fetches the repository: it deletes and re-clones it.
+
+## Obsidian
+
+[Using Obsidian](/flint/guide/using-obsidian) explains the model. This part lists the common cases.
+
+### Look at the State First
+
+```bash
+flint obsidian status            # the payload, the vault, the plugin, and the next command; writes nothing
+flint obsidian status --check    # also finds an old plugin; exits 2 on an error or a warning
+```
+
+The last line is `Next: <command>`. Run that command. Each Obsidian write has a dry run: `flint sync --dry-run`, `flint obsidian update --dry-run`, and `flint obsidian repair --dry-run`. A dry run writes nothing and sends nothing to Obsidian. The dry run of `flint obsidian update --to <release>` fetches nothing. When it cannot read the manifest of the release, the plan ends with `· fetch needed`, and the exit code is 0. Its next step is the same command with no `--dry-run`.
+
+### The Payload Is Not Installed
+
+`✘ The Obsidian payload is not installed.` Next: `flint sync`.
+
+When the network is down, the fetch fails with `Could not fetch Obsidian payload <release> (<reason>).` Check the network, then run the named command again. The Flint works for CLI work in the meantime.
+
+### A Release File Changed Outside Flint
+
+```text
+Blocked: 1 release file changed outside Flint.
+    plugins/terminal/main.js
+  No files were changed.
+```
+
+Something changed a file that Flint owns, for example an edit of a plugin bundle. `flint sync` and `flint obsidian update` stop and change nothing. Look at the plan, then replace the file:
+
+```bash
+flint obsidian repair --replace --dry-run
+flint obsidian repair --replace
+```
+
+The replace saves your version in a backup first. To look at your version later, copy the backup into an empty folder:
+
+```bash
+flint obsidian backups list
+flint obsidian backups restore <id> --to /tmp/my-version
+```
+
+### The Install Waits: The Vault Is Open
+
+`Obsidian payload <release> pending: the vault is open.` Flint writes `.obsidian/` only while the vault is closed. The pending install is not a failure. Close the vault in Obsidian, then run:
+
+```bash
+flint open "<name>"
+```
+
+`flint open` installs the pending payload first, then launches Obsidian.
+
+### The Plugins of a New Vault Are Off
+
+Obsidian asks once for each new vault. Click **Trust author and enable plugins**. Flint does not write trust for you.
+
+When status says `open · NUU Flint plugin not running`, it warns `NUU Flint is not running in "<name>".` The next step is `If Obsidian asks, click "Trust author and enable plugins"; else enable "NUU Flint" in Settings → Community plugins.`
+
+### An Old, Unprotected Plugin
+
+`"<name>" runs an old, unprotected NUU Flint plugin (0.6.x).` The vault was open during the upgrade to 0.7.0, so it still runs the old plugin. Close the vault in Obsidian, then run `flint open "<name>"`. The vault then opens with the new plugin.
+
+### A Legacy Git Payload
+
+`.obsidian in <name> is a legacy Git payload.` In a Flint of 0.6.x, `.obsidian/` is a Git clone of the payload source. Close the vault first, then convert it:
+
+```bash
+flint migrate run --dry-run
+flint migrate run
+```
+
+The next command is `flint migrate run`, or `flint obsidian repair` after a recorded conversion. `flint obsidian update` and `flint obsidian repair` convert a legacy payload too, with a closed vault.
+
+When the vault is open, or when the fetch of the release fails, the conversion waits. After a failed fetch, the text is `The conversion of <name> waits: Obsidian payload <release> could not be fetched: <reason>.` Close the vault, then run `flint open "<name>"` or `flint sync`.
+
+When a file at a release path differs from the old payload, the conversion changes nothing and names `flint obsidian repair --replace --dry-run`.
+
+### A Settings File Is Not Valid JSON
+
+`<file> is not valid JSON. Settings migration <id> did not run.` The release files are installed, and one settings migration waits. Reset the file to its initial settings, after a backup:
+
+```bash
+flint obsidian repair --reset-settings --file <file> --dry-run
+flint obsidian repair --reset-settings --file <file>
+```
+
+### Start Again from the Release
+
+`flint obsidian reset` is removed. It prints `flint obsidian repair --replace --reset-settings --dry-run`. To replace each changed release file and each settings file, run:
+
+```bash
+flint obsidian repair --replace --reset-settings --dry-run
+flint obsidian repair --replace --reset-settings
+```
+
+Flint saves each file in a backup first. A full restore gives the files back: `flint obsidian backups restore <id>` (the vault must be closed).
+
+### A Restore or a Reset Is Blocked
+
+A restore and `flint obsidian repair --reset-settings` never write through a link. An unknown object on the path blocks the run, and no file changes:
+
+| Message | Next step |
+|---|---|
+| `Blocked: an unknown <object> is on the path of a restored file: <path>.` | `Move <path> out of .obsidian, then run: <restore command>` |
+| `Blocked: an unknown <object> is on the path of a settings file: <path>.` | `Move <path> out of .obsidian, then run: flint obsidian repair --reset-settings --dry-run` |
+| `.obsidian in <name> is a link or a file, not a folder.` (a restore) | `Replace .obsidian with a folder, then run: <restore command>` |
+| `.obsidian in <name> is a legacy Git payload.` (a restore) | The conversion command: `flint migrate run`, or `flint obsidian repair` |
+
+The object is a file or a link on the folder chain of the path, or a folder or another object at the path itself. `<restore command>` is your restore command with every argument.
+
+### A Move or a Delete Refuses an Open Vault
+
+`"<name>" is open in Obsidian. Close it, then run the command again from a terminal outside Obsidian.`
+
+`flint move`, `flint rename`, and `flint delete` refuse an open vault. The refusal names the command to run again in a `Next:` line. A move under an open vault leaves a ghost folder. Close the vault first. A terminal tab of the vault closes with the vault, so run the command in a terminal outside Obsidian.
+
+`flint tinderbox heal` does not refuse. It keeps the folder of a member whose vault is open, and it makes the other repairs. A warning says `"<name>" is open in Obsidian.` Close the vault, then run `flint tinderbox heal` again from a terminal outside Obsidian.
+
+When Obsidian runs during a move, the change of the vault registry waits: `Obsidian runs, so the vault registry change waits.` Quit Obsidian, then run `flint obsidian vaults repair --yes`.
+
+When you moved or deleted a Flint folder by hand, the vault registry entry names a missing folder. Quit Obsidian, then run `flint obsidian vaults repair` (the preview) and `flint obsidian vaults repair --yes`.
+
+A waiting vault registry change is kept in `<NUU home>/flint/obsidian/registry/pending.json`. An entry of that file with a wrong form does not run, and Flint keeps it. `flint obsidian vaults repair`, `flint sync`, and `flint open` then warn: `<path> holds an entry that is not a vault registry change, so no command runs it: <entry>.` Next: `Remove the entry from <path>, then run: flint obsidian vaults repair`.
+
+### Obsidian Is Off on This Machine
+
+`✘ Obsidian is off on this machine (<config path>).` Next: `flint config set obsidian on`.
+
+## A Tinderbox Command Refuses the Box
+
+A write command of `flint tinderbox` runs one write gate before its first effect. The gate refuses a box that a newer CLI shaped, or a box with a malformed record, and nothing is written. A malformed record names its file with the next step `Fix tinderbox.json. Then run flint tinderbox check.` A newer record names the update of the CLI. A `.tinderbox` folder that is a link is refused too. Update the CLI or fix the record, then run the command again. See [Using Tinderbox](/flint/guide/using-tinderbox).
+
+## `flint tinderbox git sync` Stopped in the Middle
+
+The journal `.tinderbox/git-sync-state.json` keeps the run. Look at it first. It writes nothing:
+
+```bash
+flint tinderbox git status
+```
+
+Then continue the run. `git resume` continues each member that the last sync did not finish:
+
+```bash
+flint tinderbox git resume
+```
+
+A member that holds a rebase is `blocked`. Resolve its files, then run `flint tinderbox git resolve <member>`.

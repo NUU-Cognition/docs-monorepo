@@ -1,0 +1,88 @@
+---
+title: "Sources"
+---
+
+`Sources/` holds copies of external material for reading. It has two families: source repositories and Flint bundles. You declare both in `flint.toml` under `[sources]`. Sync copies them into the Flint.
+
+## Overview
+
+Sources are copies, not pointers. Flint materializes each declared source as a local folder, so people and agents read it without network access. Treat every folder under `Sources/` as read-only derived state. Do not edit it in place. When the upstream changes, sync or an update command takes a fresh copy.
+
+The `[sources]` block in `flint.toml` is the source of truth. Sync copies each missing declared source. Sync reports each extra local folder as drift. Sync never deletes an extra folder.
+
+## Source Repositories
+
+A source repository is a read-only snapshot of an external Git repository. It lives in `Sources/Repos/<name>/`.
+
+Manage source repositories with these commands:
+
+```bash
+flint source repo add "Design System" https://github.com/org/design-system
+flint source repo list
+flint source repo update "Design System"
+flint source repo remove "Design System"
+```
+
+Each command behaves as follows:
+
+- `add` records the declaration in `flint.toml`. It clones nothing. Run `flint sync` to clone the snapshot.
+- `list` shows each declared repository and whether its folder exists. It accepts `--wide` for full-width output.
+- `update` deletes the snapshot and clones it again from the upstream HEAD. Use it to move a snapshot to newer upstream content.
+- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question.
+
+When sync clones a snapshot, it takes a shallow clone of depth 1 and strips `.git`. The copy is not an active checkout. Sync writes a receipt with the copy. On later runs sync trusts a snapshot that has a receipt. Sync never contacts the upstream on its own. A snapshot older than 7 days produces a notice that names `flint source repo update "<name>"`. The snapshot stays in place.
+
+## Flint Bundles
+
+A Flint bundle is a folder that this Flint copies from another Flint on this machine (the producer). It lives in `Sources/Bundles/<bundle name>/`.
+
+No command adds or removes a bundle declaration. Edit `flint.toml` by hand:
+
+```toml
+[sources]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+```
+
+The `name` value has this form:
+
+```text
+"Flint Name/Bundle Name"
+```
+
+During sync, Flint finds the producer Flint by name and copies its folder `Exports/(Bundle) <Bundle Name>/` into `Sources/Bundles/<Bundle Name>/`. When the producer changes its bundle, the next sync copies the new content. When the producer Flint is missing from this machine, or its bundle folder is missing, sync reports one row and keeps the copied bundle unchanged. Extra local bundle folders are reported as drift, not deleted.
+
+## Sync Behavior
+
+`flint sync` treats `[sources]` as the source of truth. It copies each missing declared repository and each missing or changed declared bundle. It aligns `.gitignore` with the current declarations. It writes marker notes so each source stays visible from the Mesh metadata layer.
+
+`flint plan` and `flint sync --dry-run` show the same plan and change nothing. They open no network connection.
+
+Each repository name and each bundle name must be one folder name. A bad name produces one report row. Sync still processes each valid declaration.
+
+## Configuration
+
+```toml
+[sources]
+repositories = [
+  { name = "Design System", url = "https://github.com/org/design-system" },
+]
+bundles = [
+  { source = "flint", name = "Research Hub/Guide" },
+]
+```
+
+## Sources, Workspace Repositories, and References
+
+Three mechanisms connect a Flint to outside material. Each one serves a different need.
+
+- Use `Sources/` when you want Flint to copy external material into the Flint for reading. The copy is read-only.
+- Use `Workspace/Repos/` when you want to edit, run, and commit a repository as part of daily work. The copy is a full Git checkout. See [Workspace](/flint/modules/workspace).
+- Use a reference when you need only a named pointer to a codebase or to another Flint, with no copy. See [References](/flint/modules/references).
+
+## Related
+
+- [Workspace](/flint/modules/workspace)
+- [References](/flint/modules/references)
+- [Sync](/flint/modules/sync)

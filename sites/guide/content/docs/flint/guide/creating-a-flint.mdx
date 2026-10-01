@@ -1,0 +1,220 @@
+---
+title: "Creating a Flint"
+---
+
+A Flint is one folder of notes and shards, with its own id. `flint create` makes one. (`flint init` is an alias of `flint create`.) The first choices decide how useful the Flint is: its shards, its org, and its init note.
+
+## Before You Create
+
+- **Set up the machine once:** `flint setup` sets your Name and the machine names. With no Name, `flint create` still makes the Flint. It writes no `Mesh/People/@<Name>.md` marker. See [Quick Start](/flint/guide/quick-start).
+- **Give Git an author:** each new Flint is a Git repository with a first commit. With no Git author, `flint create` refuses before it writes anything. It prints `Nothing was written.` Its next steps are `flint setup` and a retry with `--no-git`.
+
+## The Name
+
+A Flint name uses the letters A to Z, the digits 0 to 9, spaces, and the characters `- ' , . ! & + ; @`. It has at most 100 characters. It does not end with a space or a dot. The word `computer` is reserved for the Computer Flint. A name in use on this machine is refused, in any letter case.
+
+## The Simplest Start
+
+```bash
+flint create "My Notes"
+```
+
+The command:
+
+- checks the name, the folder, the org, and the Git author before it writes anything
+- makes the folder `(Flint) My Notes/` in the current folder, with the standard folders
+- writes `flint.toml` (the intent) and `flint.json` (the id and the lock)
+- writes an empty `Mesh/People/@<Name>.md` marker, when your Name exists
+- makes a Git repository on the branch `main`, with one commit, no remote, and a clean status
+- adds the Flint to the roster of this machine (see [The Roster](/flint/guide/the-roster))
+- installs the shards of the preset
+- pins the recommended Obsidian payload in `flint.json`, also with `--no-obsidian` and with the machine choice `off` (a Flint from `--from <git url>` keeps its own pin)
+- installs the pinned payload into `.obsidian/` (not with `--no-obsidian`, and not with the machine choice `off`)
+- opens the Flint in Obsidian in a terminal run without `--json` (`--open` forces the open; `--no-open` skips it)
+
+`flint create` registers no vault. Obsidian registers the vault when it opens it.
+
+The screen shows what you have: the address, the org, the path, the shards, Git, and Obsidian. It ends with next steps: `Next: flint open "My Notes"`, `Or start an agent: cd '<path>' && flint orbh i`, and `Later: flint git publish <url>`. With repairs pending, the `Next` line runs them first. With `--no-obsidian`, the `Next` line starts an agent instead.
+
+The `Obsidian` row says what happened to the payload and to the launch:
+
+| Case | The `Obsidian` row |
+|---|---|
+| Installed and opened | `payload 0.7.0 installed · opened`, then `Click "Trust author and enable plugins" once in Obsidian.` |
+| Installed, not opened (`--no-open`, or no terminal) | `payload 0.7.0 installed · not opened` |
+| `NUU_HOME` isolation | `payload 0.7.0 installed · not opened (NUU_HOME isolation)` |
+| The install failed | `payload 0.7.0 not installed (no network). The Flint is ready for CLI work.` Another cause comes after a colon: `payload 0.7.0 not installed: <cause>. The Flint is ready for CLI work.` The next step is below the rows, for example `cd '<path>' && flint sync` |
+| `--no-obsidian` | `skipped for this run (--no-obsidian)`, then `flint sync in the Flint installs it later.` and `To turn Obsidian off on this machine: flint config set obsidian off` |
+| Obsidian is off on this machine | `off on this machine (<config path>)`, then `Next: flint config set obsidian on` |
+| Another platform (not macOS or Linux) | `off (Flint supports Obsidian on macOS and Linux only)` |
+
+A failed payload install never fails `flint create`. When Obsidian opens the new vault, click **Trust author and enable plugins** once. See [Using Obsidian](/flint/guide/using-obsidian).
+
+When the network is down, the Flint is still made. The screen names each part that is not installed: the shards, the Obsidian payload, or both. It prints one next command, for example `cd '<path>' && flint shard install && flint sync`.
+
+## What Gets Created
+
+```text
+(Flint) My Notes/
+├── flint.toml
+├── flint.json                     also the pin of the Obsidian payload
+├── .flint/
+│   ├── obsidian/                  the installed state of the payload on this machine
+│   │   ├── state.json
+│   │   ├── manifest.json
+│   │   └── applied.json
+│   └── backups/obsidian/          the Obsidian backups of this Flint
+├── .obsidian/                     the Obsidian payload and the settings files
+├── Mesh/
+│   ├── (System) Flint Init.md
+│   ├── Groups/
+│   ├── Main/
+│   ├── Metadata/
+│   ├── People/
+│   └── Sections/
+├── Media/
+├── Shards/
+├── Sources/
+│   ├── Repos/
+│   └── Bundles/
+└── Workspace/
+    ├── Repos/
+    └── Bench/
+```
+
+With `--no-obsidian`, or when Obsidian is off on this machine, the Flint has no `.obsidian/` and no `.flint/obsidian/`. The next `flint sync` with Obsidian on installs them.
+
+## Choose the Shards: the Preset
+
+A preset is the list of shards of a new Flint. Every new Flint gets the core shards, Flint and Orbh, whatever the preset says. Invironments comes with Flint.
+
+| Preset | The shards that it adds to the core shards |
+|---|---|
+| `blank` (the default) | None |
+| `default` | Projects, Notepad, Plan, Increments, Reports, Agents, Claude Code |
+| `factory` | Projects, Increments, Reports |
+| `garden` | Notepad |
+| `lab` | Notepad, Plan |
+| `observatory` | Reports |
+| `quarry` | Notepad |
+
+```bash
+flint create "My Notes" --preset default
+```
+
+You can add shards later with `flint shard install <spec>`. Start small, and add a shard when you know its job here.
+
+## Choose the Org
+
+A new Flint takes the org of this machine (`flint config org show`). With no org, the Flint is local.
+
+- **Local** (no org): the address starts with `@/`, such as `@/flint/my-notes`. An address that starts with `@/` names no org. It works only on this machine. To share the Flint, give it an org: `flint org set <org>`.
+- **Org**: the address is `@<org>/flint/<slug>`, such as `@nuucognition/flint/my-notes`. The members of the org see the Flint after this machine publishes it. See [Join Your Org](/flint/guide/join-your-org).
+
+```bash
+flint create "My Notes" --org none                              # A local Flint, even when this machine has an org
+flint create "Team Notes" --org nuucognition --org-id <uuid>    # A Flint of another org
+flint create "Team Notes" --visibility public                   # private, org, or public (org and public need an org)
+```
+
+## Other Options
+
+```bash
+flint create "My Notes" --path ~/notes     # Make the Flint in another folder
+flint create --from <git url>              # Clone a Flint from a Git repository; it keeps its id, org, and shards; its files give the name and the org
+flint create "My Notes" --no-obsidian      # Skip Obsidian for this run only
+flint create "My Notes" --open             # Open the Flint in Obsidian now (the default opens only in a terminal and without --json)
+flint create "My Notes" --no-open          # Install the Obsidian payload, but do not launch Obsidian
+flint create "My Notes" --no-git           # No Git repository (make it later with flint git init)
+flint create --resume '<path>'             # Complete a creation that stopped
+```
+
+`flint create --help` lists every option.
+
+## The Shard Record
+
+`flint.toml` declares the shards. A new Flint with the preset `garden` has this record:
+
+```toml
+[flint]
+name = "My Notes"
+type = "flint"
+preset = "garden"
+
+[shards]
+flint = { source = "@nuucognition/flint@0.3.5", git = "NUU-Cognition/shard-flint" }
+orbh = { source = "@nuucognition/orbh@0.4.2", git = "NUU-Cognition/shard-orbh" }
+notepad = { source = "@nuucognition/notepad", git = "NUU-Cognition/shard-notepad" }
+invironments = { source = "@nuucognition/invironments", git = "NUU-Cognition/shard-invironments" }
+```
+
+Every shard of a new Flint gets its package name in `source` and its Git location in `git`: the core shards, the shards of the preset, and their dependencies. The package name comes from the manifest that the install fetches. When the manifest has no package name, the line has `git` only: `{ git = "<owner/repo>" }`.
+
+The core shards, Flint and Orbh, also get a pinned version: the exact version of the release. The install fetches the tag of that version, so a new Flint gets the release, never the default branch. The line of Invironments comes from the Flint shard 0.3.5, which declares it by its Git location.
+
+Each line is `<alias> = "<spec>"`, or a table such as `<alias> = { source = "<spec>", git = "<owner/repo>" }`. `flint shard install @nuucognition/projects` adds one line:
+
+```toml
+projects = "@nuucognition/projects"
+```
+
+The spec is a package spec: `@org/name[@version][#place]`. The lock is in `flint.json` (`flint.json#shards[<shard id>]`): the version, the state, and the proof of each installed shard. `flint shard list` shows the shards; `flint shard install` makes the lock match the specs of `flint.toml`.
+
+## After Creation: `flint sync`
+
+`flint sync` makes the files of this Flint match its lock and its declarations. It can:
+
+- install the shard builds that the lock names
+- install the pinned Obsidian payload into `.obsidian/` (not when Obsidian is off on this machine). It never moves the pin; `flint obsidian update` does
+- write the metadata markers of sources and references
+- update the source repositories and the source bundles
+- update `.gitignore`
+
+`flint create` makes the base; `flint sync` keeps the declared parts current.
+
+## The First Fifteen Minutes
+
+1. Read the starter `Mesh/(System) Flint Init.md`, or start an agent: in its first session it asks what the Flint is for and suggests shards.
+2. Add a short `description` to `[flint]` in `flint.toml`.
+3. Install only the shards that you intend to use (`flint shard install <spec>`).
+4. Add one real outside dependency, if the Flint is about something concrete.
+5. Run `flint sync`.
+
+## Add a Codebase Reference Early
+
+If the Flint is about software, add the main codebase:
+
+```bash
+flint reference codebase "Main App" /path/to/app
+```
+
+Notes can then point to the real source.
+
+## Or a Workspace Repository
+
+If the code lives in the Flint, use a workspace repository:
+
+```bash
+flint workspace create "App" git@github.com:me/app.git
+```
+
+A reference points to a folder outside the Flint. A workspace repository is a clone inside `Workspace/Repos/`. Use the one that matches what you want.
+
+## Commands for the First Hour
+
+```bash
+flint shard list
+flint reference list
+flint sync
+flint open "My Notes"
+flint git publish <url>
+```
+
+## The Goal
+
+The goal is a Flint that is:
+
+- easy to understand
+- connected to real sources
+- easy to write in
+- clear to an agent at the start of a session

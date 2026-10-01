@@ -1,0 +1,131 @@
+---
+title: "Page and Jobs"
+---
+
+The Page is the status view of one session. Jobs are the background work of one session. Together they let a session see its state and wait for background work to finish.
+
+## Overview
+
+Orbh stores every event of a session in a durable spool. The Page renders that spool as one readable view. A session reads its Page at natural seams: on resume, before it ends a turn, and after it dispatches subagents.
+
+Jobs run shell commands or subagent dispatches in the background. Each job belongs to one session. The Page shows the jobs and their results, so a session can continue other work and collect each result when the job finishes.
+
+## The Page
+
+Render the Page of a session:
+
+```bash
+flint orbh page
+flint orbh page <session-id>
+flint orbh page <session-id> --raw
+flint orbh page <session-id> --no-mutate
+```
+
+When `ORBH_SESSION_ID` is set, `page` targets the current session. A self-read can update session state: it drains pending inbox items, advances room cursors, and bumps read counters. Use `--no-mutate` for a read-only render. Use `--raw` to label each section with its function id.
+
+The Page shows the session identity and state, the context use of the live run, unread messages and requests, room activity, jobs and their results, dispatches and child results, the awaiting state, the pager status, and warnings that need action. The Page also shows the active procedure of the session.
+
+Run one Page function on its own:
+
+```bash
+flint orbh page run core/jobs
+flint orbh page run core/inbox --session <session-id> --no-mutate
+```
+
+## The Pager
+
+The pager delivers new events to a live turn. It has two paths. During a live turn, delivery arrives through the harness connection or through a shell pager. Between turns, the orchestrator sweep wakes an awaiting session with one digest. See [Orchestrator](/orbh/modules/orchestrator).
+
+Check which path is live before you arm a pager:
+
+```bash
+flint orbh page status
+```
+
+`MODE managed` means the manager submits every Page through the harness connection. In that mode, do not arm a shell pager.
+
+In any other mode, arm the one-shot pager in the background:
+
+```bash
+flint orbh page arm
+flint orbh page arm <session-id> --max-wait 120
+```
+
+The pager watches the session spool and exits with a full Page render when something lands: a message, a terminal job, a child result, a request answer, room activity, a finished group barrier, a due scheduled wake, or a context advisory. It fires once. Arm it again after it fires while fast delivery matters.
+
+`--max-wait` sets a heartbeat deadline in seconds. At the deadline the pager prints a Page render and exits. Without it, the pager waits until its lease expires.
+
+A second arm for the same run is refused with `page arm already active for this session`. When the pager prints `session ended — pager exiting`, do not arm again.
+
+With no pager on a working turn, nothing is lost. Events stay in the durable spool and appear at the next Page read or at the turn boundary. A missed re-arm costs time, never events.
+
+## Jobs
+
+Run a shell command in the background:
+
+```bash
+flint orbh job run "npm test" --group verify
+```
+
+Run a subagent dispatch as a job:
+
+```bash
+flint orbh job run "Audit this module and return findings." --agent <runtime/profile> --group review
+```
+
+The positional argument is the shell command, or the subagent prompt with `--agent`. `--group` names the job group for a group barrier. `--timeout` marks the job failed after that many seconds. `--session` targets another session that you orchestrate.
+
+Inspect jobs:
+
+```bash
+flint orbh job list
+flint orbh job show <job-id>
+flint orbh job result <job-id>
+flint orbh job wait <job-id> --poll 500
+flint orbh job cancel <job-id>
+flint orbh job clear
+```
+
+`job list` also reaps dead and timed-out jobs. `job show` prints the whole job record with the full command or prompt. `job result` prints the full captured output, and it works on running jobs too. `job wait` blocks until the job is terminal, then prints its output. `job cancel` stops one running job and deletes its output. `job clear` removes finished jobs and deletes their outputs.
+
+Job statuses are:
+
+| Status | Meaning |
+| --- | --- |
+| `running` | The command or dispatch still runs. |
+| `done` | The job finished with success. |
+| `failed` | The job failed, timed out, or a barrier timeout forced it terminal. |
+
+## Group Barriers
+
+A group barrier wakes the session when every job in one group is terminal. Both `done` and `failed` count as terminal.
+
+Arm a barrier when you end your turn:
+
+```bash
+flint orbh job run "pnpm test" --group fan --timeout 1800
+flint orbh session return --await --until-group fan "Fan-out dispatched; awaiting the wave."
+```
+
+`return --await --until-group` delivers the turn result and arms the barrier in one verb. `flint orbh park --until-group <group>` is the legacy spelling without a turn result. `--barrier-timeout` force-resolves the barrier: it marks still-running group jobs as failed after that many seconds, so the session never waits forever.
+
+The barrier is additional, not exclusive. Messages, requests, room activity, and single terminal-job events can still wake the session before the whole group is terminal. On wake, read `job list` and use `job result <id>` for full output.
+
+## Scheduled Wakes
+
+A scheduled wake lets an awaiting session wake on time, not only on events:
+
+```bash
+flint orbh session return --await --wake-at +45m "State for the next turn."
+flint orbh session return --await --wake-at 2026-10-02T09:00 "State for the next turn."
+```
+
+`--wake-at` needs `--await`. It takes an ISO 8601 datetime or a `+duration` such as `+45m`, `+2h`, or `+1d`. A bare calendar date is rejected. An `--await` without `--wake-at` retires the schedule of a prior turn.
+
+## Related
+
+- [Sessions and Runs](/orbh/concepts/sessions-and-runs)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Orchestrator](/orbh/modules/orchestrator)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

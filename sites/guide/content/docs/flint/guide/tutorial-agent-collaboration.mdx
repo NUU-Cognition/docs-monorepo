@@ -1,0 +1,86 @@
+---
+title: "Tutorial: Agent Collaboration"
+---
+
+This tutorial shows how to work with an AI agent inside a Flint. You prepare the Flint, you run one interactive session, and you delegate one bounded task. The durable result of each task lands back in `Mesh/`.
+
+## Prerequisites
+
+- Flint runs on this machine, and `flint setup` has finished.
+- One agent runtime from the Orbh default target list is installed.
+- A Flint with real content exists, such as the Flint from [Tutorial Project Planning](/flint/guide/tutorial-project-planning).
+
+## Step 1: Prepare the Flint Before You Start the Agent
+
+Good sessions start with a ready Flint. Check these items:
+
+- `Mesh/(System) Flint Init.md` describes the Flint.
+- The needed shards are installed and synced.
+- Codebase references are fulfilled when the work touches software.
+- One Mesh note can receive the result.
+
+## Step 2: Load the Shard the Work Needs
+
+An agent loads the shard before it uses the shard. Show the manifest of the Projects shard:
+
+```bash
+flint shard start projects
+```
+
+The command prints the manifest with its init file, skills, workflows, and knowledge files. The agent reads the init file first and then works inside the rules of the shard.
+
+## Step 3: Run One Interactive Session
+
+Start an interactive agent session with a task:
+
+```bash
+flint orbh i "Audit the reference codebase and update the architecture notes."
+```
+
+The target is omitted, so Orbh uses the default target list. Work with the agent in the session. Point it at the init note and at the shard init files from Step 2. Direct each durable result into `Mesh/`: an updated note, a plan, or a report. The transcript is not the product.
+
+## Step 4: Delegate One Bounded Task
+
+Delegate a small task and wait for its result:
+
+```bash
+flint orbh request "Summarize the current planning notes."
+```
+
+The command starts one turn and waits. It prints the result when the turn ends. Use this form for concrete tasks with a clear landing note, such as updating docs from source, summarizing a subsystem, or drafting a note from a code audit. Vague tasks with no landing note give vague results.
+
+## Step 5: Inspect the Sessions
+
+List the sessions of the Flint:
+
+```bash
+flint orbh list --print
+```
+
+In a terminal, `flint orbh list` opens the sessions cockpit instead. `--print` shows the static table. Read one transcript and inspect one session in detail:
+
+```bash
+flint orbh watch <id>
+flint orbh inspect <id>
+```
+
+Use the full or partial session id for `<id>`. Agent work stays inspectable state, not background magic.
+
+## Step 6: Keep the Flint Clean
+
+Follow one pattern for each task:
+
+1. Prepare the Flint.
+2. Run the agent on a bounded task.
+3. Inspect the session.
+4. Review the result.
+5. Keep the durable outcome in `Mesh/`.
+
+The Orbh guide describes sessions, messages, delegation trees, and automation in full.
+
+## Next Steps
+
+- [Tutorial Project Planning](/flint/guide/tutorial-project-planning)
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Agent Sessions](/flint/modules/agent-sessions)
+- [Shards](/flint/modules/shards)

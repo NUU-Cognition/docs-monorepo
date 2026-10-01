@@ -1,0 +1,8 @@
+{
+  "title": "Guides",
+  "pages": [
+    "launching-and-resuming-sessions",
+    "watching-sessions-in-the-cockpit",
+    "delegating-to-subagents"
+  ]
+}

@@ -1,0 +1,145 @@
+---
+title: "Accounts"
+---
+
+An account is an isolated home for one harness login. Accounts belong to one runtime. Each account holds its own login, conversation files, memory, and config.
+
+## Overview
+
+Quota and rate limits apply per login. Orbh gives each login its own home folder, so sessions on different accounts never share login state. Use accounts to separate work from interactive sessions, and to spread a fleet over several logins.
+
+Account homes live under `~/.nuucognition/orbh/accounts/<runtime>/`. Each runtime keeps a registry there. The registry maps each account name to an immutable id. The data lives in a stable home keyed by that id, so a rename never moves the data.
+
+Account names use lowercase letters, numbers, underscores, and hyphens (`[a-z0-9_-]+`). The names `none` and `default` are reserved. When a launch uses an account, Orbh sets the runtime account-home variable (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, and the like) to the account home, then starts the harness.
+
+## Creating an Account
+
+Create an account and log in:
+
+```bash
+flint orbh auth add <runtime> <name>
+```
+
+The command creates the account home and runs the harness login flow. Two flags change this:
+
+| Flag | Effect |
+| --- | --- |
+| `--no-login` | Create the account folder without opening the login flow. |
+| `--reuse-removed-name` | Reuse the name of a removed account. The new account gets a new id. Sessions of the removed account still cannot resume. |
+
+## Running Harness Commands Under an Account
+
+Run any harness CLI command under one account home:
+
+```bash
+flint orbh auth account <runtime> <name> [args...]
+```
+
+Orbh sets the account-home variable and passes the remaining arguments to the harness unchanged. Use this for login variants, status checks, logout, and any other harness subcommand that must touch only that account. The account must already exist. `--dry-run` prints the environment and the command without running the harness.
+
+```bash
+flint orbh auth account codex work login --device-auth
+flint orbh auth account codex work login status
+flint orbh auth account claude work /logout
+```
+
+## Listing Accounts
+
+```bash
+flint orbh auth list [runtime]
+```
+
+The list shows one row per account: runtime, name, short id, default marker, scope, and home folder. It also names the effective default in the current Flint. A Flint-local default wins over the machine-global default.
+
+## The Default Account
+
+Each runtime can have a default account. Set it with:
+
+```bash
+flint orbh auth default <runtime> <name>
+flint orbh auth default <runtime> --clear
+```
+
+The default is Flint-local inside a Flint, and machine-global outside a Flint. A Flint without its own default inherits the machine-global default. Two flags change the scope:
+
+| Flag | Effect |
+| --- | --- |
+| `--global` | Read or write the machine-global default, even inside a Flint. |
+| `--clear` | Clear the default at the active scope. |
+
+A launch picks its account in this order: the `--account` flag, then the same-runtime parent account for a subagent, then the Flint default, then the machine default, then the vanilla home. `--account none` skips the inherit step and the defaults, and uses the vanilla home of the harness.
+
+## Launching on an Account
+
+Launch verbs take `--account <name>`:
+
+```bash
+flint orbh launch claude --account work "Prompt"
+flint orbh request claude --account work "Prompt"
+flint orbh i claude --account work
+```
+
+Subagents inherit the account of their parent on the same runtime, unless the dispatch passes `--account`.
+
+Spread a large fleet over more than one account. Before a fan-out, run `flint orbh auth usage` and read the `Account` line of `flint orbh inspect <id>` for each live interactive session. Do not put a fleet on the account of a live interactive session: when the fleet uses up the quota, the interactive sessions stop too.
+
+## Usage and Refresh
+
+Report live quota and rate-limit windows:
+
+```bash
+flint orbh auth usage [runtime] [name]
+```
+
+The view is read-only. It shows each account with its current windows and reset times. `--json` emits the rows as JSON.
+
+An account that shows `needs re-auth` is almost never logged out. Its stored access token has expired, and the harness refreshes it from the refresh token at the next launch under that account. Refresh each stale account at once:
+
+```bash
+flint orbh auth refresh [runtime] [name]
+```
+
+The command launches one throwaway session under each stale account, then re-checks. `--dry-run` lists the accounts it would refresh without launching anything. `--json` emits the outcomes as JSON.
+
+Report token use across account homes:
+
+```bash
+flint orbh auth ccusage [args...]
+```
+
+The command runs ccusage against the Orbh account homes. It adds the vanilla home of a runtime only when that runtime has no named account. `--dry-run` prints the environment and the command without running ccusage.
+
+## Moving a Session to Another Account
+
+Move a session to another account of the same runtime:
+
+```bash
+flint orbh auth migrate <account>
+flint orbh auth migrate <account> --session <id>
+```
+
+The command moves the conversation files of the session into the new account home and flips the durable account. It moves only the session files. Memory, config, and credentials stay with the old account.
+
+The destination must be an account of the same runtime. It must hold usable credentials, or the move is refused. `--force` overrides the credential check. By default the command moves the session that runs it; `--session` names another session.
+
+An interactive pane resumes the same context under the new home. A headless session comes up on the new account at its next wake. A headless session with a live turn loses that turn: the turn ends at a run boundary so the files can move safely, and the conversation survives.
+
+After the move, read the `Account` line of `flint orbh inspect <id>`. Report the new account only when it shows there.
+
+## Renaming and Removing Accounts
+
+```bash
+flint orbh auth rename <runtime> <old-name> <new-name>
+flint orbh auth remove <runtime> <name> --yes
+```
+
+A rename keeps the account id and the stable home. The old path stays as a compatibility alias, so running processes keep working. A rename of a default keeps the same account as the default.
+
+A remove deletes the account home and all its name aliases. It keeps a tombstone with a clear error for the old sessions. The removed name stays reserved. Sessions of the removed account cannot resume.
+
+## Related
+
+- [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters)
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

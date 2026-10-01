@@ -1,0 +1,160 @@
+---
+title: "Tutorial: Project Planning"
+---
+
+This tutorial builds a Flint that plans and tracks a real software project. You create the Flint, you connect it to the real codebase, and you write the first planning notes. The example plans a fictional project called Payments Rewrite.
+
+## Prerequisites
+
+- Flint runs on this machine, and `flint setup` has finished.
+- The codebase of the project sits on this machine.
+
+## Step 1: Create the Planning Flint
+
+Create a Flint with the project preset:
+
+```bash
+flint create "Payments Rewrite" --preset default
+cd "(Flint) Payments Rewrite"
+```
+
+The `default` preset installs the project shards, including Projects and Plan. The command also makes a Git repository and an Obsidian vault for the Flint.
+
+## Step 2: Point the Flint at the Real Code
+
+Connect the Flint to the codebase before you write planning notes:
+
+```bash
+flint reference codebase "Payments API" /Users/me/dev/payments-api
+flint sync
+```
+
+Use the real path of the codebase on this machine. Check the result:
+
+```bash
+flint reference list
+```
+
+The reference says which system each note describes. A planning note then points back to real source instead of floating free.
+
+## Step 3: Check the Planning Shards
+
+The preset already installed the shards. Confirm them:
+
+```bash
+flint shard list
+```
+
+You see one row for `projects` and one row for `plan`. When you start from another preset, find the current specs first. `browse` reads only and writes nothing:
+
+```bash
+flint shard browse plan
+```
+
+Install the specs from the SPEC column:
+
+```bash
+flint shard install @nuucognition/projects @nuucognition/plan
+```
+
+Each spec gets one intent record in `flint.toml`:
+
+```toml
+[shards]
+projects = "@nuucognition/projects"
+plan = "@nuucognition/plan"
+```
+
+## Step 4: Create the Plan and the First Task
+
+Create one plan note for the project:
+
+```bash
+flint helper artifact create Plan --title "Payments Rewrite"
+```
+
+You see a `Created` line with the new file:
+
+```text
+Created Mesh/Types/Plans/(Plan) 001 Payments Rewrite.md
+```
+
+Create one task for the first work item:
+
+```bash
+flint helper artifact create Task --title "Map the current API"
+```
+
+You see:
+
+```text
+Created Mesh/Types/Tasks/(Task) 001 Map the current API.md
+```
+
+Each new file holds frontmatter only. Open each file in Obsidian and write the body. Link the task to the plan and to the codebase reference. Keep the first notes short: state the goal, the known facts, the assumptions, and the open questions.
+
+## Step 5: Load the Shard Before Agent Work
+
+When an agent works with the planning notes, it loads the shard first:
+
+```bash
+flint shard start projects
+```
+
+The command prints the shard manifest. The agent reads the init file and then follows the task lifecycle of the shard. A task moves from `todo` to `in-progress`, then through review to `done`.
+
+## Step 6: Decide Whether You Need a Workspace Repo
+
+Skip this step when the Flint only references the main codebase. When the Flint needs its own repo, such as a sandbox or a spike repo, declare it:
+
+```bash
+flint workspace create "Sandbox" git@github.com:me/payments-sandbox.git
+flint sync
+```
+
+`flint sync` clones the repo into the Flint. A reference points to something external. A workspace repo becomes part of the Flint.
+
+## Step 7: Keep the Flint in Sync
+
+Run two commands whenever `flint.toml` changes:
+
+```bash
+flint shard install   # after a new or changed shard spec
+flint sync
+```
+
+`flint shard install` with no argument makes the lock match the specs. `flint sync` makes the files match the lock and the declarations.
+
+## Step 8: Publish and Sync with Git
+
+`flint create` already made the Git repository. Publish it once to an empty remote repository:
+
+```bash
+flint git publish <url>
+```
+
+Then sync with a message:
+
+```bash
+flint git sync -m "update planning baseline"
+```
+
+`flint git sync` exchanges history with origin. It runs `flint sync` between the integrate and the push. Without an origin, the sync stops and names the publish command.
+
+## A Healthy Everyday Loop
+
+1. Inspect the referenced codebase.
+2. Update the plan or task notes in `Mesh/`.
+3. Change `flint.toml` only when the declared relationships change.
+4. Run `flint sync`.
+5. Commit the durable changes with `flint git sync`.
+
+## Next Steps
+
+- [Creating a Flint](/flint/guide/creating-a-flint)
+- [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration)
+- [Artifacts and Types](/flint/concepts/artifacts-and-types)
+- [References](/flint/modules/references)
+- [Shards](/flint/modules/shards)
+- [Workspace](/flint/modules/workspace)
+- [Sync](/flint/modules/sync)

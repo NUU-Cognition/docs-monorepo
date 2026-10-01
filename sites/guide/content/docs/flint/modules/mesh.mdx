@@ -1,0 +1,146 @@
+---
+title: "Mesh"
+---
+
+The Mesh is the content layer of a Flint. It holds every note, plan, task, report, dashboard, and record as plain Markdown files that link to each other.
+
+## Overview
+
+The Mesh covers everything under `Mesh/` and `Media/`. Each file is Markdown with YAML frontmatter. The frontmatter carries the file identity (`id`), its classification (`tags`), and its links to other files.
+
+The Mesh is flat. Folders are display only. Structure lives in frontmatter tags, not in folder paths. Tools and agents find files by tags and links. They never depend on folder location.
+
+`Mesh/` holds Markdown. `Media/` holds files that are not Markdown. See [Media](/flint/modules/media) for the media rules.
+
+## Sections and Groups
+
+Sections and groups organize the flat Mesh. They come from the Invironments shard. Three tags form the full grammar.
+
+```yaml
+tags:
+  - "#ie/sections/<name>"   # where this file lives (exactly one)
+  - "#ie/groups/<name>"     # what collections it joins (any number)
+  - "#ie"                   # this file is a section header
+```
+
+A section says where a file lives. Each file carries exactly one section tag. Section names are flat and unique across the Mesh. A section exists the moment a tag names it. No registration step exists.
+
+A group says what a file is part of. A file can join any number of groups. Each group has a definition file `(Group) <Name>.md` under `Mesh/Groups/`.
+
+Sections display under `Mesh/Sections/` at any folder depth that reads well. The folders are visual only. Moving a folder changes nothing.
+
+A `(Section) <Name>.md` header is optional. It upgrades a section with context and a navigation guide. The header never lists members. The `load` command builds the member list live from each member description.
+
+```bash
+flint shard ie section "<Name>"     # scaffold a section folder and header
+flint shard ie group "<Name>"       # scaffold a group definition
+flint shard ie list                 # sections and groups with member counts
+flint shard ie load "<Section>"     # header plus the member list
+```
+
+## The Staging Sections
+
+`Mesh/Main/` holds three always-present sections. They stage new material.
+
+```text
+New → Working → Consolidated
+```
+
+A note captured with no destination lands in **New**. Processing moves it forward through the stages, or into the section where it belongs. **Working** holds material under active use. **Consolidated** holds material in its settled form.
+
+## Notes
+
+A note is the atomic member of the Mesh. It is one file, one idea, free-form content. Notes carry no type prefix. The filename is the title.
+
+```yaml
+---
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+tags:
+  - "#note"
+  - "#ie/sections/cognition"
+description: One line that says what this note holds.
+created: 2026-10-01
+modified: 2026-10-01
+---
+```
+
+Each note carries `#note` plus exactly one section tag. Each note carries a one-line `description`. The description is what `load` shows. A note without it stays invisible in listings.
+
+```bash
+flint shard ie note "<Title>" --section <name>
+```
+
+The command creates the note beside its section header. The default section is New. Titles are unique across `Mesh/`, without regard to letter case.
+
+## Types and the Archive
+
+Typed artifacts group under `Mesh/Types/` by type. Each type gets one folder, for example `Mesh/Types/Tasks/`. Typed files use the `(Type) NNN Name.md` pattern, for example `(Task) 042 Review import.md`. The type definitions live in `Mesh/Metadata/Types/`. See [Artifacts and Types](/flint/concepts/artifacts-and-types) for the naming rules.
+
+`Mesh/Archive/` stores finished work. It mirrors the `Types/` folders. An archived task moves from `Mesh/Types/Tasks/` to `Mesh/Archive/Tasks/`.
+
+`Mesh/Metadata/` holds derived marker notes. Shards and features write markers there for configured state, such as workspace repositories and installed type definitions. These files make state visible inside the Mesh. Agents read them instead of config files.
+
+`Mesh/People/` holds one marker file per person, named `@<Name>.md`. The filename is the identity.
+
+`Mesh/(System) Flint Init.md` is the entrypoint of the Flint. It describes what the Flint is for and where to start.
+
+## Dashboards
+
+A dashboard is a live view over the Mesh. Dashboards use the `(Dashboard) <Name>.md` pattern. They hold DataviewJS queries that aggregate artifacts, for example open tasks by status. They render inside Obsidian. Shards install dashboards for the types they manage. See [Using Obsidian](/flint/guide/using-obsidian) for the reading surface.
+
+## Wiki Links
+
+Files reference each other with wiki links.
+
+```text
+[[Document Title]]
+[[(Task) 042 Review import]]
+```
+
+In frontmatter, quote each link.
+
+```yaml
+parent: "[[(Plan) 003 Q1 Roadmap]]"
+```
+
+Mesh titles are globally unique. A link needs only the title. The helper commands keep links correct when files change.
+
+## Helper Commands
+
+Three helpers manage Mesh files. They keep titles unique and links intact.
+
+`flint helper rename` renames a file and rewrites every wiki link to it under `Mesh/`. It accepts the full Mesh name or only the title portion. The typed prefix and number stay. The file stays in its folder.
+
+```bash
+flint helper rename "(Task) 042 Old title" "New title"
+```
+
+`flint helper delete` removes a file and strips every frontmatter link to it across `Mesh/`. Scalar fields lose their key. Array fields lose the entry, and empty arrays lose their key. Body text stays untouched. A leftover link in prose is a trace, not an error. The command fails when no file has that title. With `--archive`, it moves the file to `Mesh/Archive/` instead of deleting it.
+
+```bash
+flint helper delete "(Task) 042 Old title"
+flint helper delete "(Task) 042 Old title" --archive
+```
+
+`flint helper artifact create` reserves the next free number for a type and writes the file in one step. Two writers never get the same number. The title flag is required. The folder flag is optional when the type maps to exactly one folder.
+
+```bash
+flint helper artifact create Task --title "Review import"
+```
+
+`flint helper type newnumber` only previews the next number. It reserves nothing. Use `artifact create` to claim a number.
+
+```bash
+flint helper type newnumber Task
+```
+
+See [CLI Commands](/flint/reference/cli-commands) for the full command list.
+
+## Related
+
+- [Artifacts and Types](/flint/concepts/artifacts-and-types)
+- [Media](/flint/modules/media)
+- [Shards](/flint/modules/shards)
+- [Using Obsidian](/flint/guide/using-obsidian)
+- [Core Concepts](/flint/guide/core-concepts)
+- [CLI Commands](/flint/reference/cli-commands)

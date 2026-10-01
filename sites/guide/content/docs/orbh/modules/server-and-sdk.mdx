@@ -1,0 +1,130 @@
+---
+title: "Server and SDK"
+---
+
+The Orbh server exposes sessions, rooms, and transcripts over HTTP and SSE. The SDK gives programs the wire types and helpers to use that surface.
+
+## Overview
+
+The server is a standalone process. Dashboards and tools talk to it instead of touching session state directly. It serves session routes, room routes, transcript reads, and a live event stream.
+
+The SDK is the shared contract. It declares the wire version, the event channels, the session shapes, and small helpers for summaries and transcripts. Its types are type-only, so browser clients import them with no Node runtime code.
+
+The current wire version is `2`. Clients check it before they subscribe.
+
+## Server Process
+
+Start, inspect, and stop the server through the CLI:
+
+```bash
+flint orbh server start
+flint orbh server status
+flint orbh server stop
+```
+
+`start` accepts these flags:
+
+```bash
+flint orbh server start --host 127.0.0.1 --port 13041
+flint orbh server start --port 0 --daemon
+flint orbh server start --orb-store-dir <path> --config <path>
+```
+
+The defaults are host `127.0.0.1` and port `13041`. Port `0` asks the OS for a free port. `--daemon` detaches the server so it keeps running. `--orb-store-dir` overrides the Orb store directory. `--config` points at an `orbh.toml` file. `status` and `stop` accept `--host`, `--port`, `--orb-store-dir`, and `--config` as overrides.
+
+The server refuses a non-loopback host without an auth token. The token comes from the server options or from `ORBH_SERVER_TOKEN`. Clients send it as a `Bearer` token. The server enables CORS for browser clients.
+
+## Session Routes
+
+Routes live under the route prefix, with a health check at `GET /health`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/sessions` | List sessions. Query supports `limit`, `offset`, `status`, `runtime`, `search`, `sortBy`, and `includeDiscarded`. |
+| `GET` | `/sessions/batch?ids=a,b` | Read several sessions at once. It returns an id-keyed map. |
+| `POST` | `/sessions` | Launch a session. |
+| `GET` | `/sessions/:id` | Read one session. |
+| `PATCH` | `/sessions/:id/metadata` | Patch session metadata. |
+| `POST` | `/sessions/:id/messages` | Send a session message. |
+| `POST` | `/sessions/:id/park` | Park a session. |
+| `POST` | `/sessions/:id/close` | Close a session. |
+| `DELETE` | `/sessions/:id` | Delete or discard a session. |
+| `POST` | `/sessions/:id/resume` | Resume a session. |
+| `POST` | `/sessions/:id/respond` | Respond to a pending session request. |
+| `POST` | `/sessions/:id/input` | Send input to a live interactive session. Body mode is `auto`, `paste`, or `raw`. |
+| `GET` | `/sessions/:id/requests` | List session requests. |
+| `GET` | `/sessions/:id/transcript` | Read a session transcript. |
+| `GET` | `/sessions/:id/result` | Read a session result, with optional long-poll wait. |
+| `GET` | `/sessions/:id/collect` | Collect a finished result through the server. |
+| `GET` | `/sessions/wait` | Wait for sessions in parallel. |
+| `GET` | `/profiles` | List profiles. |
+| `GET` | `/harnesses` | List harness adapters. |
+| `GET` | `/runtimes` | List runtimes. |
+| `GET` | `/requests` | List requests. |
+
+`GET /sessions` accepts no `ids` filter. Use `/sessions/batch` for batch reads. `status` accepts `working`, `needs-input`, `finished`, or `abandoned`. `sortBy` accepts `updated` or `started`.
+
+## Room Routes
+
+Room routes cover the core room actions:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/rooms?limit=<n>` | List rooms. |
+| `GET` | `/rooms/:name?limit=<n>` | Read a room. |
+| `POST` | `/rooms/:name/messages` | Post `{ "text": "..." }` to a room. |
+| `POST` | `/rooms/:name/join` | Join a room. |
+| `POST` | `/rooms/:name/leave` | Leave a room. |
+| `POST` | `/rooms/:name/read` | Mark a room as read. |
+
+Room concepts and message flow live in [Rooms and Messages](/orbh/modules/rooms-and-messages).
+
+## Live Events
+
+The server streams live events over SSE at `/events/stream`. The query accepts `channels`, `sessionIds`, and `wireVersion`. A client subscribes to the channels it needs and filters by session.
+
+The SDK declares these channels:
+
+| Channel | Events |
+| --- | --- |
+| `sessions` | `session.changed`, `session.deleted` |
+| `orbh` | `session.created`, `session.updated`, `session.work_state_changed`, `session.finished`, `session.abandoned`, `run.started`, `run.completed`, `run.failed`, `request.created`, `request.answered`, `message.received`, and manager roster events |
+| `rooms` | `room.message`, `room.changed` |
+| `transcripts` | `transcript.updated`, `transcript.turn_completed` |
+| `orb-studio` | `orb.event` |
+
+The default subscription covers `sessions`, `orbh`, and `rooms`. The `sessions` channel carries one coarse frame per summary change. The `orbh` channel carries granular control-plane events. `transcripts` and `orb-studio` need an explicit subscription.
+
+## Session Summary Shape
+
+The SDK `SessionSummary` describes one session in list and event payloads:
+
+| Field | Meaning |
+| --- | --- |
+| `id`, `spaceId`, `spoolId`, `rootThreadId` | Identity and storage pointers. |
+| `runtime`, `mode`, `retention`, `workState` | Runtime and lifecycle fields. |
+| `title`, `displayTitle`, `description` | Operator-facing text. `displayTitle` adds the live state. |
+| `metadata`, `interface` | Session metadata and key/value interface. |
+| `continues`, `parentSessionId`, `started`, `updated` | Continuation, parent link, and timestamps. |
+| `runCount`, `currentRun` | Run summary, with context use and live activity. |
+| `pendingRequest` | Current pending request, if any. |
+
+`GET /sessions/:id` returns the fuller `SessionDetail` shape.
+
+## Using Them From a Program
+
+A program starts its own server with `startOrbhServer`, or mounts `orbhPlugin` in a Fastify app. Both accept host, port, store directory, route prefix, and auth token options.
+
+```bash
+flint orbh server start --port 0 --daemon
+```
+
+A client then uses HTTP for reads and actions, and SSE for live updates. It imports the wire types from the SDK and gates on `WIRE_VERSION`. The SDK also gives `summarizeSession` for list shapes, `groupIntoTurns` and `TranscriptReader` for transcripts, and `composeDisplayTitle` for titles.
+
+## Related
+
+- [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions)
+- [Delegating to Subagents](/orbh/guides/delegating-to-subagents)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

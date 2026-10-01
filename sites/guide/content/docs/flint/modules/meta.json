@@ -1,0 +1,13 @@
+{
+  "title": "Modules",
+  "pages": [
+    "mesh",
+    "shards",
+    "sync",
+    "sources",
+    "workspace",
+    "references",
+    "agent-sessions",
+    "media"
+  ]
+}

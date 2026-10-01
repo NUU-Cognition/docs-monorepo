@@ -1,0 +1,173 @@
+---
+title: "Delegating to Subagents"
+---
+
+A subagent is a session that does one piece of work and returns one result. This guide shows how to dispatch a subagent, collect its result, send a follow-up, and fan out to several subagents.
+
+## Prerequisites
+
+- You run Orbh sessions already. See [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
+- You know the `runtime/profile` target of each child. See [Profiles and Harness Adapters](/orbh/modules/profiles-and-harness-adapters).
+- You understand turns and results. See [Sessions and Runs](/orbh/concepts/sessions-and-runs).
+
+## Dispatch one subagent
+
+Use `request -q` when you need the answer of the child in your turn:
+
+```bash
+flint orbh request -q <runtime/profile> "<complete, self-contained prompt>"
+```
+
+The command blocks until the child returns its result. It prints only the result of that turn.
+
+Run the command through the background execution of your harness when you must keep working. Do not put a long blocking request in a foreground call that times out before the child finishes.
+
+Give the child a title when the dispatch list must stay legible:
+
+```bash
+flint orbh request -q <runtime/profile> "<prompt>" --title "Review module A"
+```
+
+Treat the returned payload as the only deliverable of the child. The terminal output of the child is process output, not the Orbh result.
+
+## Write a self-contained prompt
+
+A subagent shares the workspace with you, but it shares none of your conversation. The prompt must carry the full task.
+
+Include the goal, the exact files or targets, the boundaries, the verification commands, and the required shape of the result. Name the paths that the child must not edit.
+
+Keep this shape:
+
+```text
+Read <files>. Do <bounded task>.
+Do not edit <forbidden paths>.
+Return exactly:
+- Findings
+- Files touched
+- Open questions
+
+Finish with:
+flint orbh session return --finish "<markdown result>"
+```
+
+## Collect the result
+
+Use `wait` to block for the result of a turn that you already started:
+
+```bash
+flint orbh wait <session-id>
+```
+
+Use `result` to read a result that already exists:
+
+```bash
+flint orbh result <session-id>
+flint orbh result <session-id> --run 2
+```
+
+`result` reads the latest returned turn by default. `--run <n>` reads one historical turn by its 1-based number.
+
+A collector waits for the correlated result of its turn, not for a work state or a process exit. A child can await, crash and resume, or pass through intermediate runs without resolving the collector early.
+
+The collector outcome is one of these values: `result`, `api-error`, `failed-unreturned`, `abandoned`, `hangup`, `adopted`, or `pending`. A command timeout stops the wait but leaves the outcome `pending`.
+
+## Follow up with the same subagent
+
+Use `request -q -c` to wake an awaiting child and collect one more turn:
+
+```bash
+flint orbh request -q -c <session-id> "<follow-up>"
+```
+
+The dispatch itself wakes the child. The command blocks until the follow-up turn returns.
+
+Use `wait --next` when the child stays in `--await` duty and you want its next result:
+
+```bash
+flint orbh wait --next <session-id>
+```
+
+Grant `--await` to a child only when you genuinely expect a follow-up. `return --await` still emits a result, and the collector of that turn unblocks.
+
+## Fan out to several subagents
+
+For a small fan-out, start several background `request -q` calls. Each completion arrives with its own correlation.
+
+For a wide fan-out, use agent jobs with one group barrier:
+
+```bash
+flint orbh job run --agent <runtime/profile> "<prompt A>" --group wave-1
+flint orbh job run --agent <runtime/profile> "<prompt B>" --group wave-1
+flint orbh session return --await --until-group wave-1 "Wave 1 dispatched; awaiting leaf results."
+```
+
+An agent job wraps `request -q`. The correlated result of the subagent becomes the output of the job.
+
+`return --await --until-group` does two things at once. Your collector receives the checkpoint result of this turn, and the barrier arms your next wake. The orchestrator resumes you when every job in the group reaches a terminal state.
+
+The barrier is additional, not exclusive. A message, a request, or room activity can still wake you before the group completes.
+
+Inspect the wave after the wake:
+
+```bash
+flint orbh job list
+flint orbh job result <job-id>
+flint orbh job wait <job-id>
+```
+
+`job result` prints the full captured output, and it works on a running job too. `job wait` blocks until one job reaches a terminal state. The terminal states are `done` and `failed`. A failure also resolves the barrier.
+
+Add `--barrier-timeout` when the wait must never strand you:
+
+```bash
+flint orbh session return --await --until-group wave-1 --barrier-timeout 900 "Wave 1 dispatched; awaiting leaf results."
+```
+
+The timeout marks each job that still runs as failed, so the barrier resolves. See [Page and Jobs](/orbh/modules/page-and-jobs).
+
+## Respect the dispatch caps
+
+Orbh caps the dispatch tree for safety. The default depth cap is 5, and the default live fan-out cap is 16. A subagent can dispatch its own subagents, but a dispatch past a cap fails with the chain in the error.
+
+Change the caps with the environment only when you own the machine policy:
+
+```bash
+ORBH_DISPATCH_DEPTH_CAP=8 flint orbh request -q <runtime/profile> "<prompt>"
+ORBH_DISPATCH_FANOUT_CAP=32 flint orbh request -q <runtime/profile> "<prompt>"
+```
+
+## Spread a fleet over accounts
+
+Check quota before a fan-out:
+
+```bash
+flint orbh auth usage
+```
+
+Find the account of each live interactive session with `flint orbh inspect <id>`. Do not put a fleet on the account of a live interactive session. When the fleet uses up the quota, the interactive sessions of the human stop too.
+
+Spread a large fleet over more than one account with `--account`:
+
+```bash
+flint orbh job run --agent <runtime/profile> "<prompt>" --group wave-1 --account <name>
+```
+
+See [Accounts](/orbh/modules/accounts).
+
+## Close out before you finish
+
+Collect each open dispatch with `flint orbh wait <id>`, or write in your result why you drop it. Close each child that you told to `return --await` and that has no more work:
+
+```bash
+flint orbh close <id>
+```
+
+An awaiting child whose parent has ended has no wake path. Do not use `discard` for a child that finished its work.
+
+## Next Steps
+
+- [Orchestrator](/orbh/modules/orchestrator)
+- [Page and Jobs](/orbh/modules/page-and-jobs)
+- [Rooms and Messages](/orbh/modules/rooms-and-messages)
+- [Accounts](/orbh/modules/accounts)
+- [CLI Commands (NUU Docs Orbh)](/orbh/reference/cli-commands-nuu-docs-orbh)

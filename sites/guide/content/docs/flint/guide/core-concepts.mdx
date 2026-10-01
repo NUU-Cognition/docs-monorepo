@@ -1,0 +1,90 @@
+---
+title: "Core Concepts"
+---
+
+This guide defines the core words of Flint. Each section defines one word in short form. The last section shows how the words fit together.
+
+## Flint
+
+A Flint is one folder of notes and shards with its own id. The `flint` command manages it. One Flint covers one coherent area of work, such as a product, a research area, or a client engagement. A new Flint holds `flint.toml`, `flint.json`, `.flint/`, `Mesh/`, `Media/`, `Shards/`, `Sources/`, and `Workspace/`. See [Creating a Flint](/flint/guide/creating-a-flint).
+
+## Mesh
+
+The Mesh is the content layer of a Flint. It holds typed artifacts (tasks, plans, notepads), notes, and system files. Every file uses Markdown with YAML frontmatter. Each file has a permanent `id` and `tags`. Related files point to each other with `[[wiki links]]`. The Mesh is flat: folders only change the display, and structure lives in tags. See [Mesh](/flint/modules/mesh).
+
+## Media
+
+`Media/` holds the files that are not Markdown. Examples are images, PDFs, and screenshots. Notes in the Mesh link to them. Media files carry no frontmatter of their own. See [Media](/flint/modules/media).
+
+## Sections and Groups
+
+Sections and groups organize the flat Mesh. They come from the Invironments shard, which Flint depends on.
+
+A section says where a node lives. Each node carries exactly one `#ie/sections/<name>` tag. A section exists when a tag names it. No registration step creates it. A `(Section)` header file is optional: it adds a context envelope and a navigation guide to its section. Three staging sections always exist under `Mesh/Main/`: New, Working, and Consolidated. A note with no destination lands in New.
+
+A group says what collections a node belongs to. A node carries any number of `#ie/groups/<name>` tags. Each group has one definition file, `(Group) <Name>.md`, under `Mesh/Groups/`.
+
+In short: a section is where you are, and a group is what you are part of.
+
+## Types and Templates
+
+A type defines one kind of artifact. Examples are Task, Plan, and Notepad. Each type has a definition file under `Mesh/Metadata/Types/`. The definition names the tag, the file naming pattern, the storage folder, and the lifecycle. Typed artifacts use the pattern `(Type) NNN Name.md`, with a zero-padded number.
+
+A template defines how to write an artifact of one type. It names the sections, the order, and the fields. The `template` frontmatter field of an artifact names its template. Shards ship the types and the templates. See [Artifacts and Types](/flint/concepts/artifacts-and-types).
+
+## Shards
+
+A shard is a package that extends what an agent can do in a Flint. It holds an init file, skills, workflows, templates, knowledge files, and install files. An agent loads a shard before it uses any of its capabilities.
+
+Each shard has two forms. The source holds the files that a person edits. It lives in `Shards/(Source Local) <Name>/` or `Shards/(Source Remote) <Name>/`. The build is the package that agents load. It lives in `Shards/<Name>/`. The command `flint shard build <alias>` makes the build from the source. The command `flint shard list` shows the shards of a Flint. See [Shards](/flint/modules/shards).
+
+## The Intent: flint.toml
+
+`flint.toml` declares what the Flint wants. It names the Flint, the shards with their specs, the references, the sources, and the workspace repositories. You edit this file by hand, or a command writes it. It travels with the Flint to other machines.
+
+## The Lock: flint.json
+
+`flint.json` records what the Flint resolved. It holds the id of the Flint, its type, its migration record, and one lock record per shard. Each lock record holds the shard id, the version, and the state (`published`, `snapshot`, or `edited`). Only commands write this file. You never edit it by hand.
+
+## The Facts of the Machine: .flint/
+
+`.flint/` holds state that belongs to this machine only. It does not travel with the Flint. Examples are `.flint/references.json` (where each reference lives on this disk), `.flint/shards.json` (the shard facts of this machine), `.flint/sync.json` (sync bookkeeping), and `.flint/obsidian/state.json` (the Obsidian payload that this machine installed). Only commands write these files.
+
+## Sync
+
+Sync makes the files match the declarations. Three commands do three jobs:
+
+- `flint sync` makes the files match the lock and the declarations. It never reads the shard registry. It never pushes or pulls Git.
+- `flint shard install` makes the lock match the specs in `flint.toml`.
+- `flint git sync` exchanges history with origin. It runs the local sync before the push.
+
+Run `flint sync` after you change `flint.toml`. Run `flint plan` to preview the sync without writing. See [Sync](/flint/modules/sync).
+
+## The Roster
+
+The roster is the list of Flints that this machine knows. It lives in `~/.nuucognition/places.json`. Commands use it to find a Flint by name, for example `flint open <name>` and `flint cd <name>`. The command `flint list` shows the roster. `flint create` adds each new Flint to it. See [The Roster](/flint/guide/the-roster).
+
+## The Computer Flint
+
+The Computer Flint is the home Flint of this machine. Its folder is `(Computer) <Machine Display Name>` in the home folder. The word `computer` is reserved for it: `flint open computer` always reaches it. It holds the Start Here note and the repair notes of `flint fix`. `flint setup` makes it. Its name and the machine display name are one name: a rename changes both.
+
+## Agents
+
+An agent works in a Flint through an Orbh session. The session tracks the run, its result, and interface keys such as `phase`, `progress`, and `artifacts`. The session spool lives under `.orb/`. You start an interactive agent with `flint orbh i`. The agent reads `Mesh/(System) Flint Init.md` first, then loads the shards it needs. It writes durable outcomes back into the Mesh. See [Agent Sessions](/flint/modules/agent-sessions) and [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration).
+
+## How They Fit
+
+A Flint is a bounded folder where `Mesh/` holds the durable thinking. `Media/` holds the files that are not Markdown. Sections say where each node lives, and groups say what each node belongs to. Types and templates keep artifacts consistent.
+
+`flint.toml` declares what the Flint wants. `flint.json` locks what it resolved. `.flint/` records the facts of this machine. `flint sync` makes the files match the lock and the declarations. The roster finds each Flint on this machine. The Computer Flint is the home of the machine.
+
+Shards give agents the programs they run. Agents read the Mesh, load shards, and write results back into the Mesh. That loop is the whole model: declared relationships, durable notes, and agents that work inside a known structure.
+
+## Next Steps
+
+- [Quick Start](/flint/guide/quick-start) — from install to the first Flint
+- [Creating a Flint](/flint/guide/creating-a-flint) — make a Flint with the right shards
+- [The Roster](/flint/guide/the-roster) — the list of Flints on this machine
+- [Mesh](/flint/modules/mesh) — the content layer in full
+- [Shards](/flint/modules/shards) — the shard model in full
+- [Sync](/flint/modules/sync) — the sync model in full

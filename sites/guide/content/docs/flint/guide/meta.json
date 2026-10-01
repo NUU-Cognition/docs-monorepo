@@ -1,0 +1,18 @@
+{
+  "title": "Guide",
+  "pages": [
+    "quick-start",
+    "setting-up-a-machine",
+    "join-your-org",
+    "core-concepts",
+    "creating-a-flint",
+    "the-roster",
+    "global-configuration",
+    "using-obsidian",
+    "using-tinderbox",
+    "doctor-and-fix",
+    "tutorial-project-planning",
+    "tutorial-research-notes",
+    "tutorial-agent-collaboration"
+  ]
+}

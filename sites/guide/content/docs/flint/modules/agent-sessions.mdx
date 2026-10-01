@@ -1,0 +1,144 @@
+---
+title: "Agent Sessions"
+---
+
+An agent session is a durable record of one agent task. It keeps the prompt, the runs, the result, and the state across turns.
+
+## Overview
+
+A Flint is an environment where agents run shard-based programs. Each run of an agent gets a session. The session tracks the work over time. The Mesh stores the notes and artifacts that the work produces.
+
+Orbh manages sessions. It assigns each session a stable id. It records each run inside the session. This page covers sessions from the view of a Flint user. The Orbh guide covers session management in depth.
+
+## Start an Interactive Session
+
+`flint orbh i` starts an interactive agent session in the terminal. It opens the agent interface with session tracking.
+
+```bash
+flint orbh i
+flint orbh i "Summarise the open tasks in this Flint."
+flint orbh i claude "Review my notes."
+```
+
+The first argument is an optional runtime target. The next argument is an optional prompt. With no target, Orbh uses its default target list. With no prompt, the session starts empty.
+
+Useful flags:
+
+```bash
+flint orbh i --continue <id>      # Continue a past session
+flint orbh i --detached           # Start in the background and print the session id
+flint orbh i --prompt-file ./prompt.md  # Read a long prompt from a file
+flint orbh i --model <model>      # Override the model
+```
+
+`flint orbh c` picks a past session and continues it. `flint orbh list --print` shows the sessions of this Flint. `flint orbh inspect <id>` shows one session in detail.
+
+## Open a Session from Obsidian
+
+`flint obshn` opens a new terminal tab in Obsidian and starts an interactive session there. It runs `flint orbh i` inside the new tab.
+
+```bash
+flint obshn "" "Review my notes."
+```
+
+The first argument is the Orbh profile target. An empty string lets Orbh select from its default target list. The second argument is an optional prompt. See [Using Obsidian](/flint/guide/using-obsidian) for the Obsidian setup.
+
+## Where Sessions Live
+
+Session state lives in the `.orb` folder of the Flint. Current session spools live under:
+
+```text
+.orb/spaces/local/spools/
+```
+
+These files are local session state. They are not published content of the Flint. The Flint-managed `.gitignore` excludes `.orb`.
+
+## What a Session Tracks
+
+Each session tracks:
+
+- a stable session id
+- the runtime and profile that run it
+- the mode (`interactive`, `headless`, or `subagent`)
+- the launch prompt
+- the working directory
+- an optional title and description
+- an optional parent session id
+- one or more runs
+- request and response records
+- interface key and value state
+- tracked artifact paths
+- the result text
+
+The work state shows where the session stands. The states are `working`, `awaiting`, `needs-input`, `finished`, and `abandoned`. `needs-input` means the session waits for an answer. `awaiting` means the session rests and expects follow-up.
+
+One session can hold many runs. The session is the durable container. Each run is one concrete execution inside it. A resume adds a new run to the same session.
+
+## Sessions in Artifacts
+
+Agents record their work in Mesh artifacts with two frontmatter fields.
+
+The `authors` field names the people behind the artifact:
+
+```yaml
+authors:
+  - "[[@Nathan Luo]]"
+```
+
+The `orbh-sessions` field names the sessions that created or changed the artifact:
+
+```yaml
+orbh-sessions:
+  - "[[session-uuid-1]]"
+  - "[[session-uuid-2]]"
+```
+
+Each entry is one Orbh session id in wiki link form. An agent appends its session id when it creates an artifact or edits it in a substantive way. All agent runtimes write to this one field.
+
+## Session Pins
+
+Each session keeps a list of pinned Markdown files. Pins put the key files of the work first in the session finder. The agent pins a file when it starts work on it. It keeps the pin after the work ends.
+
+Open the finder with `Ctrl-]` then `o`. It shows matching pins first in stored order. Other matches keep the usual ranking. A renamed file keeps its old pin path. The agent removes the old path and adds the new path after a rename.
+
+The pin commands are agent commands:
+
+```bash
+flint helper pins add "Mesh/Notes/Design.md"
+flint helper pins list
+flint helper pins remove "Mesh/Notes/Design.md"
+```
+
+`add` appends paths and skips duplicates. `list` prints the pins as JSON. `remove` drops paths. Pins stay with the session across resume.
+
+## How an Agent Loads a Shard
+
+An agent loads a shard before it uses the shard. It runs `flint shard start` and reads the shard init file:
+
+```bash
+flint shard start <ref>
+```
+
+The command prints a manifest. The manifest lists the init file, the required reading, the skills, the workflows, the templates, and the knowledge files. The agent reads the init file first. The init file defines what the shard does and how to use it.
+
+In a headless session the agent runs `flint shard hstart` instead. It loads the headless init file in place of the interactive one. Headless workflows drop human review gates and report progress through session keys. See [Shards](/flint/modules/shards) for the shard model.
+
+## Repair Sessions
+
+When a Flint command fails, its output ends with `Or: flint fix`. `flint fix` starts a repair session in the Computer Flint. The session reads the failure record and repairs the problem with the person.
+
+```bash
+flint fix          # Repair the last failure
+flint fix --list   # List the failure records of this machine
+```
+
+`flint fix` starts an interactive session on the default target. `flint doctor` only checks the machine and starts no agent. See [Doctor and Fix](/flint/guide/doctor-and-fix) for the full repair flow.
+
+## Related
+
+- [Using Obsidian](/flint/guide/using-obsidian)
+- [Doctor and Fix](/flint/guide/doctor-and-fix)
+- [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration)
+- [Shards](/flint/modules/shards)
+- [Mesh](/flint/modules/mesh)
+- [CLI Commands](/flint/reference/cli-commands)

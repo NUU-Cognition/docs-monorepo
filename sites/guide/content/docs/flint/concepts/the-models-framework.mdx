@@ -1,0 +1,121 @@
+---
+title: "The Models Framework"
+---
+
+A Flint is useful when it helps people and agents build workable models of reality.
+
+A model is any representation that helps a mind understand or act. A note is a model. A task is a model. A transcript, a guide, a plan, and a type definition are models too. None of them is reality itself. Each one is a structured way to point at reality, interpret it, and make it useful.
+
+This page explains the ideas behind the artifact system of Flint.
+
+## The Starting Point
+
+Flint starts from two axioms.
+
+- One shared external reality exists.
+- Minds build models of that reality. No mind has direct access to it.
+
+That distinction shapes the whole system. Flint does not treat its file types as natural categories. A task is not a kind of thing that exists in the world. It is a useful structure for work that should happen. A record is not a separate class of thing. It is a way to preserve a captured event with less added interpretation than a guide or a plan.
+
+Categories are engineering choices. They grant affordances. They are not discoveries about reality.
+
+A structure earns its place when it helps someone retrieve, verify, compare, compose, or act. Usefulness is the only test.
+
+## Meaning Depends on Context
+
+A note means something only inside an interpretation context. Flint calls that context an Information Environment.
+
+An Information Environment is a mind or a mind-like context that knows how to interpret a model. Examples include a person reading with their background knowledge, an agent session with files loaded in context, a shard with its init file and templates loaded, and a hypothetical future reader declared as a note in the Flint.
+
+The same file means different things in different contexts. A terse task note is obvious to its author. It confuses an agent that has not loaded the relevant shard. A transcript is strong evidence that someone said words. It is weak evidence that those words are true.
+
+Models do not travel alone. Good documents make their expected context legible. They link to related notes. They name source material. They use frontmatter with care. They never assume that the next reader shares the memory of the author.
+
+## Capture and Synthesis Form a Spectrum
+
+Records are models at the capture end of a spectrum. They are not a separate category.
+
+At the capture end sit transcripts, logs, sensor readings, photographs, and copied source material. Their value is preservation with minimal added interpretation. The meaning originates elsewhere. A stenographer captures a speech. The speaker supplies the meaning.
+
+At the synthesis end sit explanations, plans, policies, and design notes. Their value is selection, interpretation, and organization. A mind has done the derivation. A journalist composes an article. The journalist supplies the meaning.
+
+Most artifacts sit between the two ends. Meeting notes mix direct quotes with summarized decisions. A research note mixes copied excerpts with a new argument.
+
+Flint works best when that difference stays visible. Captured material grounds claims. Synthesized material supports action and understanding. Mixing them is normal. The reader still needs to tell which is which.
+
+## Records Say What Was Captured
+
+Every capture has two layers. Only one layer is recorded.
+
+- The event layer is the fact that the capture happened. A microphone stood here at this time and captured these waveforms.
+- The content layer is the meaning inside the captured bytes. "The sky is red" is a claim the speaker made. It is not a claim the record makes.
+
+A transcript supports the claim that certain words were said. It does not support the claim that those words are true. That second claim needs its own grounding.
+
+This distinction guides agent work. When accuracy matters, agents trace synthesized claims back toward records and source files. They never treat a polished note as direct evidence.
+
+## Types Are Compositions, Not Categories
+
+Flint composes types from traits. It does not sort documents into fixed buckets.
+
+For example, a task combines a future orientation, a commitment to do work, and lifecycle states. A record combines a past orientation, captured content, and an expectation that nobody rewrites it casually. A mandate combines a durable commitment with enforcement.
+
+This is the central move of the framework. Never ask "what bucket does this belong in?" Ask "what traits does this need so the Flint can operate on it?" Then check whether a named type already covers that pattern.
+
+That is why Flint can add, split, merge, or retire types over time. Types are tools. They are not claims about how the world divides.
+
+## Traits Stay Orthogonal
+
+Flint treats document properties as independent traits. Each trait is optional. Traits combine freely. New traits appear when repeated use proves their worth.
+
+Useful traits include:
+
+- time: past, present, or future
+- epistemic state: described from direct knowledge, or predicted under an information gap
+- scale: how big a slice of reality the model covers
+- resolution: how densely it describes that slice
+- abstraction: how far the reference chain runs from a record
+- aliveness: active, stabilized, retired, or superseded
+- capture ratio: position on the capture-versus-synthesis spectrum
+- grounding: reality-grounded, event-grounded, axiomatic, or floating
+- commitment: draft, working, endorsed, or canonical
+
+Scale and resolution are different traits. One hundred words on a forest and one hundred words on a single tree share a resolution but differ in scale. One hundred words and two thousand words on the same forest share a scale but differ in resolution.
+
+Prediction is not about time. A prediction is reasoning under an information gap. It can concern the past, the present, or the future.
+
+The point is never to fill out every field. The point is to add structure only where it creates a real affordance.
+
+## Structure Is Progressive
+
+Not every idea needs a full type, a template, a lifecycle, and a metadata scheme on day one.
+
+Flint supports a gradual path:
+
+1. Start with ordinary prose.
+2. Add links when relationships matter.
+3. Add tags when discovery or grouping matters.
+4. Add frontmatter when tools need stable fields.
+5. Add a template or a type when the pattern repeats and deserves operations.
+
+Structure is lossy by design. It drops information to make the rest operable. The question is never "is this capture complete?" The question is "does this structure enable the operations we need?"
+
+A lightly structured note is not a failure. It is often the right form until repeated use proves that more structure pays off.
+
+## The Practical Rule
+
+When you shape an artifact, ask:
+
+- What does this document help a person or an agent do?
+- What context does a reader need to interpret it correctly?
+- How close is it to captured source material versus authored synthesis?
+- Which traits need to be explicit because tools or readers use them?
+- Does a type already exist that gives this pattern the right affordances?
+
+If the answers are clear, the document belongs in the Flint. If the structure helps nobody act, retrieve, verify, or compose, keep it simpler.
+
+## Further Reading
+
+- [Artifacts and Types](/flint/concepts/artifacts-and-types)
+- [Core Concepts](/flint/guide/core-concepts)
+- [Mesh](/flint/modules/mesh)

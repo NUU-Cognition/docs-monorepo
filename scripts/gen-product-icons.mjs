@@ -20,7 +20,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const map = {
   docs: "Docs", surf: "Surf", operations: "Operations", orgs: "Organisations",
   profiles: "Profile", citations: "Citations", experience: "Experience",
-  onyx: "Onyx", ncm: "ncm", mesh: "Mesh", vessel: "Vessel", guide: "Guide",
+  onyx: "Onyx", ncm: "ncm", mesh: "Mesh", vessel: "Vessel", guide: "Guide", flint: "Flint",
 };
 
 function inner(file) {
