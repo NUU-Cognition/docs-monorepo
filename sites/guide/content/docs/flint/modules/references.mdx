@@ -8,7 +8,7 @@ References are Flint's dependency declaration layer. A Flint declares the extern
 
 ## Declaration in flint.toml
 
-References live under `[references]` in `flint.toml`. Flint supports three tables: `codebases`, `flints`, and `bundles`.
+References live under `[references]` in `flint.toml`. Flint supports three lists: `codebases`, `flints`, and `bundles`.
 
 ```toml
 [references]
@@ -23,9 +23,9 @@ bundles = [
 ]
 ```
 
-A codebase declaration names one source tree outside this Flint. A Flint declaration names one other Flint. A bundle declaration names one export folder of another Flint, in the form `<Flint Name>/<Bundle Name>`.
+A codebase declaration names one source tree outside this Flint. A Flint declaration names one other Flint. A bundle declaration names one export folder of another Flint, in the form `<Flint Name>/<Bundle Name>`. Its `source` value must be `"flint"`.
 
-Declare codebases and Flints with the CLI. Declare bundles by hand in `flint.toml`: no command adds them. Names match without regard to letter case.
+Declare codebases and Flints with the CLI. Declare bundles by hand in `flint.toml`: no command adds them. A Tinderbox can also write codebase and Flint references into its members (see [Using Tinderbox](/flint/guide/using-tinderbox)). Names match without regard to letter case.
 
 ## Codebase References
 
@@ -39,23 +39,23 @@ The command declares the reference and records the local path for this machine. 
 
 ## Flint References
 
-A Flint reference points at another Flint on this machine. Use one when the Flint needs to read the Mesh of another Flint. See [The Roster](/flint/guide/the-roster).
+A Flint reference points at another Flint on this machine. Use one when the Flint needs to read the Mesh of another Flint.
 
 ```bash
 flint reference flint "Research Hub"
 ```
 
-The command declares the reference only. `flint sync` fulfils it from the Flint registry of this machine.
+The command declares the reference only. `flint sync` fulfils it from the roster of this machine. The other Flint must be in the roster: run `flint register` in its folder when it is not. See [The Roster](/flint/guide/the-roster).
 
 ## Bundle References
 
-A bundle reference points at one export folder of another Flint. It copies no content. It resolves to the bundle folder of the producing Flint.
+A bundle reference points at one export folder of another Flint. It copies no content. It resolves to the folder `Exports/(Bundle) <Bundle Name>/` of the producing Flint.
 
-Declare the bundle by hand in `flint.toml`, then run `flint sync`. Sync fulfils it when the producing Flint sits on this machine and holds the bundle.
+Declare the bundle by hand in `flint.toml`, then run `flint sync`. Sync fulfils it when the producing Flint is in the roster of this machine and holds the bundle folder.
 
 ## Fulfilment on This Machine
 
-Local fulfilment lives in `.flint/references.json`. The file is local to this machine and stays out of version control.
+Local fulfilment lives in `.flint/references.json`. The file is local to this machine. The managed block of `.gitignore` ignores `.flint/`, so Git does not track it.
 
 ```json
 {
@@ -66,7 +66,7 @@ Local fulfilment lives in `.flint/references.json`. The file is local to this ma
 }
 ```
 
-Each entry records a name, a local path, and an optional fulfilment timestamp.
+Each entry records a name, a local path, and an optional fulfilment timestamp. When the file is not valid JSON, a command that reads it stops. The error names the file, the line, and the column.
 
 Codebase references need manual fulfilment on each new machine:
 
@@ -75,7 +75,9 @@ flint fulfill codebase "Flint" ~/dev/flint
 flint fulfill codebase --all
 ```
 
-The `--all` form prompts for each unfulfilled codebase path in turn. It needs an interactive terminal. Flint references and bundle references fulfil automatically during sync, so `flint fulfill` accepts only the type `codebase`.
+The first form records the path of one declared codebase. You can also give the path with `--target <path>`. When the path does not exist, the command warns and records the path. When the name has no declaration, the command refuses.
+
+The `--all` form prompts for each unfulfilled codebase path in turn. Press Enter to skip one. It needs an interactive terminal. Flint references and bundle references fulfil automatically during sync, so `flint fulfill` accepts only the type `codebase`.
 
 List the state of each reference:
 
@@ -83,7 +85,7 @@ List the state of each reference:
 flint reference list
 ```
 
-The list shows codebase and Flint references with their state: fulfilled, unfulfilled, or fulfilled with a missing path. It names the next command for each unfulfilled item.
+The list shows codebase and Flint references with their state: fulfilled, unfulfilled, or fulfilled with a missing path. It does not show bundle references. For unfulfilled codebases, it names `flint fulfill codebase --all`. For unfulfilled Flints, it says that the next sync fulfils them.
 
 Remove a declaration:
 
@@ -91,7 +93,7 @@ Remove a declaration:
 flint reference remove "Flint"
 ```
 
-The command removes the declaration. The next sync removes the local fulfilment that has no declaration left.
+The command removes each declaration with that name from the three lists, bundles included. The next sync removes the local fulfilment that has no declaration left.
 
 ## Resolving a Path
 
@@ -103,11 +105,15 @@ flint resolve flint "Research Hub"
 flint resolve bundle "Research Hub/Guide"
 ```
 
-Resolving a codebase also lists its git worktrees. An unfulfilled reference is a refusal: it names `flint reference list` as the next command.
+Resolving a codebase also lists its Git worktrees. An unfulfilled reference is a refusal: it names `flint reference list` as the next command. `--json` prints one JSON value.
+
+`flint resolve source "Research Hub/Guide"` prints the path of a bundle that sync copied into `Sources/Bundles/` of this Flint. See [Sources](/flint/modules/sources).
+
+`flint resolve` also resolves entity references and shard packages. See [flint resolve](/flint/reference-cli-commands-flint-resolve).
 
 ## Worktrees
 
-`flint worktree` manages git worktrees inside a codebase reference. It needs a fulfilled codebase reference.
+`flint worktree` manages Git worktrees inside a codebase reference. It needs a fulfilled codebase reference.
 
 ```bash
 flint worktree list "Flint"
@@ -115,7 +121,7 @@ flint worktree add "Flint" my-feature
 flint worktree remove "Flint" my-feature
 ```
 
-The `add` command creates one branch named `<machine-name>-wt-<suffix>`. It checks the branch out in a sibling folder named `<repo>-wt-<suffix>`. It copies the `.env` files of the repository into the new worktree. The `remove` command accepts a branch, a worktree path, or the bare suffix. Set the machine prefix with `flint config machine-name <name>`.
+The `add` command creates one branch named `<machine-name>-wt-<suffix>`. It checks the branch out in a sibling folder named `<repo>-wt-<suffix>`. It copies each `.env` and `.env.*` file of the repository into the new worktree. The `remove` command accepts a branch, a worktree path, or the bare suffix. `flint worktree list` accepts `--json`. Set the machine prefix with `flint config machine-name <name>`.
 
 ## What Sync Does
 
@@ -123,11 +129,12 @@ The `add` command creates one branch named `<machine-name>-wt-<suffix>`. It chec
 
 For references, sync does the following:
 
-- It fulfils each declared Flint reference from the Flint registry of this machine.
+- It fulfils each declared Flint reference from the roster of this machine.
 - It fulfils each declared bundle reference from the bundle folder of the producing Flint.
 - It re-resolves each broken Flint or bundle path, so a moved target heals.
 - It removes each local fulfilment that has no declaration left.
 - It reports each codebase reference that has no path yet, with `flint fulfill codebase <name> <path>` as the next command.
+- It reports each codebase reference whose path does not exist, with the same next command.
 - It reports each Flint or bundle whose target is absent from this machine, without failing the run.
 - It writes one marker note per declared reference under `Mesh/Metadata/References/`.
 
@@ -145,3 +152,4 @@ In short:
 - [Sync](/flint/modules/sync)
 - [Sources](/flint/modules/sources)
 - [The Roster](/flint/guide/the-roster)
+- [Using Tinderbox](/flint/guide/using-tinderbox)

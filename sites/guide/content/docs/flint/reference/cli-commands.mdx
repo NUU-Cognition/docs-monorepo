@@ -10,7 +10,7 @@ The Obsidian rows that other commands print, and the Obsidian commands that 0.7.
 
 ## Contents
 
-- [flint](#flint): [create](#flint-create), [list](#flint-list), [browse](#flint-browse), [status](#flint-status), [open](#flint-open), [open-url](#flint-open-url), [cd](#flint-cd), [rename](#flint-rename), [convert](#flint-convert), [org](#flint-org), [obshn](#flint-obshn), [register](#flint-register), [unregister](#flint-unregister), [delete](#flint-delete), [move](#flint-move), [sync](#flint-sync), [plan](#flint-plan), [registry](#flint-registry), [update](#flint-update), [source](#flint-source), [workspace](#flint-workspace), [reference](#flint-reference), [fulfill](#flint-fulfill), [resolve](#flint-resolve), [worktree](#flint-worktree), [send](#flint-send), [shard](#flint-shard), [config](#flint-config), [obsidian](#flint-obsidian), [migrate](#flint-migrate), [orbh](#flint-orbh), [orbcode](#flint-orbcode), [ite](#flint-ite), [tinderbox](#flint-tinderbox), [blacksmith](#flint-blacksmith), [setup](#flint-setup), [doctor](#flint-doctor), [fix](#flint-fix), [git](#flint-git), [helper](#flint-helper), [features](#flint-features), [where](#flint-where), [env](#flint-env), [whoami](#flint-whoami), [auth-status](#flint-auth-status), [login](#flint-login), [logout](#flint-logout)
+- [flint](#flint): [create](#flint-create), [list](#flint-list), [browse](#flint-browse), [status](#flint-status), [open](#flint-open), [open-url](#flint-open-url), [cd](#flint-cd), [rename](#flint-rename), [convert](#flint-convert), [org](#flint-org), [obshn](#flint-obshn), [register](#flint-register), [unregister](#flint-unregister), [delete](#flint-delete), [move](#flint-move), [sync](#flint-sync), [plan](#flint-plan), [registry](#flint-registry), [update](#flint-update), [source](#flint-source), [workspace](#flint-workspace), [reference](#flint-reference), [fulfill](#flint-fulfill), [resolve](#flint-resolve), [worktree](#flint-worktree), [send](#flint-send), [shard](#flint-shard), [module](#flint-module), [config](#flint-config), [obsidian](#flint-obsidian), [migrate](#flint-migrate), [orbh](#flint-orbh), [orbcode](#flint-orbcode), [ite](#flint-ite), [tinderbox](#flint-tinderbox), [orbit](#flint-orbit), [blacksmith](#flint-blacksmith), [setup](#flint-setup), [doctor](#flint-doctor), [fix](#flint-fix), [feedback](#flint-feedback), [git](#flint-git), [helper](#flint-helper), [features](#flint-features), [where](#flint-where), [env](#flint-env), [whoami](#flint-whoami), [auth-status](#flint-auth-status), [login](#flint-login), [logout](#flint-logout), [foundation](#flint-foundation)
 - [nuu](#nuu): [setup](#nuu-setup), [login](#nuu-login), [logout](#nuu-logout), [whoami](#nuu-whoami), [env](#nuu-env), [config](#nuu-config), [org](#nuu-org), [machine](#nuu-machine), [home](#nuu-home), [places](#nuu-places), [client](#nuu-client), [resolve](#nuu-resolve), [session](#nuu-session), [station](#nuu-station), [topology](#nuu-topology), [net](#nuu-net), [trace](#nuu-trace), [styles](#nuu-styles)
 - [Tools for Developers](#tools-for-developers): [entity](#flint-entity), [plate](#flint-plate), [orbtest](#flint-orbtest), [server](#flint-server), [steel](#flint-steel), [mcp](#flint-mcp)
 
@@ -22,7 +22,7 @@ flint [options] [command]
 
 Make and manage Flints: folders of notes and shards
 
-Subcommands: `create`, `list`, `browse`, `status`, `open`, `open-url`, `cd`, `rename`, `convert`, `org`, `obshn`, `register`, `unregister`, `delete`, `move`, `sync`, `plan`, `registry`, `update`, `source`, `workspace`, `reference`, `fulfill`, `resolve`, `entity`, `worktree`, `send`, `shard`, `config`, `obsidian`, `migrate`, `plate`, `orbh`, `orbtest`, `orbcode`, `ite`, `tinderbox`, `server`, `steel`, `blacksmith`, `setup`, `doctor`, `fix`, `git`, `helper`, `mcp`, `features`, `where`, `env`, `whoami`, `auth-status`, `login`, `logout`.
+Subcommands: `create`, `list`, `browse`, `status`, `open`, `open-url`, `cd`, `rename`, `convert`, `org`, `obshn`, `register`, `unregister`, `delete`, `move`, `sync`, `plan`, `registry`, `update`, `source`, `workspace`, `reference`, `fulfill`, `resolve`, `entity`, `worktree`, `send`, `shard`, `module`, `config`, `obsidian`, `migrate`, `plate`, `orbh`, `orbtest`, `orbcode`, `ite`, `tinderbox`, `server`, `steel`, `orbit`, `blacksmith`, `setup`, `doctor`, `fix`, `feedback`, `git`, `helper`, `mcp`, `features`, `where`, `env`, `whoami`, `auth-status`, `login`, `logout`, `foundation`.
 
 ### flint create
 
@@ -70,7 +70,7 @@ Presets:
 Types (most Flints need no type):
   --type guide   --about <address>             A Guide about an entity
   --type member  --regarding <org>             Your Member Flint of an org
-  The Computer Flint comes from flint setup computer.
+  flint setup always makes the Computer Flint. flint create does not make it.
 
 Examples:
   flint create "My Notes"
@@ -166,7 +166,7 @@ Change the shell directory to a registered Flint
 
 | Argument | Description |
 |---|---|
-| `reference` | A Flint name or reference, such as "NUU Flint" or "(Guide) NUU Cognition". With a second argument: a type |
+| `reference` | A Flint name or reference, such as "NUU Flint" or "(Guide) NUU Cognition". The word computer is the Computer Flint of this machine. With a second argument: a type |
 | `name` | The name, when the first argument is a type: flint cd guide "NUU Cognition" |
 
 ### flint rename
@@ -1446,13 +1446,252 @@ List executable scripts provided by a shard
 |---|---|
 | `-p, --path <dir>` | Path to flint |
 
+### flint module
+
+```text
+flint module [options] [command] [name] [command] [args...]
+```
+
+Manage the modules of this Flint (packages in Modules/), and run a command of a module
+
+| Argument | Description |
+|---|---|
+| `name` | A module name, to run one of its commands |
+| `command` | The command of the module |
+| `args` | The arguments of the command |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+
+Subcommands: `list`, `status`, `install`, `uninstall`, `build`, `update`, `settings`, `start`, `restart`, `stop`, `control`, `release`.
+
+#### flint module list
+
+```text
+flint module list [options]
+```
+
+List the modules of this Flint: one row for each record of [modules]
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the list as JSON |
+| `--wide` | Render full-width table output without narrow stacking |
+
+#### flint module status
+
+```text
+flint module status [options] [name]
+```
+
+Show the package state and the sync plan of each module in this Flint (writes nothing)
+
+| Argument | Description |
+|---|---|
+| `name` | One module |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the status as JSON |
+
+#### flint module install
+
+```text
+flint module install [options] [spec]
+```
+
+Install a module, or with no input make the lock and the builds match the records of [modules]
+
+| Argument | Description |
+|---|---|
+| `spec` | A package spec: @org/name[@range][#place] |
+
+| Option | Description |
+|---|---|
+| `--from-git <location>` | Install from a Git location: owner/repo[#ref] |
+| `--from-path <dir>` | Install from a folder on this machine (a source runs its build command first) |
+| `--name <name>` | The record name in [modules] (default: the slug of the module name) |
+| `--dry-run` | With no input: show what would change; write nothing |
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module uninstall
+
+```text
+flint module uninstall [options] <name>
+```
+
+Remove a module: its build, its lock record, and its record. The settings file and the data folder stay
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module build
+
+```text
+flint module build [options] <ref>
+```
+
+Build a module from its source in this Flint (Modules/(Source Local|Remote) `<Name>`), and record from = "source"
+
+| Argument | Description |
+|---|---|
+| `ref` | The module name, or the source folder name |
+
+| Option | Description |
+|---|---|
+| `--name <name>` | The record name in [modules] (default: the record of the source, else its slug) |
+| `--broadcast` | Then update the module in each Flint of this machine that installs it from this Flint |
+| `--dry-run` | With --broadcast: show the Flints that would update; write nothing |
+| `--only <flint...>` | With --broadcast: update these Flints only |
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module update
+
+```text
+flint module update [options] [name]
+```
+
+Move each module to the newest version inside the range of its record
+
+| Argument | Description |
+|---|---|
+| `name` | One module |
+
+| Option | Description |
+|---|---|
+| `--dry-run` | Show the updates; write nothing |
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module settings
+
+```text
+flint module settings [options] <name> <action> <key> [value]
+```
+
+Read or write one key of the settings file of a module (Modules/`<Name>`.settings.toml); a write keeps every comment
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+| `action` | get or set |
+| `key` | A dotted key, for example machine or schedules.tick.machine |
+| `value` | With set: one TOML value. A string needs quotes: '"check-box"' |
+
+| Option | Description |
+|---|---|
+| `--create` | With set: make the table of a nested key when the file does not have it |
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module start
+
+```text
+flint module start [options] <name>
+```
+
+Start a live module under the Flint server of this Flint (starts the server when none runs)
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module restart
+
+```text
+flint module restart [options] <name>
+```
+
+Stop the process of a live module, if one runs, and start a new one (starts the server when none runs)
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module stop
+
+```text
+flint module stop [options] <name>
+```
+
+Stop a live module: SIGTERM, then SIGKILL after 5 s. It starts again with flint module start or the next start of the Flint server
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module control
+
+```text
+flint module control [options] <name> [action]
+```
+
+Call an action of the controller of a running live module, or with no action list its actions
+
+| Argument | Description |
+|---|---|
+| `name` | The module name |
+| `action` | The action of the controller |
+
+| Option | Description |
+|---|---|
+| `--data <json>` | The input of the action: one JSON object (default \{\}) |
+| `-p, --path <dir>` | Path to Flint (default: auto-detect) |
+| `--json` | Print the result as JSON |
+
+#### flint module release
+
+```text
+flint module release [options] <name> [version]
+```
+
+Release a version of a module source: run its build step, check that the build output is committed, tag v`<version>`, push, register the module with the NUU Shard Registry, and lock it as published when the registry lists the version
+
+| Argument | Description |
+|---|---|
+| `name` | The module name, or the source folder name |
+| `version` | Version to release (default: read from module.yaml) |
+
+| Option | Description |
+|---|---|
+| `--org <slug>` | Register under this org: a slug that this machine knows. Default: the org of the Flint. A Flint with no org does not publish, also with --org |
+| `--no-register` | Tag and push only; do not register with the NUU Shard Registry |
+| `--json` | One JSON value: \{ ok, alias, version, tag, sha, hash, repo, registered, registry, slug, state \} or \{ ok: false, code, reason, next \} |
+| `-p, --path <dir>` | Path to flint |
+
 ### flint config
 
 ```text
 flint config [options] [command]
 ```
 
-The Flint CLI config file (~/.nuucognition/flint/config.toml). name, machine-name, and org route to the NUU config
+The Flint CLI config file (~/.nuucognition/flint-dev/config.toml). name, machine-name, and org route to the NUU config
 
 | Option | Description |
 |---|---|
@@ -1466,7 +1705,7 @@ Subcommands: `open`, `get`, `set`, `name`, `machine-name`, `org`.
 flint config open [options]
 ```
 
-Open the Flint CLI config file (~/.nuucognition/flint/config.toml) in your editor
+Open the Flint CLI config file (~/.nuucognition/flint-dev/config.toml) in your editor
 
 #### flint config get
 
@@ -1474,7 +1713,7 @@ Open the Flint CLI config file (~/.nuucognition/flint/config.toml) in your edito
 flint config get [options] <key>
 ```
 
-Get a value of the Flint CLI config file (~/.nuucognition/flint/config.toml)
+Get a value of the Flint CLI config file (~/.nuucognition/flint-dev/config.toml)
 
 | Argument | Description |
 |---|---|
@@ -1486,7 +1725,7 @@ Get a value of the Flint CLI config file (~/.nuucognition/flint/config.toml)
 flint config set [options] <key> <value>
 ```
 
-Set a value in the Flint CLI config file (~/.nuucognition/flint/config.toml)
+Set a value in the Flint CLI config file (~/.nuucognition/flint-dev/config.toml)
 
 | Argument | Description |
 |---|---|
@@ -2045,7 +2284,7 @@ Orbh meta-harness agent management
 | `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
 | `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
-Subcommands: `launch`, `ping`, `step`, `i`, `tui`, `v`, `resume`, `continue`, `request`, `wait`, `attach`, `detach`, `session`, `update`, `rooms`, `improve`, `approval`, `respond`, `result`, `requests`, `message`, `humanchannel`, `artifact`, `end`, `kill`, `close`, `park`, `discard`, `focus`, `list`, `active`, `timeline`, `inspect`, `peek`, `stats`, `watch`, `context`, `scope`, `space`, `station`, `cron`, `move-spool`, `save`, `restore`, `import`, `runtimes`, `profiles`, `auth`, `claude`, `heal`, `verify`, `verify-sessions`, `rebuild-session-snapshots`, `rebuild`, `orchestrator`, `server`, `archive`, `reconcile`, `interrupt`, `page`, `job`, `room`, `stream`, `agent`, `worker`, `procedure`, `workflow`, `compact`, `command-action`, `switch`, `copy-spools`, `store`, `fork`.
+Subcommands: `launch`, `ping`, `step`, `i`, `tui`, `v`, `resume`, `continue`, `request`, `wait`, `attach`, `detach`, `session`, `update`, `rooms`, `improve`, `approval`, `respond`, `result`, `requests`, `message`, `humanchannel`, `artifact`, `end`, `kill`, `close`, `park`, `discard`, `focus`, `list`, `active`, `timeline`, `inspect`, `peek`, `stats`, `watch`, `context`, `scope`, `space`, `station`, `cron`, `move-spool`, `save`, `restore`, `import`, `runtimes`, `profiles`, `auth`, `claude`, `heal`, `verify`, `verify-sessions`, `rebuild-session-snapshots`, `rebuild`, `orchestrator`, `server`, `archive`, `reconcile`, `interrupt`, `page`, `job`, `usage`, `room`, `fleet`, `actor`, `stream`, `agent`, `worker`, `procedure`, `workflow`, `compact`, `command-action`, `switch`, `copy-spools`, `store`, `fork`.
 
 #### flint orbh launch
 
@@ -2068,9 +2307,15 @@ Launch a new headless agent session
 | `--budget <usd>` | Maximum budget in USD (where supported by the harness) |
 | `--model <model>` | Model override |
 | `--account <name>` | Harness account name, or 'none' to bypass the runtime default |
+| `--allow-switch` | Let the account autoswitch move an explicit --account to a good fallback account when it is limited |
+| `--allow-manual-only` | Let --account name a manual-only account (auth manual-only) |
 | `--title <title>` | Pre-set session title (skips agent self-registration) |
 | `--description <description>` | Pre-set session description |
 | `--application <name>` | Tag the session with the launching application (also read from ORBH_APPLICATION); tagged sessions are hidden from list, active, and the cockpit by default |
+| `--fleet <handle>` | Make the new session a member of this open fleet (stamp via launch, one roster event) |
+| `--declare-fleet <handle>` | Declare a new fleet with the new session as its root (needs --charter-file) |
+| `--charter-file <path>` | The charter of the fleet that --declare-fleet declares: the goal, the boundary, and the done condition |
+| `--fleet-name <name>` | The display name of the fleet that --declare-fleet declares (default: the handle in Title Case) |
 | `--force` | Bypass the live-run guard (may create concurrent runtimes) |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
@@ -2295,10 +2540,14 @@ Launch a request turn and wait for its correlated result, or post a deferred que
 | `--budget <usd>` | Maximum budget in USD (where supported by the harness) |
 | `--model <model>` | Model override |
 | `--account <name>` | Harness account name, or 'none' to bypass the runtime default |
+| `--allow-switch` | Let the account autoswitch move an explicit --account to a good fallback account when it is limited |
+| `--allow-manual-only` | Let --account name a manual-only account (auth manual-only) |
 | `--title <title>` | Pre-set session title |
 | `--description <description>` | Pre-set session description |
 | `--application <name>` | Tag the session with the launching application (also read from ORBH_APPLICATION); tagged sessions are hidden from list, active, and the cockpit by default |
 | `--timeout <seconds>` | Maximum time to wait before detaching |
+| `--output-schema <schema>` | JSON Schema (a file path, or inline JSON) that each return of the new session must match; a matching return is stored as result.structured |
+| `--json` | Print the result as JSON: the structured value when the return matched an output schema, else the text as a JSON string (implies -q) |
 | `-q, --quiet` | Suppress spinner and status output, print only the raw result (for agent use) |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
@@ -2320,6 +2569,7 @@ Wait for the correlated results of one or more currently anchored turns
 | Option | Description |
 |---|---|
 | `--next` | Wait for a result newer than the latest result present at invocation |
+| `--host-run <nonce>` | Collect the run that a launch host records under this payload nonce (printed by request -c after a host timeout) |
 | `--timeout <seconds>` | Maximum time to wait before giving up |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
@@ -2438,7 +2688,7 @@ Subcommands: `list`, `flush`.
 flint orbh update list [options] [sessionId]
 ```
 
-List a session's updates (default: your own), or --fleet for every session
+List a session's updates (default: your own), --all for every session, or --fleet `<handle>` for the members of one fleet
 
 | Argument | Description |
 |---|---|
@@ -2446,7 +2696,8 @@ List a session's updates (default: your own), or --fleet for every session
 
 | Option | Description |
 |---|---|
-| `--fleet` | Aggregate updates across every session in this flint |
+| `--all` | Aggregate updates across every session in this flint |
+| `--fleet [handle]` | Only the members of the declared fleet `<handle>` (a bare --fleet is the deprecated name of --all) |
 | `--limit <n>` | Most recent entries to show (default 20) |
 | `--json` | Emit JSON for tooling |
 
@@ -2468,7 +2719,7 @@ Mirror pending updates to Discord now, bypassing the burst window
 flint orbh rooms [options]
 ```
 
-List Orbh rooms - the rooms equivalent of orbh list
+List Orbh rooms - the rooms equivalent of flint orbh list
 
 | Option | Description |
 |---|---|
@@ -2629,7 +2880,7 @@ Answer a pending question on a session
 flint orbh result [options] <id>
 ```
 
-Get a session turn result (latest by default)
+Get a session turn result: the dispatched turn while your dispatch obligation is open, else the latest
 
 | Argument | Description |
 |---|---|
@@ -2638,6 +2889,8 @@ Get a session turn result (latest by default)
 | Option | Description |
 |---|---|
 | `--run <n>` | Get the result for the 1-based run number |
+| `--latest` | Print the latest result, also while a dispatch obligation of yours names another turn |
+| `--json` | Print the run result as JSON: sessionId, runId, run, disposition, result, and structured (present when the return matched an output schema) |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
 | `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
@@ -2691,7 +2944,7 @@ Append a message to a target session
 
 | Argument | Description |
 |---|---|
-| `targetId` | Target session ID (full or partial) |
+| `targetId` | Target session ID (full or partial), agent:`<name>`, or fleet:`<handle>` (the root session of the fleet) |
 | `text` | Message text |
 
 | Option | Description |
@@ -2705,7 +2958,7 @@ Append a message to a target session
 flint orbh message broadcast [options] <text...>
 ```
 
-Fan one message out to every non-retired agent's and live worker's backing session in the current store
+Fan one message out to every non-retired agent's and live worker's backing session in the current store, or to the live members of one fleet
 
 | Argument | Description |
 |---|---|
@@ -2715,6 +2968,7 @@ Fan one message out to every non-retired agent's and live worker's backing sessi
 |---|---|
 | `--agents-only` | Broadcast to orb agents only |
 | `--workers-only` | Broadcast to live workers only |
+| `--fleet <handle>` | Broadcast to the live member sessions of the declared fleet `<handle>` (⛵), not to agents or workers |
 | `--json` | Print the delivery report as JSON |
 
 ##### flint orbh message request
@@ -2727,7 +2981,7 @@ Ask a blocking peer request of another session
 
 | Argument | Description |
 |---|---|
-| `targetId` | Target session ID (full or partial) |
+| `targetId` | Target session ID (full or partial), or fleet:`<handle>` (the root session of the fleet) |
 | `question` | Question text |
 
 | Option | Description |
@@ -2772,7 +3026,7 @@ flint orbh humanchannel [options] [command]
 
 Configure and test the machine human-input channel
 
-Subcommands: `setup`, `status`, `refresh`, `test`.
+Subcommands: `setup`, `status`, `refresh`, `test`, `webhook`.
 
 ##### flint orbh humanchannel setup
 
@@ -2823,6 +3077,44 @@ Post a test message to the configured human-input channel
 | Option | Description |
 |---|---|
 | `--message <message>` | Test message content (default: "Orbh human-channel test") |
+
+##### flint orbh humanchannel webhook
+
+```text
+flint orbh humanchannel webhook [options] [command]
+```
+
+Configure the channel webhook that posts fleet updates under the fleet name
+
+Subcommands: `ensure`, `set`, `clear`.
+
+###### flint orbh humanchannel webhook ensure
+
+```text
+flint orbh humanchannel webhook ensure [options]
+```
+
+Create or reuse the updates webhook with the bot (needs the Discord permission "Manage Webhooks")
+
+###### flint orbh humanchannel webhook set
+
+```text
+flint orbh humanchannel webhook set [options] <url>
+```
+
+Store a webhook URL that you made in Discord (`https://discord.com/api/webhooks/<id>/<token>`)
+
+| Argument | Description |
+|---|---|
+| `url` | The webhook URL (holds the secret token; it is never printed) |
+
+###### flint orbh humanchannel webhook clear
+
+```text
+flint orbh humanchannel webhook clear [options]
+```
+
+Remove the updates webhook; fleet updates then post through the bot with a fleet heading
 
 #### flint orbh artifact
 
@@ -2878,6 +3170,7 @@ Kill a running session process and its process group. Refuses while descendant s
 | Option | Description |
 |---|---|
 | `--force` | Kill even when descendant sessions still run; they keep running without a parent |
+| `--cascade` | After the kill, abandon each awaiting descendant session (reason parent-killed), so no later wake resumes it |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
 | `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
@@ -2911,7 +3204,7 @@ Close this session — record closed retention, terminate the harness, then clos
 flint orbh park [options] [id]
 ```
 
-Await further activity for this session (the legacy `park` spelling) — record awaiting retention, pin it to `orbh c`, ensure the Orbh orchestrator wake sweep, terminate the current harness turn, then close the bound Obsidian terminal tab. Pass --no-leaf to leave the tab open at a shell prompt. With --until-group, await the all-terminal job-group barrier. Self-targets via ORBH_SESSION_ID when run from inside an Orbh harness.
+Await further activity for this session (the legacy `park` spelling) — record awaiting retention, pin it to `flint orbh c`, ensure the Orbh orchestrator wake sweep, terminate the current harness turn, then close the bound Obsidian terminal tab. Pass --no-leaf to leave the tab open at a shell prompt. With --until-group, await the all-terminal job-group barrier. Self-targets via ORBH_SESSION_ID when run from inside an Orbh harness.
 
 | Argument | Description |
 |---|---|
@@ -2935,7 +3228,7 @@ Await further activity for this session (the legacy `park` spelling) — record 
 flint orbh discard [options] [id]
 ```
 
-Discard this session — tombstone its entry (event-sourced; hidden from `orbh list`), terminate the harness, then close the bound Obsidian terminal tab. Pass --no-leaf to leave the tab open at a shell prompt. No confirmation. Self-targets via ORBH_SESSION_ID when run from inside an Orbh harness.
+Discard this session — tombstone its entry (event-sourced; hidden from `flint orbh list`), terminate the harness, then close the bound Obsidian terminal tab. Pass --no-leaf to leave the tab open at a shell prompt. No confirmation. Self-targets via ORBH_SESSION_ID when run from inside an Orbh harness.
 
 | Argument | Description |
 |---|---|
@@ -2984,13 +3277,14 @@ Open the Sessions cockpit in a TTY; use --print for the static table or --json f
 | `-s, --stats` | Print token/turn stats (prefers persisted run context; otherwise reads transcripts) |
 | `-S, --status <status>` | Filter by session workState (e.g. working, finished) |
 | `-r, --runtime <runtime>` | Filter by runtime (e.g. claude, codex) |
-| `-q, --search <text>` | Search title, description, and prompt (case-insensitive) |
+| `-q, --search <text>` | Search the id prefix, title, description, and prompt (case-insensitive) |
 | `--json` | Print machine-readable JSON (the default when invoked from inside an Orbh session) |
 | `--print` | Print the static session table instead of opening the cockpit |
 | `--wide` | Print the static table full-width without narrow stacking |
 | `--subagents` | Flatten subagent sessions into top-level rows instead of rendering dispatch trees |
 | `--all-scopes` | List sessions machine-wide — every registered Flint store plus ~/.orb — grouped by scope (static table output) |
 | `--detached` | Only detached-interactive sessions |
+| `--fleet <handle>` | Only the members of the declared fleet `<handle>`: the root, the sessions that carry its stamp, and its explicit members |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
 | `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
@@ -3007,7 +3301,7 @@ Open the Active cockpit in a TTY with subagents nested; use --print for the stat
 | Option | Description |
 |---|---|
 | `-r, --runtime <runtime>` | Filter by runtime (e.g. claude, codex) |
-| `-q, --search <text>` | Search title, description, and prompt (case-insensitive) |
+| `-q, --search <text>` | Search the id prefix, title, description, and prompt (case-insensitive) |
 | `--json` | Print machine-readable JSON (the default when invoked from inside an Orbh session) |
 | `--print` | Print the static session tree instead of opening the cockpit |
 | `--wide` | Print the static tree full-width without narrow stacking |
@@ -3025,11 +3319,11 @@ Open the Active cockpit in a TTY with subagents nested; use --print for the stat
 flint orbh timeline [options] [root-session-id]
 ```
 
-Reconstruct a read-only chronological timeline for a session tree or room
+Reconstruct a read-only chronological timeline for a session tree, a declared fleet, or a room; it reads archived sessions too
 
 | Argument | Description |
 |---|---|
-| `root-session-id` | Root session ID (full or partial); omit with --room |
+| `root-session-id` | Root session ID (full or partial), or fleet:`<handle>` for the members of a declared fleet and their trees; omit with --room |
 
 | Option | Description |
 |---|---|
@@ -3539,7 +3833,7 @@ Request a fire on the next orchestrator sweep
 flint orbh cron delete [options] <name>
 ```
 
-Delete a cron schedule
+Delete a cron schedule (refuses a schedule that a module of the Flint desires)
 
 | Argument | Description |
 |---|---|
@@ -3753,24 +4047,110 @@ flint orbh auth [options] [command]
 
 Manage isolated harness login accounts
 
-Subcommands: `migrate`, `add`, `account`, `list`, `default`, `rename`, `remove`, `usage`, `refresh`, `ccusage`.
+Subcommands: `migrate`, `fallback`, `add`, `account`, `list`, `default`, `rename`, `remove`, `deactivate`, `reactivate`, `manual-only`, `usage`, `refresh`, `ccusage`.
 
 ##### flint orbh auth migrate
 
 ```text
-flint orbh auth migrate [options] <account>
+flint orbh auth migrate [options] [account]
 ```
 
-Move a session to another account of the same runtime (default: THIS session; pass --session for another): its conversation files are MOVED to the new account home and the durable account is flipped. An interactive pane resumes the same context there; a headless session has a live turn KILLED at a run boundary (that turn is lost, the conversation is not) and comes up on the new account at its next wake. Nothing but the session travels — memory, config, and credentials stay with the old account.
+Move a session to another account of the same runtime (default: THIS session; pass --session for another): its conversation files are MOVED to the new account home and the durable account is flipped. An interactive pane resumes the same context there; a headless session has a live turn KILLED at a run boundary (that turn is lost, the conversation is not) and comes up on the new account at its next wake. Nothing but the session travels — memory, config, and credentials stay with the old account. With --release-claim (no account): clear a migration claim that a failed release or a stuck migration left, after a check that no migration can still change files; the files are settled first.
 
 | Argument | Description |
 |---|---|
-| `account` | Destination account name (same runtime as the session) |
+| `account` | Destination account name (same runtime as the session); not used with --release-claim |
 
 | Option | Description |
 |---|---|
 | `--session <id>` | Session to migrate (full or partial ID); defaults to ORBH_SESSION_ID, the session that runs this command |
 | `--force` | Migrate even when the destination account has no usable credentials |
+| `--release-claim` | Clear a stuck migration claim of the session; refuses while its migration can still run |
+
+##### flint orbh auth fallback
+
+```text
+flint orbh auth fallback [options] [command]
+```
+
+The account autoswitch: an ordered fallback list of accounts for each runtime. A new headless launch whose account is in the list and limited (a usage-limit marker, or a fresh usage snapshot window at or above the switch percent) uses the first good account of the list, and prints one notice. Only with the separate opt-in `settings --auto-migrate on` (default off), the orchestrator also moves a headless session whose turn stopped on a provider limit to a good account of the list, between turns; that move uses the migration primitive of auth migrate, which still has open races. With no list, Orbh never switches. Orbh never chooses an account outside the list, and never switches an interactive launch or session.
+
+Subcommands: `show`, `set`, `unset`, `check`, `settings`.
+
+###### flint orbh auth fallback show
+
+```text
+flint orbh auth fallback show [options] [runtime]
+```
+
+Show the fallback lists, the switch percent, the refresh interval, and the state of each listed account. Writes nothing
+
+| Argument | Description |
+|---|---|
+| `runtime` | Show only this runtime |
+
+| Option | Description |
+|---|---|
+| `--json` | Print the config and the account states as JSON |
+
+###### flint orbh auth fallback set
+
+```text
+flint orbh auth fallback set [options] <runtime> <accounts...>
+```
+
+Set the ordered fallback list of one runtime. Each account must exist. The list replaces the old list of that runtime
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime, for example claude |
+| `accounts` | Account names in the order to try them |
+
+###### flint orbh auth fallback unset
+
+```text
+flint orbh auth fallback unset [options] <runtime>
+```
+
+Remove the fallback list of one runtime. Then Orbh never switches an account of that runtime
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime |
+
+###### flint orbh auth fallback check
+
+```text
+flint orbh auth fallback check [options] <runtime>
+```
+
+Dry run: show which account a new headless launch of this runtime uses now, and why. Writes nothing
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime |
+
+| Option | Description |
+|---|---|
+| `--account <name>` | The --account of the launch (default: the default account here) |
+| `--allow-switch` | The --allow-switch of the launch: an explicit --account may switch |
+| `--allow-manual-only` | The --allow-manual-only of the launch: --account may name a manual-only account |
+| `--model <model>` | The model of the launch, for the model windows and the model markers |
+| `--json` | Print the decision as JSON |
+
+###### flint orbh auth fallback settings
+
+```text
+flint orbh auth fallback settings [options]
+```
+
+Show or set the switch percent, the usage refresh interval, and the automatic move (for all runtimes)
+
+| Option | Description |
+|---|---|
+| `--percent <n>` | Switch percent, above 0 and at most 100, or 'default' (90) |
+| `--auto-migrate <on\|off\|default>` | The automatic move of a headless session that stopped on a limit (default off) |
+| `--refresh-minutes <n>` | Refresh interval of the usage snapshots of the listed accounts in minutes; 0 turns the refresh off; or 'default' (5) |
 
 ##### flint orbh auth add
 
@@ -3830,11 +4210,15 @@ Examples:
 flint orbh auth list [options] [runtime]
 ```
 
-List configured harness accounts
+List configured harness accounts (a deactivated account is hidden unless --all)
 
 | Argument | Description |
 |---|---|
 | `runtime` | Optional harness runtime |
+
+| Option | Description |
+|---|---|
+| `--all` | List every known account, also each deactivated account, with its state |
 
 ##### flint orbh auth default
 
@@ -3885,13 +4269,53 @@ Remove an isolated account home
 |---|---|
 | `--yes` | Remove without prompting |
 
+##### flint orbh auth deactivate
+
+```text
+flint orbh auth deactivate [options] <runtime> <name>
+```
+
+Hide an account whose subscription lapsed: the account views hide it and a new launch refuses it. Its home, credentials, and sessions stay; resume still works
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime |
+| `name` | Account name |
+
+##### flint orbh auth reactivate
+
+```text
+flint orbh auth reactivate [options] <runtime> <name>
+```
+
+Return a deactivated account to the account views and to new launches
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime |
+| `name` | Account name |
+
+##### flint orbh auth manual-only
+
+```text
+flint orbh auth manual-only [options] <runtime> <name> <state>
+```
+
+Mark an account that only a person uses (a work account), or clear the mark. Orbh then sends it no usage request unless a command names it, keeps it out of every fallback list and default, never moves a session to it, and a launch names it only with --account `<name>` --allow-manual-only
+
+| Argument | Description |
+|---|---|
+| `runtime` | Harness runtime |
+| `name` | Account name |
+| `state` | on or off |
+
 ##### flint orbh auth usage
 
 ```text
 flint orbh auth usage [options] [runtime] [name]
 ```
 
-Report live quota / rate-limit windows per account (read-only)
+Report live quota / rate-limit windows per account. It reads the providers and updates the usage cache of each account
 
 | Argument | Description |
 |---|---|
@@ -3970,10 +4394,20 @@ show it once named accounts exist.
 Claude reports use temporary copies to support nullable iteration models.
 The original transcripts stay unchanged. Temporary copies are removed after the report.
 
+ccusage has no Muse support, so Orbh reads the Muse session logs itself
+($XDG_DATA_HOME/muse, else ~/.local/share/muse). After the ccusage table of
+daily, weekly, monthly, or session (and each --sections report), Orbh prints a
+Muse table for the same periods; --since, --until, --timezone, --last, and --id
+apply to it. With --json, the Muse rows go under the top-level key
+"orbhAgents", and the ccusage keys stay unchanged. The Muse cost is
+unknown (— or null). blocks, statusline, and one-agent reports get no Muse rows.
+"auth ccusage muse [daily|weekly|monthly|session]" prints the Muse report alone.
+
 Examples:
   flint orbh auth ccusage
   flint orbh auth ccusage monthly
   flint orbh auth ccusage daily --json
+  flint orbh auth ccusage muse weekly
   flint orbh auth ccusage --dry-run
 ```
 
@@ -4177,7 +4611,7 @@ flint orbh orchestrator|orch [options] [command]
 
 Inspect and control the per-machine Orbh orchestrator (supervises managers; reaps ungraceful deaths)
 
-Subcommands: `status`, `managers`, `processes`, `launcher`, `ensure`, `stop`, `reap`.
+Subcommands: `status`, `managers`, `processes`, `launcher`, `ensure`, `stop`, `restart`, `reap`.
 
 ##### flint orbh orchestrator status
 
@@ -4287,7 +4721,15 @@ Ensure the per-machine orchestrator singleton is running (lazily spawns it if do
 flint orbh orchestrator stop [options]
 ```
 
-Stop the per-machine orchestrator singleton (it is re-ensured on the next interactive launch)
+Stop the per-machine orchestrator singleton between ticks (it is re-ensured on the next interactive launch)
+
+##### flint orbh orchestrator restart
+
+```text
+flint orbh orchestrator restart [options]
+```
+
+Restart the per-machine orchestrator between ticks onto the build of this CLI (a hand-off: the new process loads first)
 
 ##### flint orbh orchestrator reap
 
@@ -4591,6 +5033,10 @@ Run a shell command — or a subagent dispatch with --agent — as a background 
 | `--group <g>` | Job group name — the join key for `park --until-group` |
 | `--agent <target>` | Dispatch a subagent instead: `<target>` is a runtime/profile (e.g. codex/55xh) and the positional argument is its prompt |
 | `--account <name>` | Harness account for --agent, or 'none' to bypass the runtime default |
+| `--title <title>` | With --agent: pre-set the title of the child session |
+| `--description <description>` | With --agent: pre-set the description of the child session |
+| `--application <name>` | With --agent: Tag the session with the launching application (also read from ORBH_APPLICATION); tagged sessions are hidden from list, active, and the cockpit by default |
+| `--output-schema <schema>` | With --agent: JSON Schema (a file path, or inline JSON) that each return of the child must match; `job result --json` prints the structured value |
 | `--timeout <seconds>` | Mark the job failed (timeout) and SIGTERM its process group after this many seconds |
 | `--session <id>` | Target session ID (full or partial); defaults to ORBH_SESSION_ID |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
@@ -4658,6 +5104,7 @@ Print a job's full captured output (works on running jobs too — output streams
 
 | Option | Description |
 |---|---|
+| `--json` | Print the job as JSON: id, status, kind, childSessionId, output, and structured (present when the child's return matched an output schema) |
 | `--session <id>` | Target session ID (full or partial); defaults to ORBH_SESSION_ID |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 
@@ -4709,6 +5156,26 @@ Remove terminal (done/failed) jobs from the Page and delete their retained outpu
 | `--session <id>` | Target session ID (full or partial); defaults to ORBH_SESSION_ID |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 
+#### flint orbh usage
+
+```text
+flint orbh usage [options] [id]
+```
+
+Show the token usage and cost of a session, its dispatch tree, or a declared fleet. Self-targets via ORBH_SESSION_ID.
+
+| Argument | Description |
+|---|---|
+| `id` | Session ID (full or partial). Optional when ORBH_SESSION_ID is set or --fleet is given. |
+
+| Option | Description |
+|---|---|
+| `--tree` | Also sum the session and every descendant (archived and discarded included) |
+| `--fleet <handle>` | Sum the members of a declared fleet |
+| `--runs <n>` | How many run facts to print (default 10) |
+| `--json` | Print a machine-readable object |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+
 #### flint orbh room
 
 ```text
@@ -4740,6 +5207,10 @@ Create a durable room
 
 | Option | Description |
 |---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 | `--topic <topic>` | One-line room topic |
 
 ##### flint orbh room list
@@ -4752,6 +5223,10 @@ List rooms
 
 | Option | Description |
 |---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 | `--wide` | Render full-width table output without narrow stacking |
 | `--json` | Print rooms as stable JSON |
 
@@ -4769,6 +5244,10 @@ Read a room stream and context
 
 | Option | Description |
 |---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 | `--since-cursor` | Render messages after this session subscription cursor |
 | `--no-advance` | Do not advance this session subscription cursors |
 
@@ -4786,7 +5265,11 @@ Join a room from this session
 
 | Option | Description |
 |---|---|
-| `--notify <policy>` | Notification policy: all, mentions, or mute |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+| `--notify <policy>` | Notification policy: mentions (default), all, or mute |
 
 ##### flint orbh room leave
 
@@ -4799,6 +5282,13 @@ Leave a room from this session
 | Argument | Description |
 |---|---|
 | `room` | Room name or id |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
 ##### flint orbh room post
 
@@ -4813,6 +5303,13 @@ Post a message to a room
 | `room` | Room name or id |
 | `text` | Message text |
 
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
 ##### flint orbh room context
 
 ```text
@@ -4820,6 +5317,13 @@ flint orbh room context [options] [command]
 ```
 
 Read and update a room context library
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
 Subcommands: `show`, `append`, `edit`.
 
@@ -4835,6 +5339,13 @@ Show a room context library
 |---|---|
 | `room` | Room name or id |
 
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
 ###### flint orbh room context append
 
 ```text
@@ -4847,6 +5358,13 @@ Append text to a room context library
 |---|---|
 | `room` | Room name or id |
 | `text` | Text to append |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
 ###### flint orbh room context edit
 
@@ -4862,8 +5380,243 @@ Replace exactly one snippet in a room context library
 
 | Option | Description |
 |---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 | `--search <old>` | Snippet to replace |
 | `--replace <new>` | Replacement text |
+
+#### flint orbh fleet
+
+```text
+flint orbh fleet [options] [command]
+```
+
+Declare and manage fleets: a named group of sessions that acts under one name and one charter
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+```text
+A fleet is one spool in the flint Orb space of the Flint. Its handle is unique for all time.
+A child of a member inherits the fleet at launch. A peer or a station joins with fleet join.
+fleet close does not stop a session.
+```
+
+Subcommands: `declare`, `show`, `list`, `updates`, `join`, `leave`, `set`, `close`.
+
+##### flint orbh fleet declare
+
+```text
+flint orbh fleet declare [options] <handle>
+```
+
+Declare a fleet. The caller session becomes the root, unless --root names a session
+
+| Argument | Description |
+|---|---|
+| `handle` | Fleet handle: 2 to 32 characters, lower case, digits, and hyphens |
+
+| Option | Description |
+|---|---|
+| `--name <name>` | Display name (default: the handle in Title Case) |
+| `--charter <text>` | The goal, the boundary, and the done condition, in 1 to 5 sentences |
+| `--charter-file <path>` | Read the charter from a file |
+| `--charter-ref <ref>` | Mesh path or wikilink of the source of the charter |
+| `--root <sessionId>` | The root session (default: ORBH_SESSION_ID) |
+| `--room <room>` | The room of the fleet |
+| `--avatar <url>` | Public image URL for the Discord webhook post |
+| `--max-members <n>` | Advisory member limit |
+| `--budget <usd>` | Advisory budget in USD |
+| `--deadline <iso\|+duration>` | Advisory deadline |
+| `--no-backfill` | Do not stamp the present dispatch tree under the root |
+| `--backfill-only` | Do not declare: stamp the root and each unstamped session under the root of the open fleet |
+| `--json` | Print the result as JSON |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet show
+
+```text
+flint orbh fleet show [options] [handle]
+```
+
+Show a fleet (default: the fleet of this session)
+
+| Argument | Description |
+|---|---|
+| `handle` | Fleet handle or id |
+
+| Option | Description |
+|---|---|
+| `--members` | List the members |
+| `--json` | Print the fleet as JSON |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet list
+
+```text
+flint orbh fleet list [options]
+```
+
+List open fleets
+
+| Option | Description |
+|---|---|
+| `--all` | Include closed and abandoned fleets |
+| `--json` | Print the fleets as JSON |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet updates
+
+```text
+flint orbh fleet updates [options] [handle]
+```
+
+The feed of a fleet: the updates of all its members in time order (default: the fleet of this session)
+
+| Argument | Description |
+|---|---|
+| `handle` | Fleet handle |
+
+| Option | Description |
+|---|---|
+| `--limit <n>` | Most recent entries to show (default 50) |
+| `--json` | Print the feed as JSON |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet join
+
+```text
+flint orbh fleet join [options] <handle>
+```
+
+Join a session (default: this session) or a station to an open fleet
+
+| Argument | Description |
+|---|---|
+| `handle` | Fleet handle or id |
+
+| Option | Description |
+|---|---|
+| `--session <id>` | The session that joins |
+| `--station <name>` | The station that joins |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet leave
+
+```text
+flint orbh fleet leave [options]
+```
+
+Leave the fleet of a session (default: this session) or of a station
+
+| Option | Description |
+|---|---|
+| `--session <id>` | The session that leaves |
+| `--station <name>` | The station that leaves |
+| `--reason <why>` | Why the member leaves |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet set
+
+```text
+flint orbh fleet set [options] <handle> <field> [value...]
+```
+
+Change a field of an open fleet: name|charter|charter-ref|room|avatar|limits
+
+| Argument | Description |
+|---|---|
+| `handle` | Fleet handle or id |
+| `field` | name\|charter\|charter-ref\|room\|avatar\|limits |
+| `value` | The new value; none clears an optional field. limits: max-members=`<n>` budget=`<usd>` deadline=\<iso\|+duration> |
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+##### flint orbh fleet close
+
+```text
+flint orbh fleet close [options] [handleOrOutcome] [outcome]
+```
+
+Close a fleet with an outcome (default: the fleet of this session). It does not stop a session
+
+| Argument | Description |
+|---|---|
+| `handleOrOutcome` | Fleet handle, or the outcome when one argument is given |
+| `outcome` | The outcome |
+
+| Option | Description |
+|---|---|
+| `--report <path>` | Mesh path of the report |
+| `--abandon` | Mark the fleet abandoned instead of closed |
+| `--force` | Close with working members, or from a session that is not the root |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+#### flint orbh actor
+
+```text
+flint orbh actor [options] [command]
+```
+
+The actor of an act now: fleet, agent, session, or person
+
+| Option | Description |
+|---|---|
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
+
+Subcommands: `show`.
+
+##### flint orbh actor show
+
+```text
+flint orbh actor show [options]
+```
+
+Print who speaks for an act of a session now (default: this session), with via and principal
+
+| Option | Description |
+|---|---|
+| `--session <id>` | The session of the act |
+| `--json` | Print the actor as JSON |
+| `-p, --path <dir>` | Path to flint (default: auto-detect) |
+| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
+| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
+| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
 #### flint orbh stream
 
@@ -5344,6 +6097,8 @@ Spawn a worker for one unit of work (non-blocking)
 | `--label <label>` | Human handle (default: derived from the unit title) |
 | `--target <runtime/profile>` | Launch target (default: the agent's, else the first available target of the default target list) |
 | `--account <name>` | Harness account (default: the agent's) |
+| `--fleet <handle>` | Make the worker a member of this open fleet when its parent is in no fleet (a member parent already gives its fleet) |
+| `--output-schema <schema>` | JSON Schema (a file path, or inline JSON) that each return of the worker must match; a matching return is stored as result.structured |
 | `--json` | Print the spawn outcome as JSON |
 
 ##### flint orbh worker list
@@ -5951,6 +6706,7 @@ Raise the writer epoch to 2; refuses while a registered process of the store run
 | Option | Description |
 |---|---|
 | `--servers-confirmed <note>` | Confirm the processes that no registry lists (Flint servers, Orbh servers, collectors) with a note |
+| `--confirm-unfenced` | Confirm that every writer of the store is stopped: the verb does not fence writers yet |
 | `--json` | Print JSON |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
@@ -5963,10 +6719,11 @@ Raise the writer epoch to 2; refuses while a registered process of the store run
 flint orbh store epoch lower [options]
 ```
 
-Set the writer epoch to 1; the facts already written are not converted
+Set the writer epoch to 1 and wait until each running writer reads it; the facts already written are not converted
 
 | Option | Description |
 |---|---|
+| `--confirm-unfenced` | Confirm that every writer of the store is stopped: the verb does not fence writers yet |
 | `--json` | Print JSON |
 | `-p, --path <dir>` | Path to flint (default: auto-detect) |
 | `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
@@ -6231,7 +6988,7 @@ Read and change programs, maps, views, contacts, observations, and jobs.
 |---|---|
 | `-p, --path <dir>` | The Flint folder. The default is the current Flint. |
 
-Subcommands: `flow`, `list`, `frameworks`, `map`, `view`, `check`, `create`, `rename`, `archive`, `part`, `include`, `link`, `contact`, `run`, `act`, `observe`, `observations`, `focus`, `diff`, `apply`, `discard`, `job`.
+Subcommands: `flow`, `system`, `statements`, `evidence`, `instruments`, `read`, `notice`, `log`, `brief`, `vitals`, `prompt`, `adopt`, `revision`, `list`, `frameworks`, `map`, `view`, `check`, `create`, `rename`, `archive`, `part`, `include`, `link`, `contact`, `run`, `act`, `observe`, `observations`, `focus`, `diff`, `apply`, `discard`, `job`.
 
 #### flint ite flow
 
@@ -6241,7 +6998,7 @@ flint ite flow [options] [command]
 
 Read flows and run them by hand.
 
-Subcommands: `list`, `show`, `start`, `runs`, `status`, `done`, `answer`, `skip`, `pause`, `resume`, `cancel`.
+Subcommands: `list`, `show`, `start`, `runs`, `status`, `done`, `answer`, `skip`, `dispatch`, `reconcile`, `waive`, `approve`, `pause`, `resume`, `cancel`.
 
 ##### flint ite flow list
 
@@ -6362,6 +7119,76 @@ Skip a step that has no required output.
 | `--at <time>` | The ISO time when the action occurred. |
 | `--reason <text>` | Why this step can be skipped. |
 
+##### flint ite flow dispatch
+
+```text
+flint ite flow dispatch [options] <run>
+```
+
+Dispatch the active visit: an agent or a command step, or the Begin of a person step whose effect needs evidence.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--request-id <id>` | Use this request id for a retry. The default is a new UUID. |
+| `--expected-seq <number>` | Require this last sequence. The default is the sequence read before this command. |
+| `--at <time>` | The ISO time when the action occurred. |
+
+##### flint ite flow reconcile
+
+```text
+flint ite flow reconcile [options] <run>
+```
+
+Check the pending effects of a run against the system log now, or close an unknown attempt by a decision of a person.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--request-id <id>` | Use this request id for a retry. The default is a new UUID. |
+| `--expected-seq <number>` | Require this last sequence. The default is the sequence read before this command. |
+| `--at <time>` | The ISO time when the action occurred. |
+| `--attempt <id>` | The attempt. The default is each open attempt of the run. |
+| `--decision <decision>` | For an unknown attempt: retry, failed, or wait-evidence. |
+| `--reason <text>` | The reason of the decision. |
+
+##### flint ite flow waive
+
+```text
+flint ite flow waive [options] <run>
+```
+
+Waive one pending or unknown effect with a reason (a person only). A waiver is not a confirmation.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--request-id <id>` | Use this request id for a retry. The default is a new UUID. |
+| `--expected-seq <number>` | Require this last sequence. The default is the sequence read before this command. |
+| `--at <time>` | The ISO time when the action occurred. |
+| `--attempt <id>` | The attempt whose effect you waive. |
+| `--reason <text>` | Why the effect does not need evidence. |
+
+##### flint ite flow approve
+
+```text
+flint ite flow approve [options] <run>
+```
+
+Grant or refuse the approval of the step that waits (a person only). The visit, the revision, and the digest come from a read right before the write.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--request-id <id>` | Use this request id for a retry. The default is a new UUID. |
+| `--expected-seq <number>` | Require this last sequence. The default is the sequence read before this command. |
+| `--at <time>` | The ISO time when the action occurred. |
+| `--step <id>` | The step that waits for the approval. |
+| `--refuse` | Refuse the approval. |
+| `--reason <text>` | The reason of the decision. |
+| `--revision <revision>` | The revision that you reviewed. The default is the revision of the read before the write. |
+| `--digest <digest>` | The inputs digest that you reviewed. The default is the digest of the read before the write. |
+
 ##### flint ite flow pause
 
 ```text
@@ -6409,6 +7236,343 @@ Cancel a run.
 | `--expected-seq <number>` | Require this last sequence. The default is the sequence read before this command. |
 | `--at <time>` | The ISO time when the action occurred. |
 | `--reason <text>` | The reason for this action. |
+
+#### flint ite system
+
+```text
+flint ite system [options] <program>
+```
+
+Show the root of a living system: owners, boundary, goals, maps, connections, instruments, instructions, and vital signs. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+#### flint ite statements
+
+```text
+flint ite statements [options] <program>
+```
+
+Show each statement with its state, value, source, and age. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+#### flint ite evidence
+
+```text
+flint ite evidence [options] <program> <statement>
+```
+
+Show the evidence of one statement. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `statement` | The statement id. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+#### flint ite instruments
+
+```text
+flint ite instruments [options] <program>
+```
+
+Show each instrument with its health. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+#### flint ite read
+
+```text
+flint ite read [options] <program>
+```
+
+Read instruments now. The system log gets the observations and one read record of each instrument.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--instrument <id>` | Read only this instrument. Repeat for more instruments. |
+| `--reconcile` | A full read after a gap (the trigger reconcile). |
+
+#### flint ite notice
+
+```text
+flint ite notice [options] <program>
+```
+
+Take one notice of an event source. A notice is not evidence: a read of the instrument follows.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--instrument <id>` | The instrument that the notice is for. |
+| `--id <event id>` | The id of the event at its source. The log takes each id once. |
+| `--ref <ref>` | The ref that changed. |
+| `--revision <sha>` | The revision at the source. |
+
+#### flint ite log
+
+```text
+flint ite log [options] <program>
+```
+
+Show the records of the system log. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--since-seq <n>` | Only the records after this sequence, the oldest first. |
+| `--kind <kind>` | Only one kind: observation, read, notice, ack, brief-opened, escalation, prompt, detection, clearance. |
+| `--limit <n>` | The most records (default 200, at most 5000). |
+
+#### flint ite brief
+
+```text
+flint ite brief [options] [command] <program>
+```
+
+Show the brief: what changed, what is at risk, what is old, what nobody watches, and what waits. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--since <duration>` | The start of the window, for example 24h, or an ISO time. |
+| `--markdown` | Print the brief as Markdown. |
+
+Subcommands: `ack`.
+
+##### flint ite brief ack
+
+```text
+flint ite brief ack [options] <program> <item>
+```
+
+Acknowledge one episode of one item of the brief. The log gets one ack record.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `item` | The item id of the brief. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--episode <id>` | The episode that you saw. An acknowledgement of a closed episode is refused. |
+| `--note <text>` | A note for the owner. |
+
+#### flint ite vitals
+
+```text
+flint ite vitals [options] <program>
+```
+
+Show the five vital signs: freshness, closure, use, surprise, and coverage. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--window <duration>` | The window, for example 7d (the default). |
+
+#### flint ite prompt
+
+```text
+flint ite prompt [options] <program>
+```
+
+Show the prompt of the system for an agent. An agent caller writes one prompt record in the log.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--flow <id>` | The flow id or the view id. Omit it for the reconciliation prompt. |
+| `--step <id>` | The step id of the flow. |
+| `--attempt <id>` | The attempt that the prompt is for. |
+
+#### flint ite adopt
+
+```text
+flint ite adopt [options] <program>
+```
+
+Adopt the protected declarations of a living system as they are now (a person only). The guard compares the next reads with them.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+#### flint ite revision
+
+```text
+flint ite revision [options] [command]
+```
+
+Propose, review, apply, revert, or discard a revision of one file of a living system.
+
+Subcommands: `list`, `show`, `propose`, `apply`, `revert`, `discard`.
+
+##### flint ite revision list
+
+```text
+flint ite revision list [options] <program>
+```
+
+List the revisions of the system. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--state <state>` | Only one state: proposed, applying, applied, reverting, reverted, discarded. |
+
+##### flint ite revision show
+
+```text
+flint ite revision show [options] <program> <id>
+```
+
+Show one revision with its diff and its protected changes. Write nothing.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `id` | The revision id. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+
+##### flint ite revision propose
+
+```text
+flint ite revision propose [options] <program>
+```
+
+Propose a revision of one file of the system. It writes the revision file only.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--kind <kind>` | One of: part, statement, instruction, goal, system. |
+| `--target <file>` | The target file, relative to the Flint root. It must be in the folder of the program. |
+| `--content-file <path>` | A file with the full new bytes of the target. |
+| `--reason <text>` | Why the change is needed. |
+| `--subject <id>` | The part, statement, or flow that the revision is about. |
+| `--trigger <trigger>` | One of: person, repeated-failure, goal-at-risk, surprise. The default is person. |
+| `--base-hash <hash>` | The hash of the target that you read. The default is the hash of the target now (none for a new file). |
+
+##### flint ite revision apply
+
+```text
+flint ite revision apply [options] <program> <id>
+```
+
+Apply a revision. A protected revision needs --protected from a person.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `id` | The revision id. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--base-hash <hash>` | The hash of the target that you saw. The default is the hash of the target now. |
+| `--reason <text>` | Why you revert (revert only). |
+| `--protected` | Apply a revision that changes a protected field (a person only). |
+
+##### flint ite revision revert
+
+```text
+flint ite revision revert [options] <program> <id>
+```
+
+Write the exact old bytes back, or remove a new part.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `id` | The revision id. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
+| `--base-hash <hash>` | The hash of the target that you saw. The default is the hash of the target now. |
+| `--reason <text>` | Why you revert (revert only). |
+| `--protected` | Apply a revision that changes a protected field (a person only). |
+
+##### flint ite revision discard
+
+```text
+flint ite revision discard [options] <program> <id>
+```
+
+Discard a revision that is not applied.
+
+| Argument | Description |
+|---|---|
+| `program` | The name or id of the program. |
+| `id` | The revision id. |
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON value. |
 
 #### flint ite list
 
@@ -6786,15 +7950,15 @@ Run the named action contact and record its result.
 #### flint ite observe
 
 ```text
-flint ite observe [options] <program> <node>
+flint ite observe [options] <program> [node]
 ```
 
-Record what an agent or person saw for one contact.
+Record what an agent or person saw for one contact, or report the value of one statement of a living system.
 
 | Argument | Description |
 |---|---|
 | `program` | The name or id of the program. |
-| `node` | The node id. |
+| `node` | The node id (with --contact). |
 
 | Option | Description |
 |---|---|
@@ -6802,6 +7966,10 @@ Record what an agent or person saw for one contact.
 | `--document <id>` | The map, or the id of a view. (default: "map") |
 | `--contact <id>` | The contact id. |
 | `--state <state>` | holds, fails, or error. |
+| `--statement <id>` | A statement of a living system. Give --value, and --type when the type is not the type of the statement. |
+| `--value <value>` | The value of the statement. JSON for the type json. |
+| `--type <type>` | The type of the value: number, text, boolean, time, version, sha, json, or verdict. |
+| `--at <time>` | The ISO time when the value was seen (with --statement). |
 | `--summary <text>` | What you saw. |
 | `--evidence <kind=value>` | Add evidence. Repeat for more evidence. |
 
@@ -7311,6 +8479,29 @@ Repair the drift that `flint tinderbox check` finds (with a backup of the box fi
 | `--yes` | Repair with no confirmation prompt |
 | `--json` | Print the result as one JSON value, in the shape of `sync --json` |
 
+### flint orbit
+
+```text
+flint orbit [options] [command]
+```
+
+Serve the Orbit dashboard of this computer from the Orbit build of this CLI
+
+Subcommands: `serve`.
+
+#### flint orbit serve
+
+```text
+flint orbit serve [options]
+```
+
+Start the Orbit server. One Orbit runs for each NUU home: a second start shows the URL of the live Orbit and exits
+
+| Option | Description |
+|---|---|
+| `--port <port>` | The port of Orbit (default: ORBIT_PORT, else 13070) |
+| `--no-open` | Do not open the browser (ORBIT_OPEN=0 does the same) |
+
 ### flint blacksmith
 
 ```text
@@ -7401,15 +8592,15 @@ Restart flint-server daemons: graceful shutdown, then respawn via Blacksmith
 flint blacksmith restart-steel [options] [target]
 ```
 
-Restart the Steel of a Flint with the active steel binary: stop it, and Blacksmith starts it again on the same port
+Restart the one Steel of this computer with the active steel binary: stop it, and Blacksmith starts it again on the same port
 
 | Argument | Description |
 |---|---|
-| `target` | Resource token or Flint path |
+| `target` | Resource token, or the path of a Flint that the Steel serves (default: the Steel of this computer) |
 
 | Option | Description |
 |---|---|
-| `--all` | Restart the Steel of every Flint |
+| `--all` | Restart every Steel that Blacksmith registers |
 
 #### flint blacksmith stop
 
@@ -7456,10 +8647,12 @@ Set up this machine in seven steps: your Name and the machine, the Git author, t
 | `--no-open` | Do not open the Computer Flint in Obsidian (the onboarding session then runs in this terminal) |
 | `--guide` | Clone the Guide of NUU Cognition with no question |
 | `--no-guide` | Do not clone the Guide (later: flint setup guide) |
-| `-y, --yes` | Ask no question. Every open input takes its default, and setup clones the Guide |
+| `--font` | Install the terminal font JetBrainsMono Nerd Font with no question |
+| `--no-font` | Do not install the terminal font (later: flint setup font) |
+| `-y, --yes` | Ask no question. Every open input takes its default, setup installs the terminal font, and setup clones the Guide |
 | `--json` | Output one JSON result envelope on stdout. Ask no question. The text for a person goes to stderr |
 
-Subcommands: `shell-integration`, `url-handler`, `computer`, `guide`, `onboard`, `handoff`.
+Subcommands: `shell-integration`, `url-handler`, `computer`, `guide`, `font`, `onboard`, `handoff`.
 
 #### flint setup shell-integration
 
@@ -7513,6 +8706,18 @@ flint setup guide [options]
 ```
 
 Clone the Guide of NUU Cognition into the home directory. Ask it Flint questions with an agent
+
+| Option | Description |
+|---|---|
+| `--json` | Output one JSON line on stdout. The text for a person goes to stderr |
+
+#### flint setup font
+
+```text
+flint setup font [options]
+```
+
+Install the terminal font JetBrainsMono Nerd Font. The Obsidian terminal shows the glyphs of the agent titles with it
 
 | Option | Description |
 |---|---|
@@ -7581,10 +8786,12 @@ Check this machine and the current Flint, and give one next command for each pro
 ```text
 The checks: your identity and the NUU home, Git, Node.js, Obsidian, the
 terminal of Obsidian (its PATH finds node and flint, its font, and python3),
-the agent (the default target list of Orbh), the Computer Flint, and the Flint
-registry.
-Inside a Flint: its lock, the layout of flint.toml, its sync plan, its Git state,
-and its Obsidian payload.
+the agent (the default target list of Orbh), the launcher record, the
+Blacksmith daemon (a read: it starts no daemon), the Computer Flint, the Flint
+registry, the Flint version (it names a newer release and never fails for it),
+and the Orbh profiles.
+Inside a Flint: its lock, the layout of flint.toml, its sync plan, its modules,
+its Git state, and its Obsidian payload.
 A check that needs judgement names flint fix; then the doctor writes one failure
 record for it. It writes nothing else. Exit 0 when each check passes, else 1.
 ```
@@ -7604,7 +8811,7 @@ Start an agent that repairs the last failure of a Flint command (a repair sessio
 | Option | Description |
 |---|---|
 | `--list` | List the failure records of this machine |
-| `--json` | With --list or --dry-run: print one JSON value |
+| `--json` | With --list: print one JSON value |
 
 ```text
 When flint sync, flint create, flint git sync, flint shard install, flint setup,
@@ -7612,6 +8819,56 @@ or flint tinderbox sync fails, Flint writes a failure record and prints
 "Or: flint fix". flint fix starts an interactive Orbh session on the default
 target in your Computer Flint. The session reads the record and follows the
 repair skill of the Flint shard. flint doctor checks this machine and starts no agent.
+To report the failure to NUU Cognition: flint feedback --bug --with-failure.
+```
+
+### flint feedback
+
+```text
+flint feedback [options] [text...]
+```
+
+Send feedback about Flint to NUU Cognition: a bug, an idea, or a question
+
+| Argument | Description |
+|---|---|
+| `text` | The feedback. With no text, a terminal asks for it |
+
+| Option | Description |
+|---|---|
+| `--bug` | The feedback is a bug report |
+| `--idea` | The feedback is an idea |
+| `--question` | The feedback is a question |
+| `--title <text>` | The title of the report (default: the first line of the text) |
+| `--with-failure` | Add the facts of the newest failure record of flint fix: the command words, the exit code, the error code, the version, and the time |
+| `--email` | Send it as an email to hello@nuucognition.com in place of a GitHub issue |
+| `--no-open` | Print the report and the link, and open nothing |
+| `-y, --yes` | Open the link with no question |
+| `--json` | Print the report and the link as one JSON value; opens nothing without --yes |
+
+```text
+flint feedback builds a report: your text, the kind, the Flint version, the OS
+and the arch, and the Node.js version. It shows the report and asks before it
+opens anything. Then your browser opens a new issue of
+NUU-Cognition/flint-public with the report filled in, and you submit it.
+--email opens an email to hello@nuucognition.com in your mail app.
+Flint sends nothing itself.
+Flint removes some secrets, but not all. Read the report.
+Remove each secret before you send it.
+Each line of your text that has a secret key, a secret flag, or an
+Authorization or Cookie header loses the rest of the line. Private key blocks,
+the user information of URLs, known tokens, and home folder paths go too.
+--with-failure adds only the facts of the newest failure record (flint fix
+--list): the command words, the exit code, the error code, the Flint version,
+and the time. It adds no arguments, no output, no reason, and no paths.
+A local copy of each report goes to the NUU home (flint/feedback/).
+With no terminal, the command prints the report and the link only.
+
+Examples:
+  flint feedback --bug "flint sync stops on a fresh clone" --with-failure
+  flint feedback --idea "A flint sync --watch mode"
+  flint feedback --question "How do I share a shard with my org?" --no-open
+To repair a failure on this machine, run flint fix.
 ```
 
 ### flint git
@@ -8129,6 +9386,170 @@ Log out of your NUU account: revoke this machine's login and remove its session
 | Option | Description |
 |---|---|
 | `--json` | Output as JSON |
+
+### flint foundation
+
+```text
+flint foundation [list|inspect|logs|ghosts|totals|prune|storage|top|help|version] [flags]
+```
+
+The process registry of NUU services and their memory usage.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+```text
+Without a command, flint foundation runs list.
+```
+
+Subcommands: `list`, `inspect`, `logs`, `ghosts`, `totals`, `prune`, `version`, `storage`, `top`.
+
+#### flint foundation list
+
+```text
+flint foundation list [--service <service>] [--owner <kind>:<id>] [--all] [--tree]
+```
+
+List the registered NUU processes, their state, and their RSS. The default command.
+
+| Option | Description |
+|---|---|
+| `--service <service>` | Only the processes of this service. |
+| `--owner <kind>:<id>` | Only the processes of this owner. The ID must match exactly. |
+| `--all` | Also show the stale records. |
+| `--tree` | Also show the unregistered descendants of the registered processes. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation inspect
+
+```text
+flint foundation inspect <PID|registration-UUID> [--tree]
+```
+
+Show one process: identity, record, owner, launch parent, observed parent, memory, and log path. A UUID selects its record, also a stale one. A PID selects the current process.
+
+| Option | Description |
+|---|---|
+| `--tree` | Also show the descendants and the RSS sum of the tree. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation logs
+
+```text
+flint foundation logs [<registration-UUID>] [--service <service>] [--role <role>] [--event <prefix>]... [--level <level>] [--since <time>] [--limit <n>] [--list]
+```
+
+Read the event log of a NUU process: its events, filtered by service, event, level, and time. A log is \<NUU home>/foundation/logs/\<registration UUID>/events.jsonl. events.1.jsonl holds the lines before the last rotation. A process writes a log when it registers with events: true. A log stays after its process exits. Without a UUID, logs reads the newest log that matches --service and --role, of a live or an exited process. The prefix sync selects the events sync and sync.command.applied. It does not select syncx. prune --apply removes the logs of exited processes that are old or above the byte budget.
+
+| Option | Description |
+|---|---|
+| `--list` | List the logs, newest first, with their state and size. |
+| `--service <service>` | Read the newest log of this service. With --list: only the logs of this service. |
+| `--role <role>` | Read the newest log of this role. With --list: only the logs of this role. |
+| `--event <prefix>` | Only the events whose name starts with these whole words. Repeat it for more prefixes. |
+| `--level <level>` | Only the events of this level or higher: debug, info, warn, or error. |
+| `--since <time>` | Only the events at or after this time: a duration (30s, 10m, 2h, 1d) or an ISO time. |
+| `--limit <n>` | Show the last `<n>` matching events, from 0 to 1000000. 0 shows all. Default: 200. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation ghosts
+
+```text
+flint foundation ghosts [--root <absolute-repo-or-install-root>]...
+```
+
+Find running processes of this user with NUU evidence and no verified record. The scan is heuristic. An unregistered detached child without current ancestry or recognizable arguments can remain undiscovered. Candidates need review. The command stops no process.
+
+| Option | Description |
+|---|---|
+| `--root <path>` | Also accept NUU entrypoints below this absolute root. Repeat it for more roots. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation totals
+
+```text
+flint foundation totals [--service <service>] [--owner <kind>:<id>] [--tree]
+```
+
+Sum the RSS of the verified current processes, once per process, by service. RSS can count shared pages more than once.
+
+| Option | Description |
+|---|---|
+| `--service <service>` | Only this service. |
+| `--owner <kind>:<id>` | Only the processes of this owner. |
+| `--tree` | Also count the unregistered descendants, in the service of their registered ancestor. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation prune
+
+```text
+flint foundation prune [--apply]
+```
+
+Preview the stale records, the old temporary files, and the old event logs that can be removed. The event log of an exited process goes when its newest file is older than 7 days. When all logs use more than 200 MiB, the oldest logs of exited processes go until the sum is 200 MiB or less. The log of a live or unknown process always stays. Prune removes only events.jsonl and events.1.jsonl, and then the empty folder. Prune never signals a process and never changes a service registry.
+
+| Option | Description |
+|---|---|
+| `--apply` | Remove them after a fresh check. Unknown and invalid records stay. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation version
+
+```text
+flint foundation version
+```
+
+Show the CLI version, the record protocol, and the output schema.
+
+| Option | Description |
+|---|---|
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation storage
+
+```text
+flint foundation storage [--no-flints] [--top <n>] [--timeout <ms>]
+```
+
+Measure the disk usage of the NUU home, of the Flints of this machine, and of their Orbh spools. The size is the disk usage: the allocated blocks. The measure does not follow a symbolic link, stays on the device of each area, and counts a file with more than one hard link one time. The command deletes nothing.
+
+| Option | Description |
+|---|---|
+| `--no-flints` | Measure only the NUU home. Do not read the Flint registry. |
+| `--top <n>` | Show the `<n>` largest spools of each Flint. Default: 5. |
+| `--timeout <ms>` | Stop the measure after `<ms>` milliseconds. Default: 20000. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
+
+#### flint foundation top
+
+```text
+flint foundation top [--interval <ms>] [--service <service>] [--owner <kind>:<id>] [--tree] [--sort cpu|rss|pid|service] [--no-storage] [--no-mouse] [--once]
+```
+
+Show a live screen of the NUU processes with their CPU, their memory, and the storage sizes. On a terminal, top shows a live view until you press q or Ctrl-C. Press ? for the keys. Tab moves the focus between the process table and the storage panel. The arrow keys, j, k, g, G, PgUp, and PgDn move the panel with the focus. The storage panel lists all areas; it starts folded. + (or =) opens the selected row and - folds it; e opens all rows, c folds all rows. Enter, the left and right arrow keys, and a click on [+] or [-] also open and fold a row. z gives the panel with the focus all rows. The mouse wheel scrolls the panel under the pointer. A click gives a panel the focus and selects a row. The key m turns the mouse reports off, so that the terminal can select text. You can also hold Option (macOS) or Shift to select text. With --json, --once, or no terminal, top takes two samples one interval apart, measures the storage, prints one reply, and ends. An agent uses top --json. CPU: 100 % is one full core. The CPU of the second sample is the difference of the two samples. RSS can count shared pages more than once.
+
+| Option | Description |
+|---|---|
+| `--interval <ms>` | The time between two samples, from 250 to 60000. Default: 2000. |
+| `--service <service>` | Only the processes of this service. |
+| `--owner <kind>:<id>` | Only the processes of this owner. |
+| `--tree` | Also show the unregistered descendants of the registered processes. |
+| `--sort <key>` | Sort the processes by cpu, rss, pid, or service. Default: cpu. |
+| `--no-storage` | Do not measure the storage. In the live view, the key d starts it. |
+| `--no-mouse` | Do not turn on the mouse reports in the live view. The key m turns them on. |
+| `--once` | Take two samples, print one text frame, and end. |
+| `--json` | Print one JSON object (schema foundation-cli/0.1). |
+| `--home <NUU-home>` | Read this NUU home. Default: $NUU_HOME, else ~/.nuucognition. |
 
 ## nuu
 
@@ -11610,9 +13031,26 @@ List all running Flint servers from the shared registry
 flint steel [options] [command]
 ```
 
-Manage Steel UI state (.steel/ directory)
+Serve the Steel host, and manage the Steel UI state (.steel/ directory)
 
-Subcommands: `preferences`, `state`, `boards`.
+Subcommands: `serve`, `preferences`, `state`, `boards`.
+
+#### flint steel serve
+
+```text
+flint steel serve [options]
+```
+
+Serve the Steel host from the Steel build of this CLI. --machine: one host for every Flint of this computer (`http://<flint>.localhost:<port>/`), the mode that Blacksmith runs
+
+| Option | Description |
+|---|---|
+| `--machine` | Serve every Flint of this computer from one port (default 13035) |
+| `--port <port>` | The port of the Steel host |
+| `--host <host>` | The host to bind to (default 127.0.0.1) |
+| `--server <url>` | Without --machine: the URL of the Flint server (default: found or started for the Flint of --path) |
+| `--path <dir>` | Without --machine: the path of the Flint (default: the Flint of the current folder) |
+| `--no-open` | Do not open the browser |
 
 #### flint steel preferences
 

@@ -1,0 +1,374 @@
+---
+title: "Write a Module"
+---
+
+This guide is for the author of a Flint module. A module is a package whose code runs as a process: in Node.js, in Python, or as any executable. This guide shows the manifest, the process contract, the desired objects, the settings file, the env files, the TypeScript SDK and the Python SDK, the live contract, the build, and the release. To install and use a module, read [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms).
+
+To write the module with an agent, load the Knap shard (`flint shard start knap`) and follow its workflow `knap_module`. It takes the module from its purpose to a clean plan, working commands, and a clean `flint doctor`.
+
+Two complete modules are in the Flint repo: `examples/modules/showcase-ts` (TypeScript) and `examples/modules/showcase-py` (Python). They use each API of this guide. The note [(Task) 1125 Flint Modules as Packages - Modules Folder, Process Contract, Live Modules, Env Files, and TypeScript and Python SDKs . (Showcase) Python and TypeScript Modules](/flint/task-1125-flint-modules-as-packages-modules-folder-process-contract-live-modules-env-files-and-typescript-and-python-sdks-showcase-python-and-typescript-modules) shows the real output of each step of both modules. The NUU Flint Flint holds a third example, the live Python module in `Modules/(Source Local) Demo/`: run `flint module demo tour` in that Flint for a guided tour of each feature.
+
+## Prerequisites
+
+- Flint 0.7.0, and a Flint to develop the module in.
+- The Knap shard for the workflow `knap_module` (`flint shard start knap`).
+- For a TypeScript module: Node.js and a bundler (the examples use esbuild).
+- For a Python module: `python3`, version 3.9 or later, on `PATH`.
+
+## The Source and the Build
+
+Put the source of the module in the Flint: `Modules/(Source Local) <Name>/`. Then build it:
+
+```bash
+flint module build hello-ts
+```
+
+```text
+✓ Built hello-ts 0.1.0 (@/hello-ts) in Modules/Hello TS
+  Next: flint sync
+```
+
+The build runs the `build` line of the manifest in the source folder, copies the result to `Modules/<Name>/` with no `node_modules`, and writes the record `hello-ts = { source = "@/hello-ts", from = "source" }` in `[modules]` of `flint.toml`. After a change of the source, run `flint module build <name>` again, or run `flint sync`: sync builds a record with `from = "source"` again when its source changed. `flint module build <name> --broadcast` also updates the module in each Flint of this machine that installs it from this Flint.
+
+A source that is a clone of a Git repository is a remote source: `Modules/(Source Remote) <Name>/`. Git ignores that folder in the Flint, as for a shard source. To release a module, its source must be a Git repository with the remote `origin`.
+
+## The Manifest
+
+The manifest `module.yaml` is at the root of the source and of the build:
+
+```yaml
+module-spec: "0.1.0"
+module: "@/hello-ts"                  # The package name: @<org>/<slug>, or @/<slug> with no org
+id: 0c4ad1f8-1f73-4a9b-9d7e-3a2f6b1c8e55   # A UUID v4 or v7
+name: Hello TS
+version: 0.1.0
+description: Says hello on a schedule
+flint: "^0.7"                         # The Flint versions that the module supports
+runtime: node                         # node | python | command
+entry: dist/index.js                  # node: an ESM file; python: a .py file; command: an executable
+kind: sync                            # sync | live
+commands:                             # The commands of flint module <name> <command>
+  - name: status
+    description: Print the modules of this Flint
+secrets: [HELLO_TOKEN]                # The env names that the module needs
+settings:                             # The keys of the settings file, with a type and a description
+  schedule: { type: string, description: The cron expression of the schedule hello }
+  machine: { type: string, description: The owner machine of the schedule hello }
+build: "npx esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js"
+dependencies: {}
+```
+
+| Key | Rule |
+|-----|------|
+| `module-spec`, `module`, `id`, `name`, `version`, `runtime`, `entry` | Required |
+| `module` | The slug of the package name is the slug of `name` (`Hello TS` → `hello-ts`). The address is `@<org>/module/<slug>`. |
+| `version` | A semver version |
+| `entry` | A relative path inside the build, with no `..` segment |
+| `kind` | Optional. The default is `sync`. A `live` module also has the verbs of a `sync` module. |
+| `flint` | Optional. An install checks it against the version of Flint. |
+| `commands` | Optional. Each name is a kebab word. `flint module <name> <command>` runs only a command of this list. |
+| `build` | Optional. A shell command that runs in the source folder before the copy. |
+| `dependencies` | Optional. Flint 0.7.0 reads the key and installs nothing for it. |
+
+A key that the parser does not know stays in the manifest and is not an error.
+
+## The Process Contract
+
+Flint runs the entry with one verb, in the Flint root:
+
+| Runtime | Command line |
+|---------|--------------|
+| `node` | `node <entry> <verb> [args...]` |
+| `python` | `python3 <entry> <verb> [args...]` |
+| `command` | `<entry> <verb> [args...]` |
+
+The verbs are `plan`, `apply`, `command`, and `live`. You do not parse the verbs yourself: each SDK reads the verb and calls your handler.
+
+### The Environment
+
+Each module process gets the environment of the caller, with no value of the Flint server and of another module, and these values:
+
+| Name | Value |
+|------|-------|
+| `FLINT_MODULE_PROTOCOL` | `1` |
+| `FLINT_ROOT`, `FLINT_ID`, `FLINT_NAME` | The Flint |
+| `FLINT_MODULE_NAME` | The record name of the module in this Flint |
+| `FLINT_MODULE_ID`, `FLINT_MODULE_VERSION` | The module |
+| `FLINT_MODULE_DIR` | The build folder |
+| `FLINT_MODULE_SETTINGS` | The path of the settings file |
+| `FLINT_MODULE_SETTINGS_JSON` | The settings file as JSON, or `null` |
+| `FLINT_MODULE_DATA` | The data folder of the module on this machine |
+| `FLINT_MACHINE_SLUG`, `FLINT_MACHINE_ID` | This machine (empty when unknown) |
+| `FLINT_CLI` | The absolute command of this Flint CLI, so that the module can run any `flint` command |
+| Each value of `flint.env` and `flint.env.local` | `flint.env.local` wins |
+
+For a Python module, Flint also puts the folder of the Python SDK first on `PYTHONPATH`. The token of the Flint server never reaches a module.
+
+### `plan`
+
+Sync, `flint module status`, `flint plan`, and `flint doctor` run `plan`. Stdin is one JSON object:
+
+```json
+{ "protocol": 1, "flint": { "root": "…", "id": "…", "name": "…" }, "machine": { "slug": "katana", "id": "…" },
+  "module": { "name": "hello-ts", "id": "…", "version": "0.1.0", "dir": "…", "data": "…", "settingsPath": "…" },
+  "settings": { "machine": "katana" }, "dryRun": false }
+```
+
+Stdout is one JSON object with the full envelope:
+
+```json
+{ "objects": { "cronSchedules": [], "stations": [] }, "actions": [], "issues": [] }
+```
+
+- `objects`: the desired objects. Flint applies them (see [Desired Objects](#desired-objects)).
+- `actions`: the own actions of the module, each `{ id, kind, label, detail?, payload? }`. The kind is `create`, `update`, `pause`, `resume`, `remove`, or `report`. An id must not start with `flint:`: Flint keeps that prefix for its own actions.
+- `issues`: each `{ code, message, next? }`. The sync report, `flint module status`, and `flint doctor` show them.
+
+A plan must not change anything: it only says what it wants. A plan that exits with a code that is not 0, runs longer than 30 seconds, or prints output that is not the full envelope is the issue `module-plan-failed`. Then sync does not reconcile the module, and it never reads the failure as a removal. A plan must also give the same answer when nothing changed, so that a second sync has no change. Write logs to stderr: stdout holds only the JSON.
+
+An issue does not stop the reconcile: Flint applies the desired objects of a plan that has issues, and it pauses each managed object of the module that the plan does not list. So when an input is not valid and the existing objects must stay as they are, fail the plan (raise an exception) instead of returning early with an issue. The failure pauses nothing.
+
+### `apply`
+
+For each own action that is not a `report`, a sync that is not a dry run runs `apply`. Stdin is `{ "context": <the context of plan>, "action": <the action> }`. Stdout is `{ "ok": true, "detail": "…" }`. The time limit is 30 seconds. An action of the kind `report` is never applied: it is a message for a person.
+
+### `command`
+
+`flint module <name> <command> [args...]` runs `<entry> command <command> [args...]`. The process gets the terminal of the person (stdin, stdout, stderr), and its exit code is the exit code of `flint module`. A command name that the manifest does not list is refused before the process starts.
+
+### `live`
+
+A module with `kind: live` also runs `<entry> live` under the Flint server. See [Live Modules](#live-modules).
+
+## Desired Objects
+
+A module never writes an object of Orbh itself. Its plan returns desired objects, and Flint applies them:
+
+| Object | Fields |
+|--------|--------|
+| Cron schedule | `{ key, expr, prompt, timezone?, description?, target?, misfire?, overlap?, machine? }` |
+| Station | `{ key, target?, mode?, prompt?, description? }` |
+
+- The key is the name of the object in the Orb store of the Flint. A key that a local object, a deleted schedule, or an object of another module already uses is a report, never a take-over.
+- Flint stamps each object with the managed marker `{ flintId, module: <record name>, key, declHash }`. It creates, updates, or resumes each desired object, and it pauses each managed object of the module that the plan no longer desires. Sync never deletes an object of a module.
+- **The owner of a cron schedule.** `machine` is the owner machine (a machine slug or a machine id). Only the owner machine fires the schedule; each other machine pauses it. A schedule with no `machine` fires on no machine, and sync gives a report. Every machine of the Flint runs `plan`, so do not use the slug of the machine that runs the plan as the owner: then each machine would fire the schedule. Take the owner from the settings file, as the examples below do.
+- A station with no `prompt` gets a generic duty, and a station with no `description` gets `The station <key> of the module <name>`. With no `target`, an object gets the Orbh default target of the machine.
+
+## The Settings File
+
+The settings of a module in one Flint are in `Modules/<Name>.settings.toml`, beside the build. The Flint owns this file: a build, an install, and an update never change it, and an uninstall keeps it. The module gets it as JSON: in `settings` of the stdin of `plan` and `apply`, and in `FLINT_MODULE_SETTINGS_JSON` for each verb, so a module needs no TOML parser. With no file, the value is `null`, and each SDK gives an empty object. A settings file that does not parse fails the plan, and sync does not reconcile the module.
+
+Do not write the settings file from the module. Flint owns every write: run `flint module settings <name> set <key> <value>` through the Flint CLI (in the SDKs, `flint('module', 'settings', name, 'set', key, value)`). The write takes the lock of Flint, so two writers never lose a change, and it keeps every comment of the person. A key is a dotted path (for example `schedules.tick.machine`), and a value is one TOML value, so a string needs quotes. The command `own` of the module `crons` does this. A person can use the same verb, then run `flint sync`.
+
+## Env Values and Secrets
+
+The env values of a Flint are in `flint.env` (the Flint) and `flint.env.local` (this machine; its values win). Git ignores both. `flint.env.example` (tracked) names the values with no values. Each module process gets every value. A name that starts with `FLINT_` is refused: only Flint sets those values.
+
+Name the secrets of the module in `secrets:` of the manifest. The value can come from an env file or from the environment of the caller. In the plan, `secret(name)` of an SDK gives the value, or the issue `module-secret-missing` with the next step when the module process has no non-empty value of that name:
+
+```text
+! The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
+```
+
+## The TypeScript SDK
+
+The TypeScript SDK is `@nuucognition/flint-module-sdk` (`packages/flint-module-sdk` of the Flint repo). It has no runtime dependency: bundle it into one ESM file with your module. In Flint 0.7.0 the package is not on npm, so take it from a checkout of the Flint repo. `examples/modules/showcase-ts/build.mjs` shows one way.
+
+`src/index.ts` of the module `hello-ts`:
+
+```ts
+import { existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { defineModule, run } from '@nuucognition/flint-module-sdk';
+
+const text = (value: unknown): string | undefined => (typeof value === 'string' && value ? value : undefined);
+
+run(defineModule({
+  plan(m) {
+    m.secret('HELLO_TOKEN'); // A missing secret is an issue of the plan, with the next step.
+    m.desired.cron({
+      key: 'hello',
+      expr: text(m.settings.schedule) ?? '0 9 * * 1-5',
+      prompt: 'Say hello to the team.',
+      machine: text(m.settings.machine), // The owner comes from the settings: every machine runs the plan.
+    });
+    if (!existsSync(join(m.dataDir, 'hello.txt'))) {
+      m.action({ id: 'write-hello', kind: 'create', label: 'write hello.txt' });
+    }
+  },
+  apply(action, m) {
+    writeFileSync(join(m.dataDir, 'hello.txt'), `Hello from ${m.ctx.flint.name}\n`);
+    return 'wrote hello.txt';
+  },
+  commands: {
+    async status(args, m) {
+      const result = await m.flint('module', 'list');
+      process.stdout.write(result.stdout);
+      return result.code;
+    },
+  },
+}));
+```
+
+With `machine = "katana"` in `Modules/Hello TS.settings.toml`, the plan and the sync give:
+
+```text
+$ flint module status hello-ts
+hello-ts
+  Package  @/hello-ts 0.1.0
+  State    current
+  Folder   Modules/Hello TS
+  Kind     sync (node)
+  Commands status
+  Plan     not current: 2 to change
+    ● Would create the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
+    ● Would write hello.txt
+    ! The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
+
+→ Run flint sync to apply the plan.
+
+$ flint sync
+Changes
+  ✓ Created the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
+  ✓ Wrote hello.txt
+```
+
+The tools of each handler (`m`):
+
+| Tool | What it gives |
+|------|---------------|
+| `m.ctx` | The context: `flint`, `machine`, `module`, `settings`, `dryRun` |
+| `m.settings` | The settings file as an object (`{}` with no file) |
+| `m.dataDir` | The data folder of the module on this machine |
+| `m.env(name)` | One env value |
+| `m.secret(name, next?)` | One secret; a missing secret is an issue |
+| `await m.flint(...args)` | Runs the Flint CLI of this Flint in the Flint root: `{ code, stdout, stderr }` |
+| `m.desired.cron(object)`, `m.desired.station(object)` | One desired object of the plan |
+| `m.action(action)` | One own action of the plan |
+| `m.issue(code, message, next?)` | One issue: in the plan, an issue of the report; in another verb, a line on stderr |
+
+`apply` returns a detail text, `{ ok, detail }`, or nothing. A command returns its exit code.
+
+## The Python SDK
+
+The Python SDK is one file, `flint_module.py`, with the standard library only (Python 3.9 or later). The CLI of Flint ships it and puts its folder first on `PYTHONPATH`, so `from flint_module import Module` works with no install.
+
+`main.py` of the module `hello-py` (`runtime: python`, `entry: main.py`, no `build`):
+
+```python
+import os
+from flint_module import Module
+
+module = Module()
+
+
+def text(value):
+    return value if isinstance(value, str) and value else None
+
+
+@module.plan
+def plan(m):
+    m.secret("HELLO_TOKEN")  # A missing secret is an issue of the plan, with the next step.
+    m.desired.cron(key="hello", expr=text(m.settings.get("schedule")) or "0 9 * * 1-5",
+                   prompt="Say hello to the team.",
+                   machine=text(m.settings.get("machine")))  # The owner comes from the settings.
+    if not os.path.exists(os.path.join(m.data_dir, "hello.txt")):
+        m.action(id="write-hello", kind="create", label="write hello.txt")
+
+
+@module.apply
+def apply(action, m):
+    with open(os.path.join(m.data_dir, "hello.txt"), "w") as handle:
+        handle.write("Hello from %s\n" % m.ctx["flint"]["name"])
+    return "wrote hello.txt"
+
+
+@module.command("status")
+def status(args, m):
+    result = m.flint("module", "list")
+    print(result.stdout, end="")
+    return result.code
+
+
+if __name__ == "__main__":
+    module.run()
+```
+
+The Python tools have the same names in Python form: `m.ctx` (a dict), `m.settings` (a dict), `m.data_dir`, `m.env(name)`, `m.secret(name)`, `m.flint(*args)` (a result with `code`, `stdout`, `stderr`, and `json()`), `m.desired.cron(**fields)`, `m.desired.station(**fields)`, `m.action(**fields)`, and `m.issue(code, message, next)`. A field with the value `None` is left out. With no settings file, this plan gives a schedule with no owner, and sync gives a report:
+
+```text
+! Choose the owner machine of the cron schedule hello: The module hello-py gives the schedule no machine, so no machine runs it.
+    → Give the cron schedule hello an owner machine in the settings of the module hello-py.
+```
+
+## Live Modules
+
+A module with `kind: live` runs a long-running process under the Flint server of the Flint. The server starts `<entry> live` when the server starts, after a `flint sync`, and on `flint module start`. The process also gets `FLINT_SERVER_URL`, `FLINT_MODULE_TOKEN` (one token for each process), and `FLINT_MODULE_HEARTBEAT_MS` (default 10000).
+
+The SDK does the protocol for you:
+
+| TypeScript | Python | What it does |
+|------------|--------|--------------|
+| `live(m) { … }` | `@module.live` | The handler of the verb `live`. After it returns, the process runs until it stops. |
+| `await m.register({ status?, controlUrl? })` | `m.register(status=None, control_url=None)` | Registers the process with the server. The heartbeat starts. When the handler does not call it, the SDK registers after the handler. |
+| `await m.status(status, detail?)` | `m.status(status, detail=None)` | Sets the status of the heartbeat and sends one heartbeat now |
+| `await m.controller({ action: handler })` | `m.controller({"action": handler})` | Starts a local HTTP controller for the own actions of the module, and registers its URL |
+| `m.onStop(fn)` | `m.on_stop(fn)` | Runs `fn` when the process stops (SIGTERM or SIGINT) |
+
+A short form of the live part of `showcase-ts`:
+
+```ts
+async live(m) {
+  let pokes = 0;
+  const url = await m.controller({
+    async poke(body, live) {
+      pokes += 1;
+      await live.status('ready', `pokes: ${pokes}`);
+      return { pong: String(body.text ?? ''), pokes };
+    },
+  });
+  await m.status('ready', 'pokes: 0');
+}
+```
+
+The routes of the Flint server (each call of the process carries `Authorization: Bearer <FLINT_MODULE_TOKEN>`):
+
+- `POST /modules/<name>/register` with `{ pid, version, status?, controlUrl? }`
+- `POST /modules/<name>/heartbeat` with `{ status?, detail? }`
+- `GET /modules` and `GET /modules/<name>`: the state (`starting`, `running`, `down`, `stopped`), the pid, the last heartbeat, the restarts, and the controller
+- `GET /modules/<name>/actions` and `POST /modules/<name>/actions/<action>`: the server calls the controller of the module with the module token, and answers `{ ok, result }` or `{ ok: false, error }`. The answer is 409 when the module does not run or has no controller, and 502 when the controller does not answer.
+
+`flint module control <name>` lists the actions of the controller, and `flint module control <name> <action> [--data <json>]` runs one. `--data` is one JSON object (default `{}`). The command starts no server, and a failed action exits 1. The controller of an SDK accepts only a call with the module token. After three missed heartbeats, the state is `down`. A process that exits starts again after a back-off: 1 second, doubling, at most 60 seconds. A stop sends SIGTERM, then SIGKILL after 5 seconds. Each process has the Foundation record `flint-module/<name>` (`flint foundation list` shows it), and its output goes to `.flint/run/modules/<name>.log`. A sync starts again a running module whose build, settings file, or env file changed.
+
+```bash
+flint module start showcase-ts
+```
+
+```text
+✓ Started showcase-ts under the Flint server (pid 61659).
+  Live     running · pid 61659 · heartbeat 0 s ago
+  Status   ready · pokes: 0
+  Control  http://127.0.0.1:65495
+  Log      /private/tmp/wp6-showcase/flints/(Flint) Showcase/.flint/run/modules/showcase-ts.log
+  Server   http://127.0.0.1:13055
+```
+
+`flint module start` and `restart` start the Flint server when none runs. `flint module stop <name>` starts no server, and the module stays stopped until `flint module start` or the next start of the server. `flint module status` shows the liveness when the server runs.
+
+## Release a Module
+
+`flint module release <name> [<version>]` publishes a version of a module source to the NUU Shard Registry. The source must be a Git repository with the remote `origin`, and the registry needs a GitHub repository (`owner/repo`):
+
+1. It runs the `build` line of the manifest in the source.
+2. It refuses when the build output is not committed: a registry version is the released tree with its build output, and the entry must be in the commit.
+3. It tags `v<version>` and pushes the tag.
+4. It registers the module with the kind `module`, under the org of the Flint (or `--org <slug>`, a slug that this machine knows). A Flint with no org does not publish, also with `--org`. `--no-register` tags and pushes only.
+
+Then a person installs it with `flint module install @<org>/<slug>`. An install from the registry runs no build step. A module and a shard can have the same slug in one org: the kinds are separate.
+
+## Next Steps
+
+- [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms): install a module, and use the first-party modules `crons` and `dms`
+- [Configuration](/flint/reference/configuration): the records of `[modules]`, the settings files, and the env files
+- [CLI Commands](/flint/reference/cli-commands): `flint module`
+- `examples/modules/README.md` in the Flint repo: the API table of both SDKs

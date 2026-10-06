@@ -15,8 +15,8 @@ You declare workspace repositories in `flint.toml` under `[workspace]`. The decl
 Manage them with the `workspace` command group:
 
 ```bash
-flint workspace create "App" git@github.com:me/app.git
-flint workspace clone "App" git@github.com:me/app.git
+flint workspace create "App" https://github.com/me/app.git
+flint workspace clone "App" https://github.com/me/app.git
 flint workspace register "App"
 flint workspace list
 flint workspace update "App"
@@ -26,30 +26,60 @@ flint workspace remove "App"
 Each command behaves as follows:
 
 - `create` records the declaration in `flint.toml`. It clones nothing. Run `flint sync` to clone the repository.
-- `clone` records the declaration and clones the remote now.
-- `register` records a folder that already exists under `Workspace/Repos/`. The folder must be a Git repository with an `origin` remote. Flint reads the remote from `origin`.
+- `clone` records the declaration and clones the remote now. When the clone fails, the declaration stays in `flint.toml`.
+- `register` records a folder that already exists under `Workspace/Repos/`. The folder must be a Git repository with an `origin` remote. Flint reads the URL from `origin`.
 - `list` shows each declared repository and whether its folder exists. It accepts `--wide` for full-width output.
-- `update` pulls the latest changes into the repository. When the folder is missing, it clones the repository.
-- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question.
+- `update` runs `git pull` in the repository. When the folder is missing, it clones the repository. When the folder has no `.git` and is empty, it clones into the folder. When the folder has no `.git` and holds files, the command refuses.
+- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question. Without a terminal, the command refuses and names the `--force` form.
+
+Names match without regard to letter case.
 
 ## Sync Behavior
 
-`flint sync` clones each missing declared repository with a full clone. It aligns `.gitignore` with the current declarations. It writes marker notes so each repository stays visible from the Mesh metadata layer.
+`flint sync` clones each missing declared repository with a full clone. It aligns the managed block of `.gitignore` with the current declarations: while the Flint declares a workspace repository, the block ignores `Workspace/Repos/`. Sync writes marker notes under `Mesh/Metadata/Related/Repos/`, so each repository stays visible from the Mesh metadata layer.
 
-After the clone step, sync fetches each workspace repository that has an `origin` and that the run did not clone. The fetch moves only the remote-tracking refs. Sync never pulls, merges, or checks out. Each repository gets one result: up to date, ahead, behind, diverged, skipped, or fetch failed. A repository that is behind, diverged, or failed produces one notice. A repository with uncommitted changes produces one notice, and sync keeps the changes. When the declared URL differs from the `origin` URL of the folder, sync reports the mismatch and changes nothing.
+A repository with uncommitted changes produces one notice, and sync keeps the changes. When the declared URL differs from the `origin` URL of the folder, sync reports the mismatch and changes nothing.
 
-`flint plan` and `flint sync --dry-run` show the same plan and change nothing. They fetch nothing. They only name the repositories that sync fetches.
+### The Workspace Fetch
+
+After the clone step, sync runs `git fetch origin` in each workspace repository. The row `Fetch workspace repositories` shows this step. Sync fetches each declared repository root that has an `origin` and that the run did not clone. The fetch changes only the Git data of the repository, such as the remote-tracking branches. Sync never pulls, merges, or checks out.
+
+The fetch never asks a question. A fetch that needs a password or a passphrase fails at once. A timer stops a fetch that does not finish.
+
+Sync compares each fetched repository with its base. The base is the upstream branch, else `origin/<default branch>`. Each repository gets one result:
+
+| Result | Row text |
+| --- | --- |
+| up to date | `up to date with <base>` |
+| ahead | `ahead of <base> by N commits` |
+| behind | `behind <base> by N commits` |
+| diverged | `ahead by N commits and behind by M commits against <base>` |
+| no base | `fetched; no base to compare` |
+| skipped | `cloned in this run`, `not cloned`, `not a repository root`, or `no origin` |
+| fetch failed | `fetch failed: <first line of the Git error>` |
+
+Three results produce one notice each:
+
+- `workspace-behind`: the repository is behind its base. The next command is `git pull --ff-only <remote> <branch>` in the folder of the repository.
+- `workspace-diverged`: the repository has commits here and commits on its base. Integrate the two histories with Git.
+- `workspace-fetch-failed`: the fetch failed. Check the network and the access to the remote. Then run `flint sync`.
+
+A fetch is not a change to the Flint. A result and a notice change no count and no status of the run. The detail of the step `Reconcile content` sums the results, for example `2 workspace repositories fetched, 1 behind origin`. With `--json`, the row of each repository carries its result in `data`.
+
+`flint plan` and `flint sync --dry-run` show the same plan and change nothing. They fetch nothing and open no network connection. They name the repositories that sync fetches.
 
 ## Configuration
 
 ```toml
 [workspace]
 repositories = [
-  { name = "App", url = "git@github.com:me/app.git" },
+  { name = "App", url = "https://github.com/me/app.git" },
 ]
 ```
 
 Each name must be one folder name. A bad name produces one report row. Sync still processes each valid declaration.
+
+The `url` is a Git URL. The accepted forms are `https://` (and `http://`, `git://`), `ssh://`, the short SSH form `git@host:path` (for example `git@github.com:org/repo.git`), `file://`, and a local path (absolute, `./`, `../`, or `~/`). A value that starts with `-`, or that uses the form `<transport>::<address>`, is refused. Git runs with only the protocols `file`, `git`, `http`, `https`, and `ssh`. A value that is not a Git URL is reported as not valid. `flint workspace create`, `clone`, and `register` write a relative local path relative to the Flint root, with `./` or `../`. `register` reads the URL from `origin` (a relative `origin` is written relative to the Flint root too).
 
 ## Workspace/Bench
 

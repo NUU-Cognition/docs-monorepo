@@ -41,9 +41,9 @@ This installs `flint` and `nuu`. You type `flint` for your Flints. You type `nuu
 flint setup
 ```
 
-Setup asks your Name and the machine display name, checks the tools, and makes the Computer Flint. See [Setting Up a Machine](/flint/guide/setting-up-a-machine) for the full run.
+Setup needs internet access. It asks your Name and the machine display name, checks the tools, and makes the Computer Flint. See [Setting Up a Machine](/flint/guide/setting-up-a-machine) for the seven steps.
 
-The machine name (for example `sam-laptop`) is the short word for this machine in addresses, such as `@nuucognition/flint/team-notes#sam-laptop`.
+The machine name (for example `sam-laptop`) is the short word for this machine in addresses, such as `@nuucognition/flint/team-notes#sam-laptop`. It comes from the machine display name (for example `Sam Laptop`).
 
 ## Step 3: Log In (Optional)
 
@@ -110,11 +110,11 @@ flint whoami
   Name    : Sam Rivera
   Machine : Sam Laptop (sam-laptop)
   Org     : nuucognition (e17b42dd-1726-463c-861b-49d2a833c73e)
-  Account : sam@example.com
-  Network : enrolled in nuucognition, daemon running
+  Account : sam@example.com (valid for 29 days)
+  Network : home   nuucognition  as sam-laptop  (prod)  daemon running
 ```
 
-With no login, the `Account` row says `not logged in`. With no org, the `Org` row says `none (local)`.
+The `Network` row names the enrollment: the org, the machine name in the org, the network, and the state of the daemon. Before step 6, it ends with `daemon not running`. With no enrollment, it says `not enrolled (optional)`. With no login, the `Account` row says `not logged in (optional: flint login)`. With no org, the `Org` row says `none (local)`. With a guest enrollment in a second org, `flint whoami` shows one `Network` row per enrollment. When the data mode differs from the build mode (for example a dev build on prod data), `flint whoami` adds a `Data` row.
 
 After the daemon publishes, `nuu net machines` shows this machine as `online`. A colleague in the org can then describe your Flint:
 
@@ -130,7 +130,7 @@ A Flint that you made before step 4 is local. Its address starts with `@/`, for 
 flint org set nuucognition
 ```
 
-The id of the Flint does not change. Its address changes from `@/flint/<slug>` to `@nuucognition/flint/<slug>`. `flint org show` shows the org and the address of the Flint. To make a Flint local again, run `flint org set none` in it. For the members of a box, run `flint tinderbox org set nuucognition --apply` in the box (see [Using Tinderbox](/flint/guide/using-tinderbox)).
+The id of the Flint does not change. Its address changes from `@/flint/<slug>` to `@nuucognition/flint/<slug>`. `flint org show` shows the org and the address of the Flint. To make a Flint local again, run `flint org set none` in it. `flint org set nuucognition --dry-run` shows the plan and changes nothing. For a box and its owned members, run `flint tinderbox org set nuucognition --apply` in the box (see [Using Tinderbox](/flint/guide/using-tinderbox)).
 
 To work in a Flint of a colleague, clone it:
 

@@ -40,7 +40,7 @@ flint shard ie load "<Section>"     # header plus the member list
 
 ## The Staging Sections
 
-`Mesh/Main/` holds three always-present sections. They stage new material.
+`Mesh/Main/` holds three always-present sections. The Flint shard makes them. They stage new material.
 
 ```text
 New → Working → Consolidated
@@ -64,7 +64,7 @@ modified: 2026-10-01
 ---
 ```
 
-Each note carries `#note` plus exactly one section tag. Each note carries a one-line `description`. The description is what `load` shows. A note without it stays invisible in listings.
+Each note carries `#note` plus exactly one section tag. Each note carries a one-line `description`. The description is what `load` shows. A note without it appears in `load` as a bare title, with nothing that says what it holds.
 
 ```bash
 flint shard ie note "<Title>" --section <name>
@@ -109,13 +109,13 @@ Mesh titles are globally unique. A link needs only the title. The helper command
 
 Three helpers manage Mesh files. They keep titles unique and links intact.
 
-`flint helper rename` renames a file and rewrites every wiki link to it under `Mesh/`. It accepts the full Mesh name or only the title portion. The typed prefix and number stay. The file stays in its folder.
+`flint helper rename` renames a file and rewrites every wiki link to it under `Mesh/`. The new name can be the full Mesh name or only the title. The typed prefix and number stay. The file stays in its folder.
 
 ```bash
 flint helper rename "(Task) 042 Old title" "New title"
 ```
 
-`flint helper delete` removes a file and strips every frontmatter link to it across `Mesh/`. Scalar fields lose their key. Array fields lose the entry, and empty arrays lose their key. Body text stays untouched. A leftover link in prose is a trace, not an error. The command fails when no file has that title. With `--archive`, it moves the file to `Mesh/Archive/` instead of deleting it.
+`flint helper delete` removes a file and strips every frontmatter link to it across `Mesh/`. Scalar fields lose their key. Array fields lose the entry, and empty arrays lose their key. Body text stays untouched. A leftover link in prose is a trace, not an error. The command fails when no file has that title. With `--archive`, it moves the file to `Mesh/Archive/` instead of deleting it. A file under `Mesh/Types/` goes to the same type folder under `Mesh/Archive/`. The frontmatter links to the file are stripped in both cases.
 
 ```bash
 flint helper delete "(Task) 042 Old title"

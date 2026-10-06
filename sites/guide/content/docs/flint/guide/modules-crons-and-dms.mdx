@@ -1,0 +1,368 @@
+---
+title: "Modules, Crons, and DMs"
+---
+
+A module adds a capability of the machine to a Flint, such as cron schedules or direct messages. This guide shows how to install a module, how to give a Flint its own cron schedules with the module `crons`, and how to send a direct message (DM) to a Flint with the module `dms`. To write your own module, read [Write a Module](/flint/guide/write-a-module).
+
+## Prerequisites
+
+- Flint 0.7.0, and a machine that `flint setup` set up. A cron schedule needs the identity of this machine.
+- A Flint. Run `flint module` and `flint sync` in the folder of the Flint. For a Flint in another folder, put `-p <path>` before the module name: `flint module -p <path> crons list`.
+- An agent target for Orbh. A cron schedule and a DM can start an agent session on a target. `flint orbh profiles default` shows the default target list of this machine.
+
+## What a Module Is
+
+A module is a package, as a shard is. It has a name, a version, an address (`@<org>/module/<slug>`), and a manifest `module.yaml`. A shard serves agents: skills, knowledge, templates, and types. A module serves the machine: its code runs as a process, and `flint sync` makes its objects real on this machine, such as cron schedules and stations. A module can also have commands: `flint module <name> <command>`.
+
+The pages `Module - …` of these docs use the word "module" for an area of Flint, such as the Mesh or the shards. A Flint module in this guide is a package in the folder `Modules/` of the Flint.
+
+A module has these files in a Flint:
+
+| Path | Git | What it holds |
+|------|-----|---------------|
+| `[modules]` in `flint.toml` | Tracked | One record for each module |
+| `flint.json` (`modules`) | Tracked | The lock: the version and the hash of each build |
+| `Modules/<Name>/` | Tracked | The build of the module |
+| `Modules/<Name>.settings.toml` | Tracked | The settings of the module in this Flint |
+| `.flint/modules/<name>/` | Ignored | The data folder of the module on this machine |
+
+The CLI of Flint ships two first-party modules:
+
+| Module | Package | What it does |
+|--------|---------|--------------|
+| `crons` | `@nuucognition/module/crons` | Cron schedules of the Flint. The owner machine fires them. |
+| `dms` | `@nuucognition/module/dms` | Direct messages to the Flint. A session of the Flint answers each DM. |
+
+## Install a Module
+
+```bash
+flint module install @nuucognition/module/dms
+```
+
+```text
+✓ Installed dms 0.1.0 (@nuucognition/dms) in Modules/DMs
+  Next: flint sync
+```
+
+The command finds the package in this order: the CLI bundle, this machine, and the NUU Shard Registry. A spec with `#place` takes the package from that one place only. It copies the build to `Modules/DMs/`, writes the record in `[modules]` of `flint.toml`, and writes the lock in `flint.json`. It changes nothing on the machine: `flint sync` does that.
+
+```bash
+flint module install @nuucognition/crons
+flint module list
+```
+
+```text
+Modules
+  NAME   PACKAGE              VERSION  KIND  STATE
+  dms    @nuucognition/dms    0.1.0    sync  current
+  crons  @nuucognition/crons  0.1.0    sync  current
+```
+
+`flint.toml` now has two records:
+
+```toml
+[modules]
+dms = "@nuucognition/module/dms"
+crons = "@nuucognition/crons"
+```
+
+The short form `@nuucognition/crons` and the address `@nuucognition/module/crons` name the same package. The key of the record is the name of the module in this Flint: the first word of `flint module <name> <command>`. To choose another name, add `--name <name>` to the install. A reserved verb of `flint module` (`list`, `status`, `install`, `uninstall`, `build`, `update`, `release`, `start`, `stop`, `restart`, `control`, `settings`) cannot be a record name.
+
+Other ways to install:
+
+| Command | What it installs |
+|---------|------------------|
+| `flint module install --from-path <dir>` | A module from a folder of this machine. A source runs its build command first. |
+| `flint module install --from-git <owner/repo[#ref]>` | A module from a Git repository. The build command of the manifest runs. |
+| `flint module install` | No input: the lock and the builds match the records of `flint.toml`. Run it after a clone of the Flint. |
+| `flint module build <name>` | A module from its source in this Flint, `Modules/(Source Local) <Name>/`. See [Write a Module](/flint/guide/write-a-module). |
+
+`flint module update` moves each module to the newest version inside the range of its record.
+
+## Configure a Module
+
+The settings of a module in this Flint are in the file `Modules/<Name>.settings.toml`, beside the build. Git tracks it. A build, an install, and an update never change it. Each module names its settings keys in its manifest. With no settings file, the module uses its defaults. Edit the file by hand, or change one key with Flint:
+
+```bash
+flint module settings crons get machine
+flint module settings crons set schedules.morning-brief.machine '"katana"'
+```
+
+`set` takes a dotted key and one TOML value, so a string needs quotes. It keeps every comment of the file. Then run `flint sync`.
+
+`flint module status` shows the state of each module and its plan. It runs the plan of each module and writes nothing:
+
+```bash
+flint module status
+```
+
+```text
+dms
+  Package  @nuucognition/dms 0.1.0
+  State    current
+  Folder   Modules/DMs
+  Kind     sync (node)
+  Commands send, show, inbox
+  Plan     not current: 1 to change
+    ● Would create the station dm: oneshot, target claude/o55h
+
+crons
+  Package  @nuucognition/crons 0.1.0
+  State    current
+  Folder   Modules/Crons
+  Kind     sync (node)
+  Commands list, run, result, own
+  Plan     not current: 1 to change
+    ● Would create the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+
+→ Run flint sync to apply the plan.
+```
+
+Then run the sync:
+
+```bash
+flint sync
+```
+
+```text
+Changes
+  ✓ Created the station dm: oneshot, target claude/o55h
+  ✓ Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+```
+
+Sync runs the plan of each module in the step `Reconcile modules`. Flint makes the objects that the plan asks for, and marks each one with the name of its module. `flint sync --dry-run` and `flint plan` show the same changes as `Would …` and change nothing. When a plan fails, sync changes nothing of that module.
+
+Some modules need env values, such as a token. Write them in `flint.env.local` (this machine) or `flint.env` (the Flint). Git ignores both files. See [Configuration#Env Files](/flint/reference-configuration-env-files).
+
+## Run a Live Module
+
+A module with `kind: live` in its manifest runs a long-running process under the Flint server of the Flint:
+
+```bash
+flint module start demo
+flint module stop demo
+flint module restart demo
+flint module control demo
+flint module control demo poke --data '{"text":"hi"}'
+```
+
+`start` and `restart` start the Flint server when none runs. `stop` starts no server: a stopped module stays stopped until `flint module start` or the next start of the server. `stop` sends SIGTERM, then SIGKILL after 5 seconds. `flint module status` shows the state when the server runs. The states are `starting`, `running`, `down`, and `stopped`. After three missed heartbeats the state is `down`. A process that exits starts again after a back-off: 1 second, doubling, at most 60 seconds.
+
+`flint module control <name>` lists the actions of the controller of the module. `flint module control <name> <action> --data <json>` runs one action. `--data` is one JSON object (default `{}`). The command starts no server. A failed action exits 1.
+
+The output of the process goes to `.flint/run/modules/<name>.log`. Each process has a Foundation record of the service `flint-module`. Its role is the module name, except that Flint removes characters that a role cannot hold (a name that starts with a digit, such as `7demo`, gets the role `demo`). Run `flint foundation list` to find the record.
+
+## Give a Flint Its Own Cron Schedules
+
+`flint orbh cron create` makes a schedule on this machine only, because Git ignores the Orb store `.orb/` of the Flint. A schedule of the module `crons` is in the settings file of the module. So it travels with the Flint, and one machine, its owner, fires it.
+
+### Step 1: Install the Module
+
+```bash
+flint module install @nuucognition/module/crons
+```
+
+### Step 2: Write a Schedule
+
+Write the file `Modules/Crons.settings.toml`:
+
+```toml
+# The cron schedules of this Flint. One table for each schedule.
+machine = "katana"                         # The default owner machine
+
+[schedules.morning-brief]
+expr     = "0 7 * * 1-5"
+timezone = "Australia/Sydney"
+prompt   = "Write the brief of the day."
+```
+
+The name of a schedule has lower-case letters, digits, and hyphens. To keep a long prompt in a file of the Flint, use `prompt-file = "<path>"` in place of `prompt`. [Configuration#The Settings of the Module crons](/flint/reference-configuration-the-settings-of-the-module-crons) lists each key.
+
+### Step 3: Sync
+
+```bash
+flint sync
+```
+
+```text
+Changes
+  ✓ Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+```
+
+Sync makes the schedule in the cron store of this machine. When the Orbh orchestrator does not run, sync starts it. The orchestrator checks the schedules every 60 seconds.
+
+### Step 4: Check the Schedule
+
+```bash
+flint module crons list
+```
+
+```text
+Declared schedules
+  morning-brief  0 7 * * 1-5 Australia/Sydney  owner katana (this machine)  enabled  next 2026-10-05T20:00:00.000Z  LAST -
+```
+
+When no orchestrator runs on this machine, the list starts with a warning, because nothing fires:
+
+```text
+! No orchestrator runs on this machine, so the enabled cron schedule morning-brief of this Flint does not fire.
+  Next: flint orbh orchestrator ensure
+```
+
+To fire the schedule now, run `flint module crons run morning-brief`. The orchestrator fires it on its next check, within about 60 seconds. This starts a real agent session. `flint module crons result morning-brief` then shows the last fire: the session and its state, and the result text or the error.
+
+### The Owner Machine
+
+Only the owner machine fires a schedule. The owner is `machine` of the schedule, else `machine` at the top of the settings file. When you commit the settings file and another machine gets it, the sync on that machine does not make the schedule. So only the owner machine fires the schedule.
+
+The owner check compares the `machine` value with the machine slug of each machine. `flint whoami` shows the slug of this machine in parentheses. Flint does not check that two machines have different slugs. So a slug owner is safe only when each machine that syncs the Flint has a different machine slug. When one exact machine must own a schedule, write its machine id (a UUID) in `machine`. `nuu machine id` prints the machine id of this machine.
+
+To make this machine the owner of a schedule, run `flint module crons own <name>`:
+
+```text
+✔ This machine (katana) is now the owner of the cron schedule morning-brief.
+  Next: flint sync
+```
+
+The command writes `machine` in the settings file and keeps every comment. With no name, it writes the default owner. Commit the settings file, and run `flint sync` on both machines. The old owner pauses the schedule, and the new owner makes it.
+
+A schedule with no `machine` (on the schedule or at the top of the settings file) fires on no machine. `flint module crons list` shows it with the next command `flint module crons own <name>`.
+
+### Change or Remove a Schedule
+
+To change a schedule, edit its table in the settings file, then run `flint sync`. Sync updates the schedule and keeps its history. After an edit of a prompt file, run `flint sync` too.
+
+To remove a schedule, delete its table, or write `enabled = false` in it. Then run `flint sync`: sync pauses the schedule. Sync never deletes a schedule of a module. The paused schedule keeps its history. A new table with the same name resumes it.
+
+Before each fire, the orchestrator checks that `flint.toml` still has the record of the module, that the module is installed, and that this machine is the owner that sync stored. A change of the settings file takes effect at the next sync.
+
+### Local Schedules
+
+`flint orbh cron create` still works. Its schedule is local to this machine, and sync never changes it. `flint module crons list` shows it under "Local schedules". In `flint orbh cron list`, a schedule of a module has the name of the module in the column `MANAGED`:
+
+```text
+  NAME                      STATUS     EXPR                TZ                        NEXT DUE                  LAST FIRED                FIRES    SKIPS    MANAGED
+  morning-brief             enabled    0 7 * * 1-5         Australia/Sydney          2026-10-05T20:00:00.000Z  -                         0        0        crons
+```
+
+`flint orbh cron delete` refuses a schedule of a module:
+
+```text
+Error: Cron schedule morning-brief belongs to the module crons of this Flint (key morning-brief); change the settings of that module and run `flint sync`, or remove the module with `flint module uninstall crons`.
+```
+
+## Send a DM to a Flint
+
+A DM is one text to a Flint, with one answer. A session of the receiver Flint reads the DM and answers it.
+
+### Step 1: Install the Module dms in the Receiver Flint
+
+In the receiver Flint, run:
+
+```bash
+flint module install @nuucognition/module/dms
+flint sync
+```
+
+Sync makes the station `dm` of the Flint. Each DM is one item of this station. With no settings file, the module uses the default target, the mode `oneshot`, and the built-in duty. In the mode `oneshot`, a session starts when a DM waits, answers the queued DMs, and then finishes. In the mode `resident`, one session is bound to the station and waits for more DMs. To change these values, set `target`, `mode`, or `prompt` in `Modules/DMs.settings.toml`, then run `flint sync`.
+
+### Step 2: Send a DM
+
+`flint module dms send` runs the module `dms` of the Flint in the working folder. So the sender Flint needs the module `dms` too. In a Flint with no module `dms`, the command refuses:
+
+```text
+✘ This Flint has no module dms.
+  Next: flint module list
+```
+
+In a Flint with the module `dms`:
+
+```bash
+flint module dms send "Research Hub" "List the open tasks of this week."
+```
+
+```text
+✔ Sent the DM to Research Hub.
+  Flint  Research Hub (2e67fa14-77fb-45ed-9e0c-e08371177c2a)
+  Item   station-item:5a77a4f4-70e3-482e-a60c-ba10785db7eb
+  From   @Nathan#katana
+  Next: flint module dms show @2e67fa14-77fb-45ed-9e0c-e08371177c2a station-item:5a77a4f4-70e3-482e-a60c-ba10785db7eb
+```
+
+The receiver is a name, an id, or an address of a Flint of this machine. The receipt names the receiver Flint with its id. The next command uses the id (`@<flint id>`), because two Flints of this machine can have one name. The command queues the DM and returns. When no session serves the station `dm` of the receiver Flint, the station starts an agent session on its target, and that session answers.
+
+When the receiver has no module `dms`, the send refuses with the next command `flint module install @nuucognition/module/dms` (run it in the receiver Flint). When the receiver has the module and no sync made its station yet, the next command is `flint sync` in the receiver Flint.
+
+The sender is the Orbh session id of an agent, or `@<Name>#<machine>` for a person. It names the sender. It does not prove who the sender is.
+
+### Step 3: Read the Answer
+
+```bash
+flint module dms show @2e67fa14-77fb-45ed-9e0c-e08371177c2a station-item:5a77a4f4-70e3-482e-a60c-ba10785db7eb
+```
+
+```text
+  Flint   Research Hub (2e67fa14-77fb-45ed-9e0c-e08371177c2a)
+  Item    station-item:5a77a4f4-70e3-482e-a60c-ba10785db7eb
+  State   answered
+  From    @Nathan#katana
+  Sent    2026-10-05T06:36:48.197Z
+
+Text
+List the open tasks of this week.
+
+Answer
+Two tasks are open this week: 1109 and 1110.
+```
+
+The command shows the state of the DM, its text, and the answer. Before the answer, the state is `enqueued` or `claimed`, and the section Answer is absent. To wait for the answer when you send, add `--wait`. The default limit is 600 seconds; `--timeout <seconds>` changes it. When no answer comes in time, the command exits 1, and the DM stays in the queue.
+
+In the receiver Flint, `flint module dms inbox` lists its DMs, newest first:
+
+```text
+DMs
+  station-item:5a77a4f4-70e3-482e-a60c-ba10785db7eb  enqueued  @Nathan#katana  2026-10-05T06:36:48.197Z  List the open tasks of this week.
+```
+
+## Remove a Module
+
+```bash
+flint module uninstall crons
+```
+
+```text
+✓ Uninstalled crons: removed Modules/Crons, flint.toml modules.crons, flint.json modules.e03d42f1-5eec-4529-b681-e288feffa280.
+  Kept Modules/Crons.settings.toml (the files of this Flint, not of the package).
+  Kept .flint/modules/crons (the files of this Flint, not of the package).
+  Next: flint sync (pauses the objects of the module)
+```
+
+```bash
+flint sync
+```
+
+```text
+Changes
+  ✓ Paused the cron schedule morning-brief: the module crons has no record in [modules] any more.
+```
+
+The settings file and the data folder stay. Sync pauses each object of the module and never deletes it, so its history stays. A schedule of an uninstalled module does not fire, also before the next sync. For the module `dms`, the sync pauses the station `dm`: the queued DMs and the answers stay, and a new DM is refused.
+
+## A Flint from a 0.7.0 Pre-release
+
+A Flint from a 0.7.0 pre-release can hold a legacy table `[modules.<id>]` in `flint.toml`. Sync never reads it as a record, and no migration moves it. Replace it by hand: move its keys, without `enabled`, to `Modules/<Name>.settings.toml` (each `[modules.crons.schedules.<name>]` becomes `[schedules.<name>]`), remove the table, then run `flint module install @nuucognition/module/<id>` and `flint sync`. When the table has `enabled = false`, do not install the module. The row `Modules` of `flint doctor` names a legacy table with the same steps. See [Doctor and Fix](/flint/guide/doctor-and-fix).
+
+## What Is Local Only in 0.7.0
+
+- A DM goes only to a Flint of this machine. A reference that names another machine (`…#<machine>`) is refused. DMs to another machine through the NUU Network are not in 0.7.0.
+- `allow = "local"` is the only value of the settings of `dms`: each process of this OS user can send a DM.
+- The result of a fired cron session goes to no person. `flint module crons result <name>` shows it.
+- Git carries the records, the builds, and the settings files. The cron schedules and the station `dm` are in the Orb store `.orb/` of each machine, and `flint sync` makes them on each machine.
+
+## Next Steps
+
+- [Write a Module](/flint/guide/write-a-module): write, build, and release your own module
+- [Configuration](/flint/reference/configuration): the records of `[modules]`, the settings of `crons` and `dms`, and the env files
+- [CLI Commands](/flint/reference/cli-commands): `flint module`
+- [Agent Sessions](/flint/modules/agent-sessions): the Orbh sessions that a schedule or a DM starts
+- [Shards](/flint/modules/shards): the shards, which are packages of agent content

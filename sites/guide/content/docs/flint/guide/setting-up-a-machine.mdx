@@ -12,9 +12,30 @@ flint setup
 
 You need:
 
-- a terminal
+- a terminal on macOS or Linux
 - internet access
+- Node.js 26.1 or newer, with `npm`
+- the Flint CLI: `npm install -g @nuucognition/flint-cli`
 - no NUU account and no org (both stay optional)
+
+Setup checks Git, Obsidian, and the agent CLIs in step 3. A missing tool does not stop the setup.
+
+## Set Up With an Agent
+
+An agent can do the setup with you. Run the install script in a terminal:
+
+```bash
+curl -fsSL https://flint.nuucognition.com/install.sh | bash
+```
+
+The script checks the OS and Claude Code. It installs nothing. It starts Claude Code with the setup procedure of `https://flint.nuucognition.com/setup.md`. The agent asks you before each change to the machine. It installs Flint, runs `flint setup`, and writes a handoff file. Then it starts the onboarding session with that handoff:
+
+```bash
+flint setup handoff check <file>                         # Check a handoff file (spec flint-setup-handoff/0.1); write nothing
+flint setup onboard --handoff <file> --target claude     # Start the onboarding session that reads the handoff note first
+```
+
+The handoff note is `Mesh/(System) Setup Handoff.md` in the Computer Flint. The rest of this page is the manual path.
 
 ## The Network Check
 
@@ -53,7 +74,9 @@ Each new Flint is a Git repository with a first commit. Git needs an author for 
 flint setup --git-email "ada@example.com"
 ```
 
-The flag answers the email question. Git keeps an email that it has.
+The flag answers the email question. Git keeps an email that it has. The Git author name is your Name.
+
+Setup never replaces a Git author value. When Git cannot read a key of the global Git config, the step asks nothing and writes nothing. The summary then shows a warning that ends with `Setup wrote nothing.`
 
 ### Step 3: Environment
 
@@ -61,9 +84,17 @@ Setup checks the tools of this machine: Git, Node.js, Obsidian, and the agent CL
 
 A missing tool shows `✘` with its install command. A missing tool never stops the setup.
 
+Then setup checks the terminal font `JetBrainsMono Nerd Font`. The Obsidian terminal uses this font to show the glyphs of the agent titles. When the font is missing, setup asks `Install the font JetBrainsMono Nerd Font?` (the default is yes). It installs the font with Homebrew on a Mac that has Homebrew, else from the release zip of Nerd Fonts.
+
+- `--font` and `--yes` install the font with no question.
+- `--no-font`, the answer "no", and no terminal skip the font.
+- With no network, or when the install fails, setup gives a warning.
+- Each skip and each failure prints `Later: flint setup font`.
+- With `NUU_HOME` set, setup installs no font.
+
 ### Step 4: Agent Default
 
-Setup copies the Orbh profiles first. When the Orbh home has no `default.json`, setup copies it from the shared profiles repository. Setup never writes `profiles.json`, the file of the person. With no network, it skips with `Later: flint orbh profiles update`.
+Setup copies the Orbh profiles first. When the Orbh home has no `default.json`, setup copies it from the public repository `NUU-Cognition/orbh-profiles`. The screen shows `Copying the Orbh profiles` while it works. Setup never writes `profiles.json`, the file of the person. With no network, or when the copy fails, setup gives a warning and prints `Later: flint orbh profiles update`.
 
 Then setup shows the default target list and the target that Orbh selects now. In a terminal, you can put another target first. Setup writes that order to the machine layer.
 
@@ -75,7 +106,11 @@ When setup cannot make the Computer Flint, the run fails. The screen names the r
 
 ### Step 6: Guide
 
-Setup clones the Guide of NUU Cognition into the home folder, beside the Computer Flint. The Guide is a public Flint. You ask it Flint questions with an agent.
+Setup clones the Guide of NUU Cognition into the home folder, beside the Computer Flint. The folder is `(Guide) NUU Cognition`. The Guide is a public Flint from `https://github.com/NUU-Cognition/guide-nuu-cognition`. Its shard Flint Help answers Flint questions and explains Flint problems. You ask it with an agent. The summary of setup names the command:
+
+```bash
+flint orbh i -p ~/"(Guide) NUU Cognition"
+```
 
 Setup asks `Clone the Guide?` The answer "yes" is the default. Setup skips the clone in four cases:
 
@@ -106,8 +141,10 @@ A later run resumes the recorded onboarding session. The session explains Flint 
 | `--git-email <email>` | The email of the Git author, with no question |
 | `--guide` | Clone the Guide with no question |
 | `--no-guide` | Skip the Guide (later: `flint setup guide`) |
+| `--font` | Install the terminal font with no question |
+| `--no-font` | Skip the terminal font (later: `flint setup font`) |
 | `--no-open` | Do not open Obsidian. The onboarding session runs in the terminal |
-| `-y, --yes` | Ask no question. Each open input takes its default, and setup clones the Guide |
+| `-y, --yes` | Ask no question. Each open input takes its default, setup installs the terminal font, and setup clones the Guide |
 | `--json` | Print one JSON result envelope on stdout. Ask no question. Start no session |
 
 ```bash
@@ -179,7 +216,17 @@ The command moves the Computer Flint and updates the roster. The claim follows, 
 flint setup guide
 ```
 
-The command clones the Guide of NUU Cognition alone. A present Guide stays. To update it, run `flint git sync` in the Guide.
+The command clones the Guide of NUU Cognition alone. A present Guide stays: the command finds it by its Flint id and clones nothing.
+
+To get the newest Guide later, run `flint git merge` in the Guide. It takes the new history from origin and runs the local sync. It pushes nothing. Do not run `flint git sync` in the Guide: it tries to push to the public repository.
+
+## The Terminal Font Alone
+
+```bash
+flint setup font
+```
+
+The command installs the terminal font `JetBrainsMono Nerd Font` alone. `flint doctor` shows the font on its row `Terminal font`.
 
 ## The Onboarding Session Alone
 

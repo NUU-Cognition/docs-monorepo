@@ -8,17 +8,38 @@ This page lists the Obsidian rows that commands outside the group `flint obsidia
 
 The help does not show these rows. In the tables, `<release>` is a payload release, for example `0.7.0`. `<name>` is the name of the Flint, and `<path>` is its folder. `<config path>` is the Flint CLI config of this build: `<NUU home>/flint/config.toml` (a dev build: `<NUU home>/flint-dev/config.toml`).
 
+### Loading Rows
+
+A slow Obsidian step shows a loading row on stderr while it runs. In a terminal, the rows are a live frame, and the command removes the frame before its result lines. The rows are not part of the result.
+
+Outside a terminal, the rows differ by command:
+
+- `flint create`, `flint sync`, `flint open`, and `flint obsidian update`: in a pipe, with `--json`, or with `NO_COLOR`, the rows are plain lines.
+- `flint delete`, `flint move`, and `flint obshn`: the rows show only when stderr and stdout are both a terminal, with no `NO_COLOR` and no `--json` (`terminalOnly()` in `apps/flint-cli/src/output/loading-row.ts`). In a pipe, with a redirected stdout, with `--json`, or with `NO_COLOR`, these commands print no row and no control sequence.
+
+| Command | Rows |
+|---|---|
+| `flint create` | `Installing the Obsidian payload`, `Opening Obsidian` |
+| `flint create`, `flint sync`, `flint open`, `flint obsidian update` | `Downloading Obsidian payload <release>` (only when the cache of this machine does not hold the release; a byte count and a bar), `Writing the Obsidian files` |
+| `flint open` | `Asking Obsidian to open "<name>"`, `Starting Obsidian`, `Starting Obsidian with "<Computer Flint>"`, `Waiting for Obsidian to open "<name>"` (`up to 15 s`) |
+| `flint obsidian update --tinderbox` | `Updating the Obsidian payload of "<name>"` (`Checking …` with `--dry-run`) |
+| `flint delete`, `flint move` | `Checking that Obsidian has no open vault of <name>` |
+| `flint delete` | `Copying the Obsidian backups to the deleted scope` |
+| `flint obshn` | `Finding the Obsidian manager of "<name>"`, `Opening a terminal tab in "<name>" and launching orbh` |
+
 ### flint create
 
-`flint create` pins the recommended release and installs the Obsidian payload. Then it opens the vault in Obsidian, but only in a terminal and without `--json`. `--open` and `--no-open` decide when you give them. `--no-open` skips only the launch: the payload is installed. `--no-obsidian` skips Obsidian for this run only, and it writes no config. `flint create` never registers a vault: Obsidian registers the vault when it opens it.
+`flint create` pins the recommended release and installs the Obsidian payload. Then it opens the vault in Obsidian, but only in a terminal and without `--json`. `--open` and `--no-open` decide when you give them. `--no-open` skips only the launch: the payload is installed. `--no-obsidian` skips Obsidian for this run only, and it writes no config. The open step runs `flint open` (see below): when no Obsidian process runs, it can write the vault registry entry of the new Flint before it launches Obsidian. With `--no-open`, `flint create` writes no vault registry entry.
 
 A payload that does not install never fails `flint create`. The exit code is 0, and the Flint is ready for CLI work. `flint create` then does not open the vault, because a vault with no payload has no NUU Flint plugin.
+
+The open step prints the result line of `flint open` (see below) before the result of `flint create`. When the launch of Obsidian fails, `flint create` fails with exit 1 and the code `open-failed`. The Flint stays, and the next command is `flint create --resume '<path>'`.
 
 The `Obsidian` row:
 
 | Case | `Obsidian` row |
 |---|---|
-| Installed and opened | `payload <release> installed · opened`, then the line `Click "Trust author and enable plugins" once in Obsidian.` |
+| Installed and opened | `payload <release> installed · opened`. When the plugin of the new vault did not answer, the line `Click "Trust author and enable plugins" once in Obsidian.` follows. |
 | Installed, not opened (`--no-open`, no terminal, or Obsidian did not open) | `payload <release> installed · not opened` |
 | Installed, under `NUU_HOME` isolation | `payload <release> installed · not opened (NUU_HOME isolation)` |
 | Not installed: the fetch failed for a cause of the network | `payload <release> not installed (no network). The Flint is ready for CLI work.` |
@@ -34,10 +55,10 @@ The lines below the rows:
 
 | Case | Lines |
 |---|---|
-| The payload is installed | `Next: flint open "<name>"`, then `Or start an agent: cd '<path>' && flint orbh i claude` |
-| The payload is not installed: no network | The warning `No network: the Obsidian payload is not installed yet.` Then `Next: cd '<path>' && flint sync && flint open "<name>"` and `Or start an agent: cd '<path>' && flint sync && flint orbh i claude` |
+| The payload is installed | `Next: flint open "<name>"`, then `Or start an agent: cd '<path>' && flint orbh i` |
+| The payload is not installed: no network | The warning `No network: the Obsidian payload is not installed yet.` Then `Next: cd '<path>' && flint sync && flint open "<name>"` and `Or start an agent: cd '<path>' && flint sync && flint orbh i` |
 | The payload is not installed: another cause | The warning `The Obsidian payload is not installed yet. The cause: <message>` Then the same `Next:` lines |
-| `--no-obsidian`, `off`, another platform, Flatpak, Snap | `Next: cd '<path>' && flint orbh i claude` (no `flint open`) |
+| `--no-obsidian`, `off`, another platform, Flatpak, Snap | `Next: cd '<path>' && flint orbh i` (no `flint open`) |
 
 When the shards did not install too, one warning names both, for example `No network: the shards of the preset blank (flint, orbh) and the Obsidian payload are not installed yet.`
 
@@ -49,7 +70,7 @@ An example with no network:
   Obsidian : payload 0.7.0 not installed (no network). The Flint is ready for CLI work.
 ⚠ No network: the Obsidian payload is not installed yet.
 Next: cd '/home/ada/(Flint) Field Notes' && flint sync && flint open "Field Notes"
-Or start an agent: cd '/home/ada/(Flint) Field Notes' && flint sync && flint orbh i claude
+Or start an agent: cd '/home/ada/(Flint) Field Notes' && flint sync && flint orbh i
 ```
 
 With `--json`, the result has the fields `obsidian` (`provisioned`, `existing`, `skipped`, or `failed`), `obsidianRelease`, `obsidianCause`, `obsidianChoice`, `obsidianUnsupported`, `obsidianIsolated`, `opened`, and `openedReady`.
@@ -69,10 +90,10 @@ With `--json`, the result has the fields `obsidian` (`provisioned`, `existing`, 
 | The fetch failed | `failed` | `Could not fetch Obsidian payload <release> (<reason>).` Next: `Check the network, then run: flint sync` | 1 |
 | Machine choice `off` | `skipped` | `Obsidian: off on this machine` | 0 |
 | Another platform, Flatpak, Snap | `skipped` | The message of the platform, for example `Flint supports Obsidian on macOS and Linux only.` | 0 |
-| A dev source | `unchanged` | `Obsidian payload: dev source <dir>. flint sync does not change it.` | 0 |
+| A dev source | `unchanged` | `Obsidian payload: dev source <dir>. flint sync does not change it.` A notice names `Next: flint obsidian repair`. | 0 |
 | A dry run | `unchanged` | The plan: `Would install Obsidian payload <release> (pinned) · <changes>`, or `Obsidian payload <release> · up to date` when the plan writes nothing | 0 |
 
-A failed or blocked payload row also fails or blocks the step `Reconcile content`, so the run records no sync time. A failed row gives `sync — partial`, and a blocked row gives `sync — blocked`. A pending conversion of a legacy payload completes when the vault is closed.
+A failed or blocked payload row also fails or blocks the step `Reconcile content`, so the run records no sync time. A failed row gives `sync — partial`, and a blocked row gives `sync — blocked`. A pending conversion of a legacy payload completes when the vault is closed. It also completes on an open vault when the NUU Flint plugin of the vault runs and `flint sync` runs outside that vault: the sync then reloads the vault after the write.
 
 When the recommendation is newer than the pin, a notice says `Obsidian payload <new release> is available (pinned <release>).` Next: `flint obsidian update`. The pin does not move.
 
@@ -101,31 +122,49 @@ With `--json`, the field `obsidian` holds the status model of the quick check. T
 
 ### flint open and flint open-url
 
-`flint open` opens or focuses the vault of a Flint. `flint open-url` does the same for the target of a `flint://` URL. When the vault is closed, Flint first completes the pending vault registry changes. Then it installs a missing, pending, or stale payload. Then the NUU Flint plugin of another open vault opens the vault (`open-vault`), or Flint launches `obsidian://open?path=<path>`. Flint waits up to 15 seconds for the plugin of the vault. Flint writes no trust key and no vault registry entry. `--no-launch` resolves and prints the target without opening Obsidian.
+`flint open` opens or focuses the vault of a Flint. `flint open-url` does the same for the target of a `flint://` URL. The word `computer` is the Computer Flint of this machine. `--no-launch` resolves and prints the target without opening Obsidian.
+
+When the vault is closed, Flint does these steps in order:
+
+1. It completes the pending vault registry changes.
+2. It installs a missing, pending, or stale payload.
+3. It runs the trust check (see [Using Obsidian#Open a Flint](/flint/guide-using-obsidian-open-a-flint)).
+4. The NUU Flint plugin of another open vault opens the vault (`open-vault`). With the trust setting `auto` and a passed check, the request asks Obsidian to trust the vault.
+5. When no plugin can open the vault, the check passed, and a Computer Flint exists that is not the target, Flint starts Obsidian with the Computer Flint. Then the plugin of the Computer Flint opens the vault with trust.
+6. Else Flint launches `obsidian://open?path=<path>`. A link opens only a folder that the vault registry of Obsidian knows. When the folder has no entry and no Obsidian process runs, Flint writes the entry first. When Obsidian runs, Flint launches nothing and names the step in Obsidian.
+7. Flint waits up to 15 seconds for the plugin of the vault.
+
+Flint writes no trust key itself. The plugin of a vault that opens the target sets the trust of Obsidian.
 
 | Case | Output | Exit |
 |---|---|---|
 | Opened | `✓ Obsidian: opened "<name>"` | 0 |
 | Open already, and Flint raised the window or focused the note | `✓ Obsidian: focused "<name>"` | 0 |
 | Open already, and Flint did not raise the window (for example, a plugin of 0.6.x) | `✓ Obsidian: "<name>" is open.` When the call to the plugin failed, a notice comes first: `Obsidian did not raise the window of "<name>" (<reason>).` | 0 |
-| Obsidian started, and the plugin of the vault did not answer in 15 seconds | `Obsidian: launch requested. If Obsidian asks, click "Trust author and enable plugins".`, then `Next: flint obsidian status`. This is not a failure. | 0 |
+| Opened through the Computer Flint | `✓ Obsidian: opened "<name>" through the Computer Flint "<Computer Flint>"` | 0 |
+| The Computer Flint did not open the vault | The notice `The Computer Flint "<Computer Flint>" did not open the vault (<reason>).` Flint then launches by link. | 0 |
+| Obsidian runs, and its vault registry has no entry for the folder | The notice `Obsidian runs, and its vault registry has no entry for "<name>". A link cannot open a folder that Obsidian does not know.`, then `Obsidian: open "<name>" once from Obsidian: Manage vaults, then Open folder as vault, then choose <path>`. Nothing launches. | 0 |
+| Obsidian started, and the plugin of the vault did not answer in 15 seconds | `Obsidian: launch requested. If Obsidian asks, click "Trust author and enable plugins".`, then `Next: flint obsidian status`. When the vault had no registry entry yet and the plugin sets the trust after Obsidian makes the entry, the line is `Obsidian: launch requested. The NUU Flint plugin of "<name>" did not answer in 15 s.` This is not a failure. | 0 |
+| Flint did not ask for trust, and the vault did not answer | The notice `Flint did not ask Obsidian to trust "<name>": <reason>.`, then `Next: flint obsidian status`. The reason is, for example, `a plugin file of the payload changed outside Flint`. | 0 |
 | The vault is in Restricted Mode | `Obsidian: launch requested. "<name>" is in Restricted Mode: turn on community plugins in Settings, Community plugins.` This is not a failure. | 0 |
 | The vault is open, and its plugins did not start | `Obsidian: "<name>" is open, and its plugins did not start. Reload its window to start them.` This is not a failure. | 0 |
 | Flint installed or updated the payload first | One line before the result, for example `Obsidian payload <release> installed.` | 0 |
 | A legacy Git payload | The notice `.obsidian in <name> is a legacy Git payload.`, then `Next: flint migrate run` (or `flint obsidian repair` when `.flint/local.json` records the step `l5`). The vault opens. | 0 |
 | A missing payload that does not install | `✘ <message>`, then `Next: flint sync`. The vault does not open. | 1, or 2 for a block |
 | A stale or pending payload that does not install | A warning with its next step. The vault opens. | 0 |
-| The plugin of another vault did not open the vault | The notice `Obsidian plugin did not open the vault (<reason>); launching by URI.` | 0 |
+| The plugin of another vault did not open the vault | The notice `Obsidian plugin did not open the vault (<reason>).` Flint then launches by link. One reason is `only legacy managers run`. | 0 |
 | The note of the reference did not get the focus | The warning `Obsidian did not focus <note path> (<reason>).`, then `Next: flint obsidian status` | 0 |
 | The launch failed | `✘ Could not launch Obsidian (<reason>). Open <path> in Obsidian by hand.`, then `Next: Install xdg-utils, then run: flint open "<name>"`. On macOS: `Install Obsidian, then run: flint open "<name>"` | 1 |
 | `NUU_HOME` isolation (no `NUU_ALLOW_LIVE_OBSIDIAN=1`) | One line: `Obsidian: skipped (NUU_HOME isolation; live Obsidian not contacted). Set NUU_ALLOW_LIVE_OBSIDIAN=1 for a live test.` Flint installs nothing. | 0 |
 | Machine choice `off` | `✘ Obsidian is off on this machine (<config path>).`, then `Next: flint config set obsidian on` | 2 |
 | Another platform, Flatpak, Snap | `✘ <message of the platform>`, then `Next: flint config set obsidian off` | 1 |
 | No reference, outside a Flint | `✘ This folder is not inside a Flint.`, then `Next: flint list` | 1 |
+| `computer`, and this machine has no Computer Flint | `✘ This machine has no Computer Flint.`, then `Next: flint setup computer` | 1 |
+| A name that no Flint of this machine has | `✘ No Flint of this machine has the name "<typed>".`, then `Next: flint list` | 1 |
 
 ### flint setup
 
-`flint setup` opens the Computer Flint in Obsidian at the end, with the onboarding session. `--no-open` skips the open. The onboarding session then runs in the terminal. `flint setup onboard --no-open` does the same for the onboarding session alone. With `--json`, the session never uses the terminal.
+`flint setup` opens the Computer Flint in Obsidian at the end, with the onboarding session. `--no-open` skips the open. The onboarding session then runs in the terminal. `flint setup onboard --no-open` does the same for the onboarding session alone. With `--json`, or with no terminal, `flint setup` opens the Computer Flint and starts no session. It prints `--json: setup starts no session. Start it with flint setup onboard.` (or `No terminal: …`). `flint setup onboard --json` never uses the terminal for the session.
 
 ### flint obshn
 
@@ -210,7 +249,9 @@ After the move, the report has these rows:
 
 `flint tinderbox check` reports a vault registry entry whose folder is gone: `The vault registry lists <path>, and the folder is gone.` Next: `flint obsidian vaults repair`.
 
-`flint tinderbox sync`, `heal`, and `init --from` make no vault registry entry. A vault enters the registry when Obsidian opens it.
+`flint tinderbox sync`, `heal`, and `init --from` make no vault registry entry. A vault enters the registry when Obsidian opens it, or when `flint open` writes the entry before a launch by link.
+
+When the box renamed a member, `flint tinderbox sync` moves the folder of that member and relocates its vault registry entry. An open vault refuses the move: `The box renamed "<former>" to "<name>", and "<former>" is open in Obsidian. Nothing was written.` The next step is `Close "<former>" in Obsidian. Then run from a terminal outside Obsidian:` `flint tinderbox sync`.
 
 ### Note Templates in the Shard Commands
 
@@ -227,7 +268,8 @@ The local step `flint-0.6.0-to-0.7.0-l5` ("Convert the legacy Obsidian payload")
 | Case | Output |
 |---|---|
 | Converted | `Obsidian payload <release> installed · converted from the legacy payload <commit> · <.git result> · backup <id>`, and the line `Undo .obsidian: flint obsidian backups restore <backupId>` |
-| The vault is open | `The conversion of <name> waits: the vault is open.` Next: `close "<name>" in Obsidian, then: flint open "<name>"` |
+| The vault is open, and its plugin runs, and the command runs outside the vault | The step converts the payload, then reloads the vault. A reload stops each terminal tab of the vault. |
+| The vault is open, and no plugin can reload it (or the command runs in that vault) | `The conversion of <name> waits: the vault is open.` Next: `close "<name>" in Obsidian, then: flint open "<name>"` |
 | The fetch failed | `The conversion of <name> waits: Obsidian payload <release> could not be fetched: <reason>.` Next: `flint sync` |
 | Machine choice `off` | `Obsidian is off on this machine (<config path>). The step changes nothing.` Next: `flint obsidian repair`. The step runs once. |
 
@@ -235,7 +277,7 @@ A waiting conversion is a pending conversion. `flint open` or the next `flint sy
 
 ## Removed Obsidian Commands
 
-A removed command is hidden. It prints one line with the command that replaces it, and it exits 1. With `--json`, it prints one envelope with `ok: false`, the code `obsidian_command_removed`, the reason, and `next`.
+A removed command is hidden. A removed subcommand prints one line with the command that replaces it. A removed flag prints the line and a `Next:` line. Each exits 1. With `--json`, it prints one envelope with `ok: false`, the code `obsidian_command_removed`, the reason, and `next`.
 
 | Command | Message |
 |---|---|
@@ -244,7 +286,8 @@ A removed command is hidden. It prints one line with the command that replaces i
 | `flint obsidian patches`, `patches list`, `patches replay` | `✘ patches is removed. A bundle that something overwrote is a changed release file: flint obsidian repair --replace --dry-run` |
 | `flint obsidian profiles apply <id>` | `✘ profiles apply is now: flint obsidian profiles activate <id>` |
 | `flint open --no-plugin`, `flint open-url --no-plugin` | `✘ --no-plugin is removed. flint open launches by URI when no manager can open the vault.`, then `Next: flint open <reference>` |
-| `flint setup --repair-blacksmith-payload` | `✘ --repair-blacksmith-payload is removed.`, then `Next: flint obsidian repair` |
+| `flint setup --repair-blacksmith-payload` | `✘ --repair-blacksmith-payload is removed.`, then `Next: flint obsidian repair` and `Or: flint fix` |
+| `flint blacksmith open` | `✘ flint blacksmith open is removed.`, then `Next: flint open <reference>` |
 
 These flags stay hidden for one release. They do not fail:
 
