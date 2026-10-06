@@ -104,7 +104,7 @@ dms
   Kind     sync (node)
   Commands send, show, inbox
   Plan     not current: 1 to change
-    ● Would create the station dm: oneshot, target claude/o55h
+    ● (module) dms: Would create the station dm: oneshot, target claude/o55h
 
 crons
   Package  @nuucognition/crons 0.1.0
@@ -113,7 +113,7 @@ crons
   Kind     sync (node)
   Commands list, run, result, own
   Plan     not current: 1 to change
-    ● Would create the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+    ● (module) crons: Would create the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
 
 → Run flint sync to apply the plan.
 ```
@@ -126,11 +126,26 @@ flint sync
 
 ```text
 Changes
-  ✓ Created the station dm: oneshot, target claude/o55h
-  ✓ Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+  ✓ (module) dms: Created the station dm: oneshot, target claude/o55h
+  ✓ (module) crons: Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
 ```
 
 Sync runs the plan of each module in the step `Reconcile modules`. Flint makes the objects that the plan asks for, and marks each one with the name of its module. `flint sync --dry-run` and `flint plan` show the same changes as `Would …` and change nothing. When a plan fails, sync changes nothing of that module.
+
+Each line of a module in the report names the module first: `(module) <name>: `, where `<name>` is the record name in `[modules]`. This holds for the changes, the planned changes, and the issues of the module. When a module runs an own action, the change line ends with the result that the module gives, after ` — `. A module can also write log lines. Sync shows them in the section `Module logs`, after `Changes`: `·` marks information, and `⚠` marks a warning. A dry run shows the log lines of each plan; a real sync also shows the log lines of each own action. For example, for a module `demo` that writes the file `greeting.json`:
+
+```text
+Changes
+  ✓ (module) demo: Wrote greeting.json: Hello — wrote .flint/modules/demo/greeting.json
+
+Module logs
+  · (module) demo: The settings ask for the greeting Hello.
+  · (module) demo: Wrote 160 bytes to greeting.json.
+```
+
+To write log lines in your own module, see [Write a Module#Log Lines](/flint/guide-write-a-module-log-lines).
+
+A log line is information only. It never fails a sync, and it does not change `flint doctor`. `flint module status <name>` shows the log lines of the plan in the row `Logs`, under the plan. `flint sync --json` gives them in `moduleLogs`.
 
 Some modules need env values, such as a token. Write them in `flint.env.local` (this machine) or `flint.env` (the Flint). Git ignores both files. See [Configuration#Env Files](/flint/reference-configuration-env-files).
 
@@ -186,7 +201,7 @@ flint sync
 
 ```text
 Changes
-  ✓ Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
+  ✓ (module) crons: Created the cron schedule morning-brief: 0 7 * * 1-5 (Australia/Sydney), target claude/o55h
 ```
 
 Sync makes the schedule in the cron store of this machine. When the Orbh orchestrator does not run, sync starts it. The orchestrator checks the schedules every 60 seconds.
@@ -343,7 +358,7 @@ flint sync
 
 ```text
 Changes
-  ✓ Paused the cron schedule morning-brief: the module crons has no record in [modules] any more.
+  ✓ (module) crons: Paused the cron schedule morning-brief: the module crons has no record in [modules] any more.
 ```
 
 The settings file and the data folder stay. Sync pauses each object of the module and never deletes it, so its history stays. A schedule of an uninstalled module does not fire, also before the next sync. For the module `dms`, the sync pauses the station `dm`: the queued DMs and the answers stay, and a new DM is refused.

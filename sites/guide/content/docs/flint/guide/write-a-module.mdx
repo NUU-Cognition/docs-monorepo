@@ -117,20 +117,35 @@ Sync, `flint module status`, `flint plan`, and `flint doctor` run `plan`. Stdin 
 Stdout is one JSON object with the full envelope:
 
 ```json
-{ "objects": { "cronSchedules": [], "stations": [] }, "actions": [], "issues": [] }
+{ "objects": { "cronSchedules": [], "stations": [] }, "actions": [], "issues": [],
+  "logs": [ { "message": "The owner machine is katana." } ] }
 ```
 
 - `objects`: the desired objects. Flint applies them (see [Desired Objects](#desired-objects)).
 - `actions`: the own actions of the module, each `{ id, kind, label, detail?, payload? }`. The kind is `create`, `update`, `pause`, `resume`, `remove`, or `report`. An id must not start with `flint:`: Flint keeps that prefix for its own actions.
 - `issues`: each `{ code, message, next? }`. The sync report, `flint module status`, and `flint doctor` show them.
+- `logs` (optional): the log lines of the plan, each `{ message, level? }`. See [Log Lines](#log-lines).
 
-A plan must not change anything: it only says what it wants. A plan that exits with a code that is not 0, runs longer than 30 seconds, or prints output that is not the full envelope is the issue `module-plan-failed`. Then sync does not reconcile the module, and it never reads the failure as a removal. A plan must also give the same answer when nothing changed, so that a second sync has no change. Write logs to stderr: stdout holds only the JSON.
+A plan must not change anything: it only says what it wants. A plan that exits with a code that is not 0, runs longer than 30 seconds, or prints output that is not the full envelope is the issue `module-plan-failed`. Then sync does not reconcile the module, and it never reads the failure as a removal. A plan must also give the same answer when nothing changed, so that a second sync has no change. Stdout holds only the JSON: the SDKs send `print` and `console.log` of a plan to stderr, and Flint shows stderr only when the plan fails. For a line that a person sees at each sync, use the tool `log` (see [Log Lines](#log-lines)).
 
 An issue does not stop the reconcile: Flint applies the desired objects of a plan that has issues, and it pauses each managed object of the module that the plan does not list. So when an input is not valid and the existing objects must stay as they are, fail the plan (raise an exception) instead of returning early with an issue. The failure pauses nothing.
 
 ### `apply`
 
-For each own action that is not a `report`, a sync that is not a dry run runs `apply`. Stdin is `{ "context": <the context of plan>, "action": <the action> }`. Stdout is `{ "ok": true, "detail": "…" }`. The time limit is 30 seconds. An action of the kind `report` is never applied: it is a message for a person.
+For each own action that is not a `report`, a sync that is not a dry run runs `apply`. Stdin is `{ "context": <the context of plan>, "action": <the action> }`. Stdout is `{ "ok": true, "detail": "…" }`, with optional `logs`. The time limit is 30 seconds. An action of the kind `report` is never applied: it is a message for a person.
+
+The sync report shows the detail after ` — ` on the change line of the action: `✓ (module) hello-ts: Wrote hello.txt — wrote hello.txt`. Write the detail as a short result, for example the file that `apply` wrote.
+
+### Log Lines
+
+The stdout of `plan` and of `apply` may hold `logs`: a list of `{ message, level? }`. `message` is a text that is not empty. `level` is `info` (the default) or `warn`. In the SDKs, call `m.log(message)` or `m.log(message, "warn")`. A module with no `logs` is valid.
+
+- `flint sync --dry-run` shows the log lines of each plan. A real `flint sync` shows the log lines of each plan and of each `apply`. They are in the section `Module logs`, after `Changes`: `· (module) <name>: <message>` for `info`, and `⚠ (module) <name>: <message>` for `warn`.
+- `flint module status <name>` shows the log lines of the plan in the row `Logs`, under the plan.
+- `flint sync --json` gives each line in `moduleLogs` of the report: `{ module, source, action?, level, message, cut?, flint? }`. `source` is `plan` or `apply`, and `action` is the id of the action of an `apply`.
+- Flint shows at most 50 lines of one process and cuts a message after 500 characters. It drops an entry that is not valid. For each of these, Flint shows one line that says what it did.
+- A log line is information only. It never fails a plan, never makes the module not current, and never changes `flint doctor`. When a person must act, give an issue. Never write a secret in a log line.
+- In `command` and `live`, the tool `log` writes the line to stderr: to the terminal of the person, or to the log of the live process.
 
 ### `command`
 
@@ -167,7 +182,7 @@ The env values of a Flint are in `flint.env` (the Flint) and `flint.env.local` (
 Name the secrets of the module in `secrets:` of the manifest. The value can come from an env file or from the environment of the caller. In the plan, `secret(name)` of an SDK gives the value, or the issue `module-secret-missing` with the next step when the module process has no non-empty value of that name:
 
 ```text
-! The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
+! (module) hello-ts: The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
 ```
 
 ## The TypeScript SDK
@@ -192,6 +207,7 @@ run(defineModule({
       prompt: 'Say hello to the team.',
       machine: text(m.settings.machine), // The owner comes from the settings: every machine runs the plan.
     });
+    m.log(`The owner machine is ${text(m.settings.machine) ?? 'not set'}.`); // A log line: sync shows it under Module logs.
     if (!existsSync(join(m.dataDir, 'hello.txt'))) {
       m.action({ id: 'write-hello', kind: 'create', label: 'write hello.txt' });
     }
@@ -221,16 +237,21 @@ hello-ts
   Kind     sync (node)
   Commands status
   Plan     not current: 2 to change
-    ● Would create the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
-    ● Would write hello.txt
-    ! The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
+    ● (module) hello-ts: Would create the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
+    ● (module) hello-ts: Would write hello.txt
+    ! (module) hello-ts: The module hello-ts needs the secret HELLO_TOKEN, and no env file of this Flint sets it.  → Set HELLO_TOKEN in flint.env.local (this machine) or flint.env (the Flint).
+  Logs     1 line of the plan
+    · (module) hello-ts: The owner machine is katana.
 
 → Run flint sync to apply the plan.
 
 $ flint sync
 Changes
-  ✓ Created the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
-  ✓ Wrote hello.txt
+  ✓ (module) hello-ts: Created the cron schedule hello: 0 9 * * 1-5 (local time), target claude/o55h
+  ✓ (module) hello-ts: Wrote hello.txt — wrote hello.txt
+
+Module logs
+  · (module) hello-ts: The owner machine is katana.
 ```
 
 The tools of each handler (`m`):
@@ -246,6 +267,7 @@ The tools of each handler (`m`):
 | `m.desired.cron(object)`, `m.desired.station(object)` | One desired object of the plan |
 | `m.action(action)` | One own action of the plan |
 | `m.issue(code, message, next?)` | One issue: in the plan, an issue of the report; in another verb, a line on stderr |
+| `m.log(message, level?)` | One log line (`info` or `warn`): in `plan` and `apply`, a line of the section `Module logs`; in another verb, a line on stderr |
 
 `apply` returns a detail text, `{ ok, detail }`, or nothing. A command returns its exit code.
 
@@ -294,10 +316,10 @@ if __name__ == "__main__":
     module.run()
 ```
 
-The Python tools have the same names in Python form: `m.ctx` (a dict), `m.settings` (a dict), `m.data_dir`, `m.env(name)`, `m.secret(name)`, `m.flint(*args)` (a result with `code`, `stdout`, `stderr`, and `json()`), `m.desired.cron(**fields)`, `m.desired.station(**fields)`, `m.action(**fields)`, and `m.issue(code, message, next)`. A field with the value `None` is left out. With no settings file, this plan gives a schedule with no owner, and sync gives a report:
+The Python tools have the same names in Python form: `m.ctx` (a dict), `m.settings` (a dict), `m.data_dir`, `m.env(name)`, `m.secret(name)`, `m.flint(*args)` (a result with `code`, `stdout`, `stderr`, and `json()`), `m.desired.cron(**fields)`, `m.desired.station(**fields)`, `m.action(**fields)`, `m.issue(code, message, next)`, and `m.log(message, level="info")`. A field with the value `None` is left out. With no settings file, this plan gives a schedule with no owner, and sync gives a report:
 
 ```text
-! Choose the owner machine of the cron schedule hello: The module hello-py gives the schedule no machine, so no machine runs it.
+! (module) hello-py: Choose the owner machine of the cron schedule hello: The module hello-py gives the schedule no machine, so no machine runs it.
     → Give the cron schedule hello an owner machine in the settings of the module hello-py.
 ```
 
