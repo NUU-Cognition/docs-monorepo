@@ -2,7 +2,7 @@
 title: "Sync"
 ---
 
-Sync keeps the files of the Flint true to its declarations and its shared history. Three commands do three jobs.
+Sync keeps the files of the Flint true to its declarations and its shared history. Four commands do four jobs.
 
 ## Overview
 
@@ -19,23 +19,89 @@ In package terms, `flint sync` is `pnpm install --frozen-lockfile`. `flint shard
 
 ## The Local Sync
 
-`flint sync` makes the files of this Flint match its lock (`flint.json`) and its declarations (`flint.toml`). It runs two steps: `Resolve Flint` and `Reconcile content`.
+`flint sync` makes the files of this Flint match its lock (`flint.json`) and its declarations (`flint.toml`). It runs two steps: `Resolve Flint` and `Reconcile content`. A Flint with a module record gets a third step, `Reconcile modules`.
 
 It fetches only bytes that the lock or a declaration names and that are absent or differ. It checks out the pin of each shard repository. It fetches a pinned commit only when the commit is absent.
 
-Its one write to the lock removes a stale lock line. A stale lock line is a line that `flint.toml` does not declare and that has no folder under `Shards/`.
-
 `flint sync` never asks the shard registry. It never writes a shard version and never writes a pin. It never touches the origin of the Flint: no fetch of the Flint repository, no integration of incoming commits, no commit, and no push.
+
+Sync removes a stale lock line. A stale lock line is a lock record that `flint.toml` does not declare, that has no folder under `Shards/`, and that has no pending migration. Sync also removes the entry of that shard in `.flint/shards.json`.
+
+### Reconcile Content
+
+The step `Reconcile content` does this work:
+
+- It makes the missing standard folders. It refreshes the managed blocks of `.gitignore` and `.gitattributes`.
+- It writes the id of a new Flint, and it registers the Flint in the roster of this machine.
+- It takes the source repositories and the source bundles, and it clones the workspace repositories. See [Sources](/flint/modules/sources) and [Workspace](/flint/modules/workspace).
+- It fulfills the references. See [References](/flint/modules/references).
+- It reconciles the shard sources, the shard builds, and the shard repositories. See [Shards](/flint/modules/shards).
+- It writes the metadata markers under `Mesh/Metadata/` and sweeps that folder.
+- It installs the pinned Obsidian payload. It never moves the pin. See [Using Obsidian](/flint/guide/using-obsidian).
+- It fetches the workspace repositories.
+
+A drift that sync cannot heal is a row under `Not current`, with its next command. A notice changes no count and no status.
+
+### The Metadata Sweep
+
+`Mesh/Metadata/` holds the markers that sync writes. Sync prunes each other entry. The dry run shows `Would prune the entry`, with each path inside it.
+
+Some entries stay:
+
+- `Mesh/Metadata/Types/` stays. The shard installer writes the type files there.
+- A file at the top of `Mesh/Metadata/` stays. Sync reports it: `This file under Mesh/Metadata is not a Flint marker. Sync keeps it. Move it out of Mesh/Metadata.` A file of the operating system (`.DS_Store`) is pruned.
+- A folder that an installed shard declares in `folders` stays with all its contents. Sync gives one notice: `The folder <path> is declared by the shard <alias>. Sync keeps it.`
+
+### Old Shard Folders
+
+A Flint of 0.6.0 used other folder names under `Shards/`. A pull of the rename can leave the old folders on other machines.
+
+- An old folder that holds only empty folders and files of the operating system goes. Sync removes it. The dry run shows `Would remove the empty old folder <path>`. This applies to `(Dev Local) <Name>`, `(Dev Remote) <Name>`, `(Shards) State`, and `(Shards) Local State`.
+- An old `(Dev …) <Name>` folder with files, next to its new `(Source …) <Name>` folder, stays. Sync never removes it and never tells you to delete it with a command. It gives one notice (`legacy-leftover`): `The old folder <path> holds a Git clone next to <new folder>. Sync keeps it.` The next step is inspection only. Check the old folder for your own work, then remove it by hand:
+  - For a Git clone: `git -C '<path>' status` (changes that are not committed), `git -C '<path>' log --branches --not --remotes` (commits that are not pushed), `git -C '<path>' tag` (tags), and `git -C '<path>' stash list` (stashed work).
+  - For a folder that is not a Git clone: `ls -la '<path>'`.
+  - Move the work that you need into the new folder before you remove the old folder.
+- Any other folder with a 0.6.0 name gets the notice of the migration, with `flint migrate run`.
+
+`Shards/(Shards) Repos/` is not an old folder. The installer makes it for the shard repositories.
 
 ### Workspace Repositories
 
-After the two steps, sync fetches each workspace repository. It runs `git fetch origin` in each repository root that has an origin and that the run did not clone. See [Workspace](/flint/modules/workspace).
+After the kernel, sync fetches each workspace repository. It runs `git fetch origin` in each repository root that has an origin and that the run did not clone. See [Workspace](/flint/modules/workspace).
 
 The fetch moves only the remote-tracking refs. Sync never pulls, never merges, and never checks out. It changes no branch and no working tree of the repository.
 
-Each repository gets one result against its base: `up to date`, `ahead`, `behind`, `both`, `skipped`, or `fetch failed`. A repository that is behind, diverged, or failed gives one notice. The notice for a behind repository names `git pull --ff-only` in its folder. The fetch changes no count and no status of the report.
+Each repository gets one row with its result against its base. The base is the upstream of the branch, else `origin/<default branch>`.
 
-When the branch holds commits that the cached `origin/<branch>` ref does not hold, sync gives one notice. It names `flint git sync`. A branch with no `origin/<branch>` ref gives no notice.
+| Result | Row |
+|--------|-----|
+| Up to date | `up to date with <base>` |
+| Ahead | `ahead of <base> by <n> commits` |
+| Behind | `behind <base> by <n> commits` |
+| Diverged | `ahead by <n> commits and behind by <m> commits against <base>` |
+| No base | `fetched; no base to compare` |
+| Skipped | `cloned in this run`, `not cloned`, `not a repository root`, or `no origin` |
+| Failed | `fetch failed: <first line of the Git error>` |
+
+A repository that is behind, diverged, or failed gives one notice. The notice for a behind repository names `git pull --ff-only` in its folder:
+
+```text
+Notices
+  ● …/Workspace/Repos/App: The workspace repository App is 1 commit behind origin/main. Sync does not pull.
+      → Run git pull --ff-only origin main in the folder of the repository.
+```
+
+The detail of `Reconcile content` sums the fetch, for example `1 workspace repository fetched, 1 behind origin`. The fetch changes no count and no status of the report.
+
+When the branch of the Flint holds commits that the cached `origin/<branch>` ref does not hold, sync gives one notice: `Local history is <n> commits ahead of origin. Run flint git sync.` A branch with no `origin/<branch>` ref gives no notice.
+
+### Reconcile Modules
+
+A module is a package, as a shard is. Sync handles the modules in two parts.
+
+**The module builds.** In the step `Reconcile content`, the row `Module builds` makes each build under `Modules/` match the lock (`flint.json`), as the shard reconcile does for the shards. It restores a locked build that is missing or that differs from the lock, and the locked version stays. It builds a module with `from = "source"` again when its source changed. It removes a lock line that `flint.toml` does not record. A record with no lock line is not current: sync installs no new module, and the next command is `flint module install`. A restore fetches only what the lock names; sync never asks the registry.
+
+**The step `Reconcile modules`.** It runs after `Reconcile content`, and it shows only when the Flint has a module record or a module has work. It runs the plan of each installed module, one process each. Then it applies the plan: Flint makes the objects that the plan desires (cron schedules, stations) with the managed marker of the module, and the module runs its own actions. A failure of a module fails its own row only, and sync never reads a failure as a removal. When a module no longer desires an object, or the module is uninstalled, sync pauses the object on this machine. Sync never deletes it. After a sync that is not a dry run, a running Flint server of the Flint also reconciles its live modules. See [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms).
 
 ### Blocks
 
@@ -47,9 +113,11 @@ Three states block the run with exit 2.
 
 The halted rebase and the held operation block `--dry-run` too. A `flint sync` that ends `ok` exits 0. A failed or partial run exits 1.
 
+A Flint that is not at the current Flint Version does not sync. `flint sync` refuses with exit 1, and the next command is `flint migrate run`. `flint sync --migrate` applies the pending script migrations first. `flint sync --dry-run` reads the Flint as it is, with one notice. A fresh clone of a current Flint is not a migration case: it has no `.flint/local.json` yet. `flint sync --dry-run` and `flint plan` then show `Would initialize the local state at <version>`, and `flint doctor` counts it as one change to apply (`Next: flint sync`). The first `flint sync` writes the local state.
+
 ## Preview
 
-`flint sync --dry-run` shows the plan and writes nothing. It fetches nothing and opens no socket. It names the repositories that a real sync fetches.
+`flint sync --dry-run` shows the plan and writes nothing. It fetches nothing and opens no socket. It names the repositories that a real sync fetches: `A dry run fetches nothing. flint sync fetches App.` The plan of each module runs, and each change of a module shows as `Would …`.
 
 `flint plan` shows the same preview as `flint sync --dry-run`. A repeat sync with no new drift writes nothing.
 
@@ -59,19 +127,26 @@ flint plan              # The same preview
 flint sync              # Make the files match the lock and the declarations
 ```
 
+The flags `--no-git` and `--no-update` are retired. Each prints one line that names the new command, and the sync runs.
+
 ## The Lock
 
 `flint shard install` makes the lock match the specs. It resolves each spec that the lock does not satisfy. It leaves a satisfied lock alone.
 
 A new or changed spec in `flint.toml` needs this command. `flint sync` reports a spec with no lock line as not current. It names `flint shard install` as the next command.
 
-`flint shard install <spec>` installs one package and writes its record. `flint shard install --dry-run` shows the plan and the registry answers. It writes nothing.
+`flint shard install <spec>` installs each named package and writes its record. `flint shard install --dry-run` shows the plan and the registry answers. It writes nothing.
 
-`flint shard update` moves the lock of each shard to the highest version inside its range. It updates every installed shard, or one shard by its alias, shorthand, or id. It skips a build that comes from a source. See [Shards](/flint/modules/shards).
+The shard registry serves versions of most NUU Cognition shards. An install by package spec resolves its range against the registry. With no range, it takes the latest release. A few older records still have no shard id. An install of one of them fails with `the registry record … has no shard id (an older CLI registered it), so it has no versions.` Install that shard from Git: `flint shard install --from-git NUU-Cognition/shard-<slug>`. It writes the record `<alias> = { git = "<owner/repo>" }`.
+
+`flint shard update` moves the lock of each shard to the highest version inside its range. It updates every installed shard, or one shard by its package name, alias, shorthand, or id. It skips a build that comes from a source. See [Shards](/flint/modules/shards).
+
+The pins of the shard repositories (`flint.json#repos`) are lock data. Only `flint shard install` with no argument and `flint shard update` write them.
 
 ```bash
 flint shard install                       # Make the lock match the specs
-flint shard install @org/name@^1.1        # Install one package
+flint shard install --from-git NUU-Cognition/shard-projects   # Install one package from Git
+flint shard install @org/name@^1.1        # Install one package from the shard registry
 flint shard install --dry-run             # Show the plan; write nothing
 flint shard update                        # Move each lock inside its range
 flint shard update <alias>                # Move one lock inside its range
@@ -79,13 +154,28 @@ flint shard update <alias>                # Move one lock inside its range
 
 ## The Transport
 
-`flint git sync` exchanges history with origin. It runs these steps in order: checkpoint the local work, fetch, integrate, run the local sync, checkpoint the writes of the sync, and push.
+`flint git sync` exchanges history with origin. It runs these steps in order: checkpoint the local work, fetch, integrate, run the local sync, checkpoint the writes of the sync, and push. The report has three steps: `Integrate`, `Reconcile content`, and `Push`.
 
 It makes no commit and no push when nothing changed. It commits the writes of the local sync as a second checkpoint only when the local sync writes. When the fetch changes `flint.toml`, the local sync of the same run reads the new file, and the same push publishes its writes.
+
+A Flint with no origin refuses before any change: `This Flint has no origin. Nothing was sent.` Give the Flint an origin with `flint git publish <url>`.
+
+### Deletions
+
+A Git sync carries a deletion in both directions. A move counts as the deletion of its old path.
+
+- The push removes from origin each file that this clone deleted. The report names them: `Removed <n> files from origin that this clone deleted or moved: …`
+- The pull removes each file that origin deleted. The report names them: `Removed <n> files that origin deleted or moved: …`
+- A folder that the pull emptied goes when it holds only empty folders and files of the operating system: `Removed <n> folders that the pull emptied: …`
+- A folder that the pull emptied of tracked files, but that still holds a file that Git does not track, stays. Sync gives one notice. The next command is `ls -la <folder>`: move the files that you need, then remove the folder.
+
+Each line names at most three paths, then the count of the rest.
 
 ### Conflicts
 
 A conflict halts the run before the local sync. It exits 2 and reports the conflict under `Failed`.
+
+When a rebase stops on `flint.toml` or `flint.json`, the two files first merge by key. A shard record is one whole value. A key that both sides changed in two different ways stays a conflict, and the report names the key and both values. The report line `Merged <files> by key` names the files that merged.
 
 Resolve the files by hand, or take one side whole:
 
@@ -102,24 +192,25 @@ Then re-run `flint git sync`, or run `flint git sync --continue`. It finishes th
 
 ### Remote History Rewrite
 
-When the remote history was rewritten, sync realigns automatically when no local-only commits exist. When local-only commits exist, sync halts and asks for `--replay`. `--replay` puts the local commits on the new tip.
+When the remote history was rewritten, sync realigns automatically when no local-only commits exist. When local-only commits exist, sync halts and asks for `--replay`. `--replay` puts the local commits on the new tip. A backup ref keeps the old tip.
 
 ### Force Flags
 
-`--force-remote` takes the remote as truth. Local commits that replay cleanly stay. Overlapping changes resolve in favour of the remote. Anything that still does not merge is discarded. A backup ref keeps the old tip.
+`--force-remote` takes the remote as truth. Local commits that replay cleanly stay. Overlapping changes resolve in favour of the remote. Anything that still does not merge is discarded, and the report names each discarded commit. A backup ref keeps the old tip.
 
 `--force-local` is the mirror image. Overlapping changes resolve in favour of the local commits. The remote history is never rewritten.
 
-The force flags refuse before any change when a nested repository holds uncommitted work.
+`--replay`, `--force-remote`, and `--force-local` refuse before any change when a nested repository holds uncommitted work.
 
 ### More Transport Commands
 
-`flint git sync --no-sync` is transport only. It runs no local sync. It still writes the managed block of `.gitignore` and pushes.
+`flint git sync --no-sync` is transport only. It runs no local sync. It still writes the managed blocks of `.gitignore` and `.gitattributes`, and it pushes.
 
-`flint git merge` is `flint git sync` with no push. It checkpoints, fetches, integrates, runs the local sync, and commits the writes of the sync. Its conflict halt names `flint git merge`. After a remote history rewrite, run `flint git merge --replay`.
+`flint git merge` is `flint git sync` with no push. It checkpoints, fetches, integrates, runs the local sync, and commits the writes of the sync. Its conflict halt names `flint git merge`. After a remote history rewrite, run `flint git merge --replay`. Publish later with `flint git sync`.
 
 ```bash
 flint git sync                # Checkpoint, fetch, integrate, sync, checkpoint, push
+flint git sync -m "<message>" # The same, with your commit message
 flint git sync --no-sync      # Transport only: no local sync
 flint git sync --continue     # Continue a sync halted on a conflict
 flint git sync --abort        # Stop the held rebase and restore the branch
@@ -131,13 +222,21 @@ flint git merge               # Integrate and sync, with no push
 
 When the local sync fails, the push still sends the integrated history as it is. It makes no second fetch. When origin moved during that sync, the push is rejected, and the next `flint git sync` sends it.
 
+A Flint that is not at the current Flint Version does not run the local sync. The step `Reconcile content` is blocked, and the next command is `flint migrate run`.
+
+A `flint.toml` or a `flint.json` that does not parse stops the run before the checkpoint. The report names the file, the line, and the next step. The run changes nothing.
+
 A held merge, cherry-pick, or revert refuses `sync` and `merge` with exit 2. The run changes nothing. Finish the held operation in Git first.
 
 One Git run at a time holds the run lock of the repository. The lock is `<git dir>/flint-git-sync.lock`. `sync`, `merge`, `--continue`, `--abort`, and `resolve` take it. When the wait for the lock times out after 60 seconds, the report is `blocked` with exit 2.
+
+`--json` prints the report as one JSON value.
 
 ## Related
 
 - [Shards](/flint/modules/shards)
 - [Workspace](/flint/modules/workspace)
 - [Sources](/flint/modules/sources)
+- [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms)
+- [flint sync](/flint/reference-cli-commands-flint-sync)
 - [CLI Commands](/flint/reference/cli-commands)

@@ -35,10 +35,10 @@ The Flint keeps the shard state in three records:
 | Record | File | Committed | Holds |
 |--------|------|-----------|-------|
 | The intent | `flint.toml` `[shards]` | Yes | What a person wants: the spec, and `git`, `from`, `use`. |
-| The lock | `flint.json#shards[<shard id>]` | Yes | What is here: the version, the state (`published`, `snapshot`, or `edited`) with its proof, the request, and where the build came from. |
-| The local facts | `.flint/shards.json` | No | The facts of this machine: the local setup state and the Git state of a source. |
+| The lock | `flint.json#shards[<shard id>]` | Yes | What is here: the version, the state (`published`, `snapshot`, or `edited`) with its proof, the Git facts of the fetch, the package hash, the payload files, and the folders. |
+| The local facts | `.flint/shards.json` | No | The facts of this machine: the local setup state, the Git state of a source, the request, where the files came from, and the answer of the registry. |
 
-The state says how the build came to be. `published` means the build came from a released version. `snapshot` means the build came from a source at one commit. `edited` means the build came from a source with local changes.
+The state says how the build came to be. `published` means the build came from a version that the shard registry lists. `snapshot` means the build came from one commit, of a Git location or of a source. `edited` means the build came from a source with local changes. A shard installed from Git is `published` when the hash of its build matches the hash of a registry version, else `snapshot`.
 
 ## The Package Spec
 
@@ -47,7 +47,18 @@ A reference to a shard is a package spec: `@org/name[@version][#place]`.
 - `@version` is an exact version (`@0.4.0`), a caret range (`@^1.1`), or a tilde range (`@~1.1.3`).
 - `#place` is a Flint on this machine (its slug) or a machine name. It says where to take the shard from instead of the shard registry.
 
-Without `#place`, the install asks this Flint first, then this machine, then the shard registry.
+Without `#place`, `flint shard install <package>` asks this machine, then the shard registry. (`flint resolve` walks further: this Flint, then this machine, then the registry.)
+
+A shard can also come from a Git location (`owner/repo`). The shard registry serves versions of most NUU Cognition shards (Flint `0.4.0`, Orbh `0.5.0`, Knap `1.2.0`, and more). An install by package spec takes the highest version inside its range from the registry. With no range, it takes the latest release.
+
+A few older registry records still have no shard id. An install by package spec of one of them fails:
+
+```text
+✘ the registry record nuucognition/chrome-use has no shard id (an older CLI registered it), so it has no versions.
+  Next: flint shard install --from-git NUU-Cognition/shard-chrome-use
+```
+
+Install that shard from Git with the named command. The presets of `flint create` write records with both a package spec and a Git location (`{ source = "@nuucognition/<slug>", git = "NUU-Cognition/shard-<slug>" }`). A record with a Git location takes the Git location: the lock install fetches it (the tag in range when the spec has one, else the default branch). The registry answers afterward: it names the package and its published state from the id and the hash of the build.
 
 ## Declaring Shards
 
@@ -55,8 +66,9 @@ Without `#place`, the install asks this Flint first, then this machine, then the
 
 ```toml
 [shards]
+projects = { git = "NUU-Cognition/shard-projects" }                                         # a package from Git (what --from-git writes)
+plan = { source = "@nuucognition/plan@0.4.0", git = "NUU-Cognition/shard-plan" }            # a package with its version and its Git location
 notepad = "@nuucognition/notepad@^1.1"                                                      # a package from the shard registry
-plan = { source = "@nuucognition/plan@0.4.0", git = "NUU-Cognition/shard-plan" }            # a package from Git
 tasks = "@nuucognition/tasks#demo-maker"                                                     # a package from a place (a Flint of this machine)
 oracle = { source = "@nuucognition/oracle", from = "source" }                                # build the shard from its source here
 seer = { source = "@nuucognition/seer", git = "NUU-Cognition/shard-oracle", from = "source" }  # a remote source with its Git location
@@ -66,12 +78,15 @@ A string value is a spec. A table value has these fields:
 
 | Field | Purpose |
 |-------|---------|
-| `source` | The spec of the package. A path (`./Shards/(Source Local) X`) also parses. |
-| `git` | The Git location (`owner/repo`) that a person chose. |
+| `source` | The spec of the package. A path (`./Shards/(Source Local) X`) and a Git location (`owner/repo`) also parse. |
+| `git` | The Git location (`owner/repo`) that a person chose. It goes with a package spec in `source`, or with no `source`. |
 | `from` | `"source"`: build the shard from its source in this Flint. |
-| `use` | `reference` (the loader reads the folder in its place; no build) or `none` (a source with no build here). |
+| `use` | `copy` (the default: a build under `Shards/`), `reference` (the loader reads the folder in its place; no build), or `none` (a source with no build here). |
+| `of` | The shard of a declaration that the merge keeps apart, for example a checkout of the repository of an installed shard. |
 
-The alias is the key of the record, not an id. The shard id lives in the manifest of the shard (`shard.yaml#id`) and in the lock record. `flint.toml` holds no id. Use the CLI to add a record: `flint shard install <spec>` writes it.
+Every other field stays as it is and changes no meaning. The 0.6.0 fields `version` and `edit = true` are retired. Sync reports a record that holds one of them, with the next command `flint migrate rerun flint-0.6.0-to-0.7.0-s6`. The spec carries the version.
+
+The alias is the key of the record, not an id. The shard id lives in the manifest of the shard (`shard.yaml#id`) and in the lock record. The CLI writes no id in `flint.toml`. Use the CLI to add a record: `flint shard install` writes it.
 
 The **core shards** are Flint (`@nuucognition/shard/flint`) and Orbh (`@nuucognition/shard/orbh`). Every new Flint gets them. When `flint shard list` has no row for one of them, run `flint shard install --core`. It installs each missing core shard and leaves the present ones alone.
 
@@ -88,7 +103,7 @@ flint resolve <spec>             # Where one package is: this Flint, this machin
 
 A `<ref>` names one shard of this Flint. It accepts the alias, the shorthand, the address (`@org/<slug>` or `@org/shard/<slug>`), or the id. `info` is an alias of `status`. `search` is an alias of `browse`. `list` accepts `--sources` to show only the records of `flint.toml`, and `browse` accepts `--available` and `--installed` to filter the catalog.
 
-Each row of `browse` shows the address, the version, where it comes from, its state here, the spec that installs it, and the next command. A row from the registry installs with `@org/<slug>`. A row from a Flint of this machine installs with `@org/<slug>#<flint slug>`.
+Each row of `browse` shows the package, the version, where it comes from, its state here, the spec that installs it, and the next command. A row from the registry shows its version and installs with `@org/<slug>`. A row from a Flint of this machine installs with `@org/<slug>#<flint slug>`. A registry row with no version is an older record with no shard id. Install it from Git: `flint shard install --from-git NUU-Cognition/shard-<slug>`.
 
 `flint shard start <ref>` prints the manifest that loads the shard: its init file, required reading, skills, workflows, templates, and knowledge. When the source changed after the build, `start` prints a notice with `flint shard build <alias>` and loads the build anyway.
 
@@ -96,15 +111,30 @@ Each row of `browse` shows the address, the version, where it comes from, its st
 
 ```bash
 flint shard install                              # No argument: make the lock match the specs of flint.toml
-flint shard install @org/name[@range][#place]    # Install one package: from the shard registry, or from a place
 flint shard install --from-git <owner/repo[#ref]>  # Install from a Git location: a tag, a branch, or a commit after #
+flint shard install @org/name[@range][#place]    # Install one package: from the shard registry, or from a place
 flint shard install --from-path <dir>            # Install from a folder on this machine
 flint shard install --core                       # Install each missing core shard (Flint, Orbh)
 ```
 
 With no argument, `install` reads every record of `flint.toml`. It installs or builds each record that the lock does not satisfy. It does not move a record that the lock satisfies. It installs the missing dependencies first. With `--dry-run`, it shows the plan and writes nothing.
 
-With a source, `install` writes the record `<alias> = "<spec>"` in `flint.toml`, the lock record in `flint.json`, and the local entry in `.flint/shards.json`. From the registry, it checks the shard id and the package hash of the version before any write. Useful flags:
+With a source, `install` writes the record in `flint.toml`, the lock record in `flint.json`, and the local entry in `.flint/shards.json`. A package spec writes `<alias> = "<spec>"`. From the registry, it checks the shard id and the package hash of the version before any write.
+
+`--from-git` fetches the location, hashes the build, and asks the registry. The record depends on the answer. For a package the registry knows, it writes the spec with the Git location: `{ source = "@nuucognition/projects@1.4.1", git = "NUU-Cognition/shard-projects" }` when the build hash matches a registry version (published), and `{ source = "@nuucognition/projects", git = "NUU-Cognition/shard-projects" }` when it does not (snapshot). Only for an unregistered package, or when the registry does not answer, it writes the Git location alone: `<alias> = { git = "<owner/repo>" }`.
+
+```text
+$ flint shard install --from-git NUU-Cognition/shard-projects
+✓ Fetched NUU-Cognition/shard-projects at 1626169
+✓ Installed Projects from NUU-Cognition/shard-projects
+  ⚠ The registry knows @nuucognition/projects, but this build is not a published version: it is installed as a snapshot.
+  Git      : NUU-Cognition/shard-projects
+  State    : snapshot 1626169
+  Registry : snapshot
+  Alias    : projects
+```
+
+Useful flags:
 
 - `--alias <alias>`: install under another key. Use it for a second shard with the same slug.
 - `--reference`: install by reference. It writes no build under `Shards/`. The loader reads the source folder in its place.
@@ -123,9 +153,18 @@ flint shard versions <ref>       # List the versions of a shard: the registry ve
 
 `update` with no argument updates every installed shard. It skips a build of a source: a source moves by editing and building, not by version. `update` accepts `--reinstall` to force a fresh download and reinstall of every installed shard.
 
-`broadcast` runs in the Flint that holds the source of a shard, after a change to the source. It updates each direct consumer on this machine: a Flint with a record `@org/<slug>#<this Flint>`. It installs no missing dependency, runs no migration, and makes no commit. With `--dry-run`, it prints the rows and writes nothing. With `--only <flint...>`, it limits the consumers.
+`broadcast` runs in the Flint that holds the source of a shard, after a change to the source. It updates each direct consumer on this machine: a Flint with a record `@org/<slug>#<this Flint>`, or `#<this machine>` when its walk selects this Flint. A Flint that installs from a consumer is not updated, and a place on another machine is skipped. It installs no missing dependency, runs no migration, and makes no commit. A consumer that cannot take the package gets a `refused` or `skipped` row with the reason and the next command to run in that Flint. The other consumers go on. With `--dry-run`, it prints the rows and writes nothing. With `--only <flint...>`, it limits the consumers.
 
 `uninstall` removes the build, its lock record, and the payload files that you did not change. It keeps each file that you changed. `reinstall` with no name reinstalls every installed shard.
+
+## Shard Scripts
+
+A shard can ship Node.js scripts under `scripts/`. Run one through the alias or the shorthand of the shard:
+
+```bash
+flint shard scripts <ref>             # List the scripts of a shard
+flint shard <ref> <script> [args...]  # Run one script
+```
 
 ## Setup and Migrations
 
@@ -140,9 +179,11 @@ flint shard setup <ref> --reset      # Back to required
 A new version of a shard can bring migration steps. `status` shows the pending steps. The migrate commands manage them:
 
 ```bash
+flint shard migrate show [<ref>]     # Show the migration state of one shard, or of all shards
 flint shard migrate list <ref>       # List the steps with their types and states
 flint shard migrate run <ref>        # Run the queued steps (it stops at an agent or manual step)
 flint shard migrate finish <ref>     # Mark the current agent or manual step done
+flint shard migrate rerun <ref> <step>  # Run one step of the build again
 ```
 
 ## Note Templates
@@ -162,7 +203,7 @@ A **note template** is a file that a shard installs for the Obsidian template pi
   flint shard reinstall <alias> --replace-note-templates
   ```
 
-  It saves your copy in `.flint/backups/shards/<shard>/<time>/` first (`<time>` is an ISO time). Then it installs the note template of the shard.
+  It saves your copy in `.flint/backups/shards/<shorthand>/<time>/` first (`<time>` is an ISO time). Then it installs the note template of the shard, and prints `Replaced note template <path>: it had changes. Backup: <backup path>`.
 
 ## Authoring Shards
 

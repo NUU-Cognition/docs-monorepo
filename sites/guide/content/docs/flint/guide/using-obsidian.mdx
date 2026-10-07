@@ -4,7 +4,7 @@ title: "Using Obsidian"
 
 A Flint is plain Markdown, so it needs no editor. Obsidian is the editor that Flint supports. This guide shows how to open a Flint, how Flint keeps the Obsidian files of a Flint, and what to do when a command names a next step.
 
-Flint installs one set of released files into `.obsidian/` of each Flint. Flint calls this set the Obsidian payload. Pure machinery of the Obsidian commands lives in [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands).
+Flint installs one set of released files into `.obsidian/` of each Flint. Flint calls this set the Obsidian payload. [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands) lists the Obsidian output of the other commands.
 
 ## Prerequisites
 
@@ -33,12 +33,18 @@ Flint saves each file that it replaces or removes, before the write. Flint never
 Open a Flint with Flint, not from inside Obsidian:
 
 ```bash
-flint open "My Notes"
+flint open "My Notes"             # a Flint by its name
+flint open                        # the Flint of the working folder
+flint open computer               # the Computer Flint of this machine, from any folder
+flint open guide "NUU Cognition"  # a type and a name
+flint open "My Notes" --no-launch # print the folder; open nothing
 ```
 
-When the vault is closed, `flint open` completes a waiting install first. Then it launches Obsidian. When the vault is open, it raises the window.
+The word `computer` is reserved for the Computer Flint. When this machine has no Computer Flint, `flint open computer` refuses with `This machine has no Computer Flint.` and `Next: flint setup computer`.
 
-`flint open` trusts a Flint that passes the trust check, so Obsidian does not ask. The check passes when the payload is installed, the plugin files are the release files, and `.obsidian/plugins` holds no other plugin. Obsidian still asks once ("Trust author and enable plugins") at the first open of the Computer Flint, when the check fails, and when no vault is open and this machine has no Computer Flint. After the click, the plugin reloads Obsidian one time.
+When the vault is closed, `flint open` completes a waiting install first. Then it launches Obsidian and waits up to 15 seconds for the NUU Flint plugin of the vault. When the vault is open, it raises the window. In a terminal, a loading row names each wait while it runs: the payload install, the start of Obsidian, and the wait for the vault.
+
+With the trust setting `auto` (the default), `flint open` trusts a Flint that passes the trust check, so Obsidian does not ask. The check passes when the payload is installed, the plugin files are the release files, and `.obsidian/plugins` holds no other plugin. When no vault is open and your Flint passes the check, Flint starts Obsidian with the Computer Flint first and opens your Flint through it. So a second window can open. Obsidian still asks once ("Trust author and enable plugins") at the first open of the Computer Flint, when the check fails, and when no vault is open and this machine has no Computer Flint. After the click, the plugin reloads Obsidian one time.
 
 To let Obsidian ask for each new vault instead, set the trust setting to `ask`:
 
@@ -59,13 +65,17 @@ flint obsidian status
 
 ```text
 Obsidian payload
-  Pinned     : 0.7.0 (<commit>)
+  Pinned     : 0.7.0 (108feb3)
   Installed  : 0.7.0 · 63 release files verified
+  Applied    : 1 key (release 1 · machine 0 · Flint 0)
 Vault
   Obsidian   : closed
+  Trust      : auto (flint open trusts this Flint)
+
+Next: nothing to do.
 ```
 
-Use `--check` to also probe each running plugin for the old 0.6.x plugin. It exits 2 when an error or a warning is present. Use `--tinderbox` for one row per member of a Tinderbox. Use `--json` for the status as JSON.
+The last line is the one next command. Use `--check` to also probe each Obsidian manager of this machine for an old plugin. It exits 2 when an error or a warning is present. Use `--tinderbox` for one row per member of a Tinderbox. Use `--json` for the status as JSON.
 
 ## Sync and Update
 
@@ -144,7 +154,7 @@ A restore has three forms:
 | Command | What it does |
 |---|---|
 | `flint obsidian backups restore <id>` | A full restore: each saved file and the records. It backs up the current files first. It needs a closed vault. |
-| `flint obsidian backups restore <id> --file <path>` | Restore one path. The pin stays. |
+| `flint obsidian backups restore <id> --file <path>` | Restore one path. The pin stays. It needs a closed vault. |
 | `flint obsidian backups restore <id> --to <empty-dir>` | Copy the saved files into an empty folder. Nothing in the Flint changes. |
 
 To delete old backups, look at the preview first:
@@ -191,6 +201,7 @@ An appearance profile is a set of appearance keys that you activate and deactiva
 flint obsidian profiles list
 flint obsidian profiles activate baseline-transparent
 flint obsidian profiles deactivate
+flint obsidian profiles                # choose in a terminal; choose the active entry to deactivate it
 ```
 
 On an open vault, the plugin sets the keys at once. No reload is necessary. On a closed vault, Flint writes `appearance.json` after a backup. Deactivation restores only the keys that you did not change since the activation. It keeps your later changes and names them.
@@ -251,7 +262,7 @@ flint migrate run
 
 The step keeps every settings file, every runtime file, and the vault registry entry. It saves each replaced file in one backup. When the step wrote the pin, commit `flint.json`. Then open the Flint with `flint open "<name>"`.
 
-`flint obsidian update` and `flint obsidian repair` convert a legacy payload too. When the vault is open or the fetch fails, the conversion waits. Close the vault, then run `flint open "<name>"` or `flint sync`.
+`flint obsidian update` and `flint obsidian repair` convert a legacy payload too. `flint migrate run`, `flint sync`, and `flint obsidian repair` can convert an open vault when its NUU Flint plugin runs: they reload the vault after the write. `flint obsidian update` needs a closed vault. When Flint cannot reload the open vault, or the fetch fails, the conversion waits. Close the vault, then run `flint open "<name>"` or `flint sync`.
 
 ## Troubleshooting
 
@@ -264,6 +275,8 @@ The step keeps every settings file, every runtime file, and the vault registry e
 | `NUU Flint is not running in "<name>".` | If Obsidian asks, click "Trust author and enable plugins". Else enable "NUU Flint" in Settings, Community plugins. |
 | `.obsidian in <name> is a legacy Git payload.` | Close the vault. Then run `flint migrate run`. |
 | `Obsidian is off on this machine` | Run `flint config set obsidian on`. |
+| `Obsidian runs, and its vault registry has no entry for "<name>".` | Do the step that the next line names once in Obsidian: Manage vaults, then Open folder as vault. Or quit Obsidian, then run `flint open "<name>"`. |
+| `This machine has no Computer Flint.` (from `flint open computer`) | Run `flint setup computer`. |
 
 More cases are in [Troubleshooting](/flint/reference/troubleshooting).
 

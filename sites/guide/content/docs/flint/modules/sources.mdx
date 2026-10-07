@@ -27,10 +27,14 @@ Each command behaves as follows:
 
 - `add` records the declaration in `flint.toml`. It clones nothing. Run `flint sync` to clone the snapshot.
 - `list` shows each declared repository and whether its folder exists. It accepts `--wide` for full-width output.
-- `update` deletes the snapshot and clones it again from the upstream HEAD. Use it to move a snapshot to newer upstream content.
-- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question.
+- `update` takes a fresh snapshot of the upstream HEAD and replaces the old snapshot. When the folder is missing, it makes the first snapshot. Use it to move a snapshot to newer upstream content.
+- `remove` deletes the declaration from `flint.toml`. It leaves the folder on disk for manual cleanup. It asks for confirmation. Use `--force` to skip the question. Without a terminal, the command refuses and names the `--force` form.
 
-When sync clones a snapshot, it takes a shallow clone of depth 1 and strips `.git`. The copy is not an active checkout. Sync writes a receipt with the copy. On later runs sync trusts a snapshot that has a receipt. Sync never contacts the upstream on its own. A snapshot older than 7 days produces a notice that names `flint source repo update "<name>"`. The snapshot stays in place.
+Names match without regard to letter case.
+
+When sync clones a snapshot, it takes a shallow clone of depth 1 and strips `.git`. The copy is not an active checkout. Sync writes a receipt (`.flint-receipt.json`) into the snapshot folder. On later runs sync trusts a snapshot that has a complete receipt. Sync does not contact the upstream for a snapshot that it already has. When you change the `url` of a declaration, the next sync takes a new snapshot.
+
+A snapshot older than 7 days produces a notice that names `flint source repo update "<name>"`. The snapshot stays in place.
 
 ## Flint Bundles
 
@@ -45,17 +49,27 @@ bundles = [
 ]
 ```
 
-The `name` value has this form:
+The `source` value must be `"flint"`. The `name` value has this form:
 
 ```text
 "Flint Name/Bundle Name"
 ```
 
-During sync, Flint finds the producer Flint by name and copies its folder `Exports/(Bundle) <Bundle Name>/` into `Sources/Bundles/<Bundle Name>/`. When the producer changes its bundle, the next sync copies the new content. When the producer Flint is missing from this machine, or its bundle folder is missing, sync reports one row and keeps the copied bundle unchanged. Extra local bundle folders are reported as drift, not deleted.
+During sync, Flint finds the producer Flint by name in the roster of this machine (see [The Roster](/flint/guide/the-roster)). It copies the producer folder `Exports/(Bundle) <Bundle Name>/` into `Sources/Bundles/<Bundle Name>/`. When the producer changes its bundle, the next sync copies the new content. When the producer Flint is missing from this machine, or its bundle folder is missing, sync reports one row and keeps the copied bundle unchanged. Extra local bundle folders are reported as drift, not deleted.
+
+`flint resolve source` prints the path of a copied bundle in this Flint:
+
+```bash
+flint resolve source "Research Hub/Guide"
+```
+
+When the folder is missing, the command refuses and names `flint sync`.
 
 ## Sync Behavior
 
-`flint sync` treats `[sources]` as the source of truth. It copies each missing declared repository and each missing or changed declared bundle. It aligns `.gitignore` with the current declarations. It writes marker notes so each source stays visible from the Mesh metadata layer.
+`flint sync` treats `[sources]` as the source of truth. It copies each missing declared repository and each missing or changed declared bundle. It aligns the managed block of `.gitignore` with the current declarations. It writes marker notes under `Mesh/Metadata/Sources/`, so each source stays visible from the Mesh metadata layer.
+
+While the Flint declares a source repository, the managed block of `.gitignore` ignores `Sources/Repos/`. Git does not track the snapshots, and each machine takes its own snapshot. The managed block does not ignore `Sources/Bundles/`.
 
 `flint plan` and `flint sync --dry-run` show the same plan and change nothing. They open no network connection.
 
@@ -73,6 +87,8 @@ bundles = [
 ]
 ```
 
+The `url` of a repository is a Git URL. The accepted forms are `https://` (and `http://`, `git://`), `ssh://`, the short SSH form `git@host:path` (for example `git@github.com:org/repo.git`), `file://`, and a local path (absolute, `./`, `../`, or `~/`). A value that starts with `-`, or that uses the form `<transport>::<address>`, is refused. Git runs with only the protocols `file`, `git`, `http`, `https`, and `ssh`. A value that is not a Git URL is reported as not valid, and sync clones nothing for it. `flint source repo add` writes a relative local path relative to the Flint root, with `./` or `../`.
+
 ## Sources, Workspace Repositories, and References
 
 Three mechanisms connect a Flint to outside material. Each one serves a different need.
@@ -86,3 +102,4 @@ Three mechanisms connect a Flint to outside material. Each one serves a differen
 - [Workspace](/flint/modules/workspace)
 - [References](/flint/modules/references)
 - [Sync](/flint/modules/sync)
+- [The Roster](/flint/guide/the-roster)

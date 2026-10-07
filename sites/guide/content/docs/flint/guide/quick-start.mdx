@@ -8,10 +8,13 @@ This guide takes you from the install to your first Flint and your first agent s
 
 You need:
 
-- Node.js with `npm`
+- macOS or Linux, with a terminal where global npm installs are allowed
+- Node.js 26.1 or newer, with `npm` (an older Node.js stops `flint` with one line that names the version)
 - Git
-- a terminal where global installs are allowed
+- internet access for the setup
 - Obsidian, if you want it (it is optional)
+
+An agent can do Steps 1 and 2 with you: `curl -fsSL https://flint.nuucognition.com/install.sh | bash` starts Claude Code with the setup procedure. See [Setting Up a Machine#Set Up With an Agent](/flint/guide-setting-up-a-machine-set-up-with-an-agent).
 
 ## Step 1: Install the CLI
 
@@ -38,10 +41,10 @@ flint setup
 
 1. **Identity**: your Name and the machine display name.
 2. **Git author**: the author of the first commits of new Flints.
-3. **Environment**: a check of Git, Node.js, Obsidian, and the agent CLIs.
+3. **Environment**: a check of Git, Node.js, Obsidian, and the agent CLIs, and the terminal font `JetBrainsMono Nerd Font` (setup asks before it installs the font).
 4. **Agent default**: the first copy of the Orbh profiles and the default target list.
 5. **Computer Flint**: the home Flint of this machine.
-6. **Guide**: a clone of the Guide of NUU Cognition (optional).
+6. **Guide**: a clone of the Guide of NUU Cognition, a Flint that answers Flint questions with an agent (optional).
 7. **Open and onboarding**: the open of the Computer Flint with your first agent session.
 
 For the full detail of each step, read [Setting Up a Machine](/flint/guide/setting-up-a-machine). To change your Name only later, run `flint config name "<Name>"`. Login and an org stay optional; to share Flints with an org, read [Join Your Org](/flint/guide/join-your-org).
@@ -98,7 +101,7 @@ Now move into the Flint:
 cd "(Flint) My Notes"
 ```
 
-A new Flint holds `Mesh/` for your notes, `Media/` for files that are not Markdown, `Shards/` for the programs that agents load, and `Sources/`, `Workspace/`, and `.flint/` for outside material, active repositories, and the facts of this machine.
+A new Flint holds `Mesh/` for your notes, `Media/` for files that are not Markdown, `Shards/` for the programs that agents load, and `Sources/`, `Workspace/`, and `.flint/` for outside material, active repositories, and the facts of this machine. It has no `Modules/` folder and no env files. `flint module install` creates `Modules/`. You create the env files when the Flint needs them.
 
 Open `Mesh/(System) Flint Init.md`. This note tells humans and agents what the Flint is for. A new Flint has a starter note; in the first agent session, the agent asks you what the Flint is for and rewrites the note.
 
@@ -111,6 +114,8 @@ Create a note in `Mesh/`:
 id: 11111111-1111-1111-1111-111111111111
 tags:
   - "#note"
+authors:
+  - "[[@Ada Lovelace]]"
 ---
 
 # Project Ideas
@@ -123,7 +128,7 @@ Initial thoughts for the project.
 - Track follow-up tasks in one place
 ```
 
-Three habits help from the start: use frontmatter in each note, use tags on purpose, and link related notes with `[[wiki links]]`.
+Give each note its own `id` (a new UUID). `authors` names you: `@` and your Name (`flint whoami` shows it). Three habits help from the start: use frontmatter in each note, use tags on purpose, and link related notes with `[[wiki links]]`. An agent makes notes with the same shape: the Flint shard has the note template `tmp-f-note-v0.1`.
 
 ## Step 6: Sync After a Change
 
@@ -133,7 +138,7 @@ When you change `flint.toml`, run:
 flint sync
 ```
 
-`flint sync` makes the files of this Flint match its lock and its declarations. It installs missing shard builds and the pinned Obsidian payload. It never reads the shard registry and never pushes or pulls Git. For the full detail, read [Sync](/flint/modules/sync).
+`flint sync` makes the files of this Flint match its lock and its declarations. It installs missing shard builds and the pinned Obsidian payload. It never reads the shard registry and never pushes or pulls Git. It only fetches each workspace repository and reports whether it is behind origin. To see the plan first, run `flint sync --dry-run`. For the full detail, read [Sync](/flint/modules/sync).
 
 When you add or change a shard spec in `flint.toml`, run `flint shard install` first. It makes the lock match the specs. To exchange history with origin, run `flint git sync`.
 
@@ -152,6 +157,7 @@ This starts an interactive agent session with Orbh session tracking. With no tar
 - [Setting Up a Machine](/flint/guide/setting-up-a-machine) — the seven setup steps in full detail
 - [Creating a Flint](/flint/guide/creating-a-flint) — presets, types, clones, and the result rows
 - [Join Your Org](/flint/guide/join-your-org) — log in, set your org, enroll this machine, and share Flints
+- [Doctor and Fix](/flint/guide/doctor-and-fix) — check this machine with `flint doctor`, and repair a failure with `flint fix`
 - [The Roster](/flint/guide/the-roster) — the list of Flints on this machine
 - [Using Obsidian](/flint/guide/using-obsidian) — the Obsidian payload, applied settings, and backups
 - [Agent Sessions](/flint/modules/agent-sessions) — interactive sessions, targets, and profiles

@@ -8,7 +8,7 @@ An agent session is a durable record of one agent task. It keeps the prompt, the
 
 A Flint is an environment where agents run shard-based programs. Each run of an agent gets a session. The session tracks the work over time. The Mesh stores the notes and artifacts that the work produces.
 
-Orbh manages sessions. It assigns each session a stable id. It records each run inside the session. This page covers sessions from the view of a Flint user. The Orbh guide covers session management in depth.
+Orbh manages sessions. It assigns each session a stable id. It records each run inside the session. This page covers sessions from the view of a Flint user. The Orbh docs cover session management in depth: see [Sessions and Runs](/flint/concept-sessions-and-runs) and [Launching and Resuming Sessions](/flint/guide-launching-and-resuming-sessions).
 
 ## Start an Interactive Session
 
@@ -123,6 +123,10 @@ The command prints a manifest. The manifest lists the init file, the required re
 
 In a headless session the agent runs `flint shard hstart` instead. It loads the headless init file in place of the interactive one. Headless workflows drop human review gates and report progress through session keys. See [Shards](/flint/modules/shards) for the shard model.
 
+## Sessions That a Schedule or a DM Starts
+
+A Flint can start sessions by itself. A cron schedule of the module `crons` starts an agent session when it fires (`flint module crons result <name>` shows the last fire). A direct message to the Flint (`flint module dms send`) starts a session of the receiver Flint, and that session answers. Both need the module installed: `flint module install @nuucognition/module/crons` or `@nuucognition/module/dms`, then `flint sync`. A Flint-level value, such as a token, is not in the environment of a session: an agent reads it from `flint.env.local` or `flint.env` at the Flint root. See [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms).
+
 ## Repair Sessions
 
 When a Flint command fails, its output ends with `Or: flint fix`. `flint fix` starts a repair session in the Computer Flint. The session reads the failure record and repairs the problem with the person.
@@ -130,15 +134,18 @@ When a Flint command fails, its output ends with `Or: flint fix`. `flint fix` st
 ```bash
 flint fix          # Repair the last failure
 flint fix --list   # List the failure records of this machine
+flint fix 2        # Repair the second record of the list
 ```
 
-`flint fix` starts an interactive session on the default target. `flint doctor` only checks the machine and starts no agent. See [Doctor and Fix](/flint/guide/doctor-and-fix) for the full repair flow.
+`flint fix` starts an interactive session on the default target. `flint doctor` only checks the machine and starts no agent. To report the failure to NUU Cognition, run `flint feedback --bug --with-failure`. See [Doctor and Fix](/flint/guide/doctor-and-fix) for the full repair flow.
 
 ## Related
 
 - [Using Obsidian](/flint/guide/using-obsidian)
 - [Doctor and Fix](/flint/guide/doctor-and-fix)
 - [Tutorial Agent Collaboration](/flint/guide/tutorial-agent-collaboration)
+- [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms)
 - [Shards](/flint/modules/shards)
 - [Mesh](/flint/modules/mesh)
 - [CLI Commands](/flint/reference/cli-commands)
+- [(NUU Docs) Orbh](/flint/nuu-docs-orbh)

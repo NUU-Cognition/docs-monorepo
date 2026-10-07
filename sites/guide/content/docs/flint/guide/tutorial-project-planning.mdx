@@ -18,7 +18,15 @@ flint create "Payments Rewrite" --preset default
 cd "(Flint) Payments Rewrite"
 ```
 
-The `default` preset installs the project shards, including Projects and Plan. The command also makes a Git repository and an Obsidian vault for the Flint.
+The `default` preset installs the core shards (Flint, Orbh, and Invironments) and seven more: Projects, Notepad, Plan, Increments, Reports, Agents, and Claude Code. The command also makes a Git repository and an Obsidian vault for the Flint. At the end, it prints the next commands:
+
+```text
+Next: flint open "Payments Rewrite"
+Or start an agent: cd '<path>' && flint orbh i
+Later: flint git publish <url>
+```
+
+This tutorial works in the terminal, in the folder of the Flint. Step 8 publishes the Flint.
 
 ## Step 2: Point the Flint at the Real Code
 
@@ -45,19 +53,33 @@ The preset already installed the shards. Confirm them:
 flint shard list
 ```
 
-You see one row for `projects` and one row for `plan`. When you start from another preset, find the current specs first. `browse` reads only and writes nothing:
+The PACKAGE column has one row for `@nuucognition/projects` and one row for `@nuucognition/plan`. The preset wrote one record for each shard in `flint.toml`:
 
-```bash
-flint shard browse plan
+```toml
+[shards]
+projects = { source = "@nuucognition/projects", git = "NUU-Cognition/shard-projects" }
+plan = { source = "@nuucognition/plan", git = "NUU-Cognition/shard-plan" }
 ```
 
-Install the specs from the SPEC column:
+When you start from another preset, install the two shards from the shard registry:
 
 ```bash
-flint shard install @nuucognition/projects @nuucognition/plan
+flint shard install @nuucognition/projects
+flint shard install @nuucognition/plan
 ```
 
-Each spec gets one intent record in `flint.toml`:
+Each command prints one result, for example:
+
+```text
+✓ Resolved @nuucognition/projects 1.4.1
+✓ Installed Projects 1.4.1
+  Spec    : @nuucognition/projects
+  Package : @nuucognition/projects
+  State   : published 1.4.1
+  Registry: published
+```
+
+Each install writes one record in `flint.toml`:
 
 ```toml
 [shards]
@@ -108,7 +130,7 @@ The command prints the shard manifest. The agent reads the init file and then fo
 Skip this step when the Flint only references the main codebase. When the Flint needs its own repo, such as a sandbox or a spike repo, declare it:
 
 ```bash
-flint workspace create "Sandbox" git@github.com:me/payments-sandbox.git
+flint workspace create "Sandbox" https://github.com/me/payments-sandbox.git
 flint sync
 ```
 
@@ -139,7 +161,7 @@ Then sync with a message:
 flint git sync -m "update planning baseline"
 ```
 
-`flint git sync` exchanges history with origin. It runs `flint sync` between the integrate and the push. Without an origin, the sync stops and names the publish command.
+`flint git sync` exchanges history with origin. It runs `flint sync` between the integrate and the push. Without an origin, it stops with `This Flint has no origin. Nothing was sent.` and names `flint git publish`.
 
 ## A Healthy Everyday Loop
 

@@ -20,7 +20,7 @@ That structure comes from a few visible surfaces:
 - an optional template
 - an optional lifecycle
 
-Different artifacts use different amounts of structure. A quick note needs only an `id` and a tag. A task needs status, priority, parent links, and a lifecycle. A documentation page needs authors, source references, and a verification date.
+Different artifacts use different amounts of structure. A note needs only an `id`, the `#note` tag, one section tag, and a one-line `description`. A task needs status, priority, parent links, and a lifecycle. A documentation page needs authors, source references, and a verification date.
 
 The rule is simple. Add structure when it helps a reader, an agent, or a command do something better.
 
@@ -97,7 +97,7 @@ Other common fields include:
 
 ```yaml
 status: in-progress
-template: "[[tmp-proj-task-v0.1]]"
+template: "[[tmp-proj-task-v0.2]]"
 authors:
   - "[[@Nathan]]"
 orbh-sessions:
@@ -136,7 +136,7 @@ Agents treat templates as instructions, not as text to copy. A good generated ar
 Templates live in the `templates/` folder of a shard. The `template` field in frontmatter names the template stem:
 
 ```yaml
-template: "[[tmp-proj-task-v0.1]]"
+template: "[[tmp-proj-task-v0.2]]"
 ```
 
 That link binds the artifact to its governing structure. Templates pay off when repeated artifacts need consistency. They are unnecessary when a one-off note needs only prose.
@@ -153,12 +153,12 @@ For example, a task type supports:
 - backlog dashboards
 - archive behavior
 
-A record type supports:
+A notepad type supports:
 
-- stable capture notes
-- source-oriented titles
-- few lifecycle transitions
-- strong expectations around preserved content
+- numbered notepad filenames
+- numbered sections in the body (`# 1`, `# 2`, and so on)
+- a short lifecycle
+- archive behavior
 
 The important question is not "what category is this?" The important question is "what can Flint do with this structure?"
 
@@ -201,19 +201,21 @@ This separation keeps Flint explicit. Type definitions describe meaning and beha
 
 Some artifacts carry lifecycle states because their role changes over time.
 
-A task moves through:
+A task of the Projects shard moves through:
 
 ```text
-draft -> todo -> in-progress -> review -> done
+todo -> in-progress -> review -> reviewing -> reviewed -> done
 ```
 
-A document moves through:
+A notepad of the Notepad shard moves through:
 
 ```text
-draft -> working -> verified -> retired
+active -> archived
 ```
 
-A record carries little or no lifecycle. Its value comes from preserved capture.
+A note carries no lifecycle. Its value is its content, and you revise it in place.
+
+The type definition of each type names its lifecycle. Each shard can define its own states.
 
 Lifecycle fields are not decoration. They help dashboards, agents, and humans decide what action comes next.
 
