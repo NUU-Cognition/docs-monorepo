@@ -1,0 +1,843 @@
+---
+title: "Trident"
+---
+
+Trident is a local web app that shows a **board of streams**. A stream is one line of work. This guide shows how to start Trident, pick the streams that show, drop the pieces of your work, join them into paths, move them through planned, in progress, and done, attach the real things of the work, and promote an idea to a task.
+
+Trident is in the Flint repository, in `apps/trident`. It is not a command of the Flint CLI: `ndv` links it as the command `trident`.
+
+## What Trident Is
+
+A task is too heavy to track each raw line of work. Trident adds one level above the task, and one level above Strike: the **stream**. Each line of work has one stream. A stream holds your free text and your raw ideas, and its **orbs**: the pieces of its work. A stream also attaches to the real things of that work: a Flint, Orbh sessions, Projects tasks, Operations tasks, Strike targets, and repositories.
+
+The board reads around one **now line**:
+
+- Each shown stream is one lane. You pick the shown streams in the Streams menu.
+- Above the now line are the planned orbs. You put them anywhere, and you join them into paths.
+- On the now line are the orbs in progress, side by side. Many can be in progress at once.
+- Under the now line are the done orbs, in the chains that you completed. You scroll down to see them.
+
+Trident reads each local service live and shows the facts on each stream and orb. It does not copy the facts into its store. Trident does not replace Strike: Strike is one of its sources.
+
+| Surface | What it is for | Its unit | Trident and this surface |
+|---------|----------------|----------|--------------------------|
+| Trident | The lines of work of one person, on a board of streams around a now line | Stream | — |
+| Strike | The target graph: the targets of the work, tied to the Operations hierarchy, in the terminal | Target | Trident reads the Strike files. A stream can attach a Strike target. |
+| Orbit | The one dashboard of the computer: every Flint and every Orbh session of those Flints | Orbh session | Trident reads the sessions from the Orbit API when Orbit runs. |
+| Steel | The UI host of the Flints, with plates such as the Workbench of the ITE and the OrbCode plate | Plate | Trident does not read Steel. |
+
+Trident reads Strike, Orbit, and the other sources. Only an action of the person writes to a source: a promote, a move of a task, or a reply to a session. See Promote an Idea and The Row Actions below.
+
+## Agent Commands, the Flint Scope, and the Data Mode
+
+Since Task 1269, the `trident` command has a suite of commands for agents. An Orbh session uses them to see the streams of its Flint, make a stream, attach itself to a stream or an orb, and move orbs as its work moves. The shard **Trident** (`trd`) of this Flint tells a session how and when to use them: `flint shard start trd`.
+
+### The Commands
+
+```bash
+trident here                                   # the streams and orbs that this session is attached to
+trident streams                                # the streams of this Flint
+trident stream show <stream>                   # one stream: notes, orbs, links, attachments, ideas
+trident stream create "<title>" --join         # a new stream of this Flint, with this session on it
+trident join <stream> [--orb <orb>]            # attach this session to a stream or an orb
+trident orb add <stream> "<title>" [--after <orb>]
+trident orb start|done|plan|reopen|park|unpark <orb>
+trident orb note <orb> "<text>"
+trident env                                    # the build, the data mode, and the server
+trident help                                   # every command
+```
+
+- **Each command calls the server.** A command calls the HTTP API of a live Trident server. It never writes `spheres.json`. So each change shows on the page live, and each command is one step of Undo (⌘Z).
+- **The refs.** A stream is its slug, its address, or its id. An orb is its id, the first 6 characters of its id or more, or its exact title.
+- **`--json`.** Each command prints one JSON value. A refusal prints `{ok: false, code, reason, next}`, else the reason and a `Next:` line, and exits 1.
+- **The full reference** is the knowledge file `knw-trd-cli` of the shard.
+
+### The Flint Scope
+
+- By default, a command sees only the streams whose home Flint is the Flint of the working folder.
+- `--all` shows and changes the streams of every Flint.
+- `trident stream create` sets the current Flint as the home Flint of the new stream.
+- `trident here` shows each stream and orb of the session, in any Flint.
+
+### The Data Mode
+
+The prod server (port 13090) and the dev server (port 13091) use one store: `<NUU home>/trident`. The data mode chooses the server of the agent commands (the prod code or the dev code), not the streams.
+
+| The build of `trident` | How you get it | The server of the agent commands |
+|---|---|---|
+| prod | `ndv use trident prod` | Always the prod server |
+| dev | `ndv use trident dev` | The dev server, or the prod server after `trident env use prod` |
+
+- **See the mode.** Run `trident env`. It shows the build, the data mode and where it came from, the server, the data folder, and the switch file.
+- **Point the dev build at the prod server.** Run `trident env use prod`. Run `trident env clear` to go back to the dev server. The switch file is `<NUU home>/trident-dev-data.json`. `TRIDENT_DATA_MODE=dev|prod` sets the mode of one process.
+- **A prod build never changes.** It reads no switch file and no `TRIDENT_DATA_MODE`, and it refuses `--server`.
+- **The check.** Before each command, the CLI asks `GET /health` of the server. When the server has the other mode or another data folder, the command stops (`wrong-server`). When no server answers, the command stops and names the start command. A server that started before Task 1269 gives no mode: stop it and start it again (`server-too-old`).
+- **`ndv use trident dev`** makes `trident` the dev launcher: `trident` with no command then starts the dev server and Vite. `trident dev` starts the dev server in both builds.
+
+## Panel Views, a Home Flint, the Park Dock, and Lanes You Size
+
+Since Task 1267, the right panel has two views (the stream and one orb), a stream can open Orbh sessions in the Obsidian of its home Flint, the parked orbs of each lane are in a dock under the header of the lane (the orb "Better parking" of the stream Trident replaced the dropdown of Task 1267 with the dock), and each lane is as wide as you make it. This section adds to "The Loose Board and the Now Line" below.
+
+### The Two Panel Views
+
+- **The stream view.** Click a lane header, a stream in the Streams menu, or a stream in the palette. The panel shows the stream: its header, the row **Flint**, **Sessions**, **Attached**, the sections In progress, Planned, and Done, the notes, the commits, and the recent activity.
+- **The orb view.** Click an orb on the board, a jot, an orb of the park dock, or a row of In progress, Planned, or Done in the stream view. The panel shows only that orb. The orb has the selected look on the board. The popover editor next to the orb is gone: the orb view replaces it.
+- **What the orb view shows.** At the top is the path: the color dot, the stream title, "›", the orb title, and its kind. Under it: the title and the note, the state, and the actions of the state (Start, Done, Back to here, or Put back). Then **Park**, **Move to…**, **Remove**, **Sessions** (the sessions of the orb and **Session in Obsidian**), **Follows** and **Followed by** (each link with ×, and **+ Follow…**), **Attached** (with **+ Attach**), and **Activity** (the changes of the stream that name this orb).
+- **The view follows the orb.** Park shows the parked orb. Move to… shows the orb in its new stream. A parked orb has **Unpark** and **Remove**; a jot has **File to…** and **Remove**. Each action writes one change, with a toast and Undo.
+- **Go back to the stream.** Click the path at the top, click ×, or press Escape. An open menu, popover, field, or board selection closes first. An open park dock stays open.
+
+### A Home Flint and Sessions in Obsidian
+
+- **Set the home Flint.** In the stream view, the row **Flint** is under the header. Choose a Flint: the sessions of this stream open in the Obsidian of that Flint. The Flints that the stream attaches are first in the list. Choose **No Flint** to clear it. Undo (⌘Z) puts the old value back. A stream that had one Flint attachment before Task 1267 uses that Flint as its home Flint. Other Flints stay plain attachments.
+- **Open a session.** Click **Session in Obsidian** in the header of the section **Sessions** of the stream view, or in the orb view. The button is off when the stream has no home Flint. The launcher of Steel opens: choose the runtime, the account, and the profile, then click **Open in Obsidian** (or press ⌘↵). Cancel or Escape closes it. Trident keeps your last choice in the browser.
+- **What the launch does.** Obsidian opens a terminal tab in the home Flint with a new Orbh session. The session gets the stream (its title, address, and free text), the orb (its title, state, and note) when you launched from an orb, and the labels of the attachments. It registers and waits for you. Trident attaches the session to the orb, or else to the stream. A launch does not change the state of the orb.
+- **The profiles.** The launcher shows the profiles and the accounts of the Flint server of the home Flint. When Steel has a list of shown profiles (`sessionProfiles` in `<NUU home>/steel/settings.json`), the launcher shows only those. Change that list in Steel; Trident only reads it.
+- **When it does not open.** With no home Flint, the button is off. When the Flint server or its Obsidian does not run, the launcher says so; start Obsidian on that Flint and try again. Undo stops at a launch ("It made a real item"): close the session in Obsidian or remove its row.
+- **The section Sessions.** It lists the Orbh sessions of the stream and of its orbs (the orb title follows the title of an orb session), with the live state and the working mark. Click a row to focus its tab in Obsidian. Each row has **Reply** and ×. **Attached** lists the other attachments.
+
+### The Park Dock
+
+- **Find the parked orbs.** Each lane has a park button at the left of its header, before the colored dot and the title. It shows the park icon and the count of the parked orbs. With no parked orb, it shows only a quiet icon.
+- **Open the dock.** Click the park button. The dock opens under the header of the lane. It is as wide as the lane and 300 px tall. It stays open until you close it: click the park button again, click **×** in its head, or press Escape on it. A click outside the dock does not close it. Trident remembers your open docks in the browser. More than one dock can be open at the same time.
+- **A canvas.** The dock is a canvas. Each parked orb stands at its place. Drag an orb to any place in the dock, and it keeps that place. An orb parked with no place (the **Park** action of the orb view, or a drop on the park button) shows at a free place from the bottom left of the dock until you move it.
+- **A stream of its own.** The dock keeps the links between its parked orbs, and draws them as on a lane. Join two parked orbs as on the board: hold ⌥ and drag one orb onto the other, or drag from the handle at the rim of an orb (hold Shift to reverse the link). Click a link to select it, and press Delete to remove it. A link between a parked orb and an orb of the board is refused: unpark or park one of them first. When you unpark both orbs, the link is back on the board.
+- **Park an orb.** Drag an orb or a jot into the dock: Trident parks it at the drop place. Drop it in the dock of another lane: the orb moves to that stream and is parked there. Or drop an orb, a selected group, or a jot on the park button of a lane: it is parked there with no place. While you drag over the button, it shows the color of the lane and "Park “X”".
+- **Unpark.** Drag an orb out of the dock onto a lane. The orb goes to the drop place, and the zone gives its state: above the now line planned, on the line in progress, under the line done. Or hold the pointer on the orb and click the small **↑** at its right: the orb goes to a free planned place.
+- **Open and remove.** Click an orb (or press Enter on it) to open it in the panel. Right-click an orb for **Unpark** and **Remove**. The orb view of a parked orb also has Unpark and Remove.
+- **Undo.** Each park, each move in the dock, and each unpark is one change. ⌘Z undoes it.
+
+### Lanes You Size
+
+- **Set the width.** Drag the right edge of a lane. The lane keeps that width (from 200 to 2400 canvas units) until you change it. A lane never grows or shrinks by itself. Undo (⌘Z) puts the old width back.
+- **Reset the width.** Double-click the right edge of a lane. The width becomes 360. A new stream also starts at 360.
+- **A narrow lane.** When a lane is narrower than its orbs, it hides the outer orbs. Scroll the lane sideways with a trackpad, a horizontal wheel, or the thin scrollbar that shows under the lane header on hover. The lane header and the now line stay in place. When you drag an orb near a side edge of the lane, the lane scrolls.
+- **The Jots lane.** Drag its right edge to set its width (from 160 to 640 px). Your browser keeps this width. A double-click sets 220.
+- **The lanes stand in the middle.** When the lanes do not fill the board, they stand in the middle of it. When they are wider than the board, the board starts at the left edge and scrolls sideways. The zoom buttons float at the bottom right of the board.
+
+## Do Together
+
+One Orbh session can work on two or more orbs, in one lane or in many lanes (the orb "Do together").
+
+- **The loop.** The comet of the session runs on one loop around all of its orbs, under the lanes. When the orbs have room between them (3 radii or more in x), the loop is an arch: it goes round the outer side of each orb, and two bridges join each two neighbours above the board. The comet goes out on the high bridge and comes back on the low bridge. An orb between two members stays outside the loop, so only the members look like one session. Orbs that are close together, for example above each other in one lane, get a capsule. A member that the board does not show adds "+N" at the top of the loop.
+- **Pick the orbs.** "Together with…" in the orb view, or "+ Pick orbs" in the launcher, starts a pick on the board. With a session, a click adds the session to an orb or takes it off. With no session, the picked orbs join a session that one of them holds, or start a new session in Obsidian on all of them (at most 8).
+- **Attach a running session.** "+ Attach" in the orb view and in the stream view attaches a session that runs now.
+
+## The Loose Board and the Now Line
+
+Since Task 1266, each shown stream is a loose canvas around one **now line**. This section describes the board as it is now. The sections after it describe earlier rounds: where they name a root, a trail, a "+", or the composer, those are gone.
+
+- **Pick the streams that show.** Click **Streams · 4/9** in the header. Click a stream to show or hide it. **Only** (on the hover of a row, or ⌥-click) shows only that stream. **Show all active** and **Hide all** are at the bottom. The last row turns the Jots lane on or off. A hidden stream keeps all its data. A stream that you mark as done hides itself; a reopen shows it. On a lane header, the eye button hides that stream (the toast has Undo).
+- **Make a stream.** Click **New stream** (or press `n` with the pointer off the lanes). The Streams menu opens with its name field. Type the name and press Enter. Trident makes no stream before you type its name.
+- **The three zones.** Above the now line, an orb is **planned**. On the line, it is **in progress**. Under the line, it is **done**. Many orbs can be in progress at once, side by side on the line. To start one never completes another.
+- **Drop orbs.** Double-click an empty place of a lane. A dashed orb appears there, and you type its title on the orb, with no box. Enter drops it and opens the next one near it. The zone of the place gives the state: double-click above the line for a planned orb, on the line for an orb in progress, under the line for a done orb.
+- **Dump orbs.** Hold the pointer over a lane and type. A small line catches the text at the pointer. Each Enter drops one orb, and a paste drops one orb for each line. Escape closes the line. Over the Jots lane, it adds jots. With the pointer over a lane, every letter goes to the dump line; the single keys (`j`, `n`, `/`, `?`) work when the pointer is off the lanes.
+- **Rename.** Double-click an orb or a lane title, type, and press Enter (Escape cancels).
+- **Move orbs.** Drag an orb to any place of its zone. Drag it into another zone to change its state: onto the line to **start** it, under the line to make it **done** (it stays where you drop it), above the line to **put it back** to planned, or a done orb onto the line to bring it **back**. While you drag over the line, the line shows the change ("Start “Polish”"). Drag an orb to another lane, to the Jots lane, or onto the park button of a lane (Task 1267). The orb keeps its new place while the write runs. An orb that goes to another lane, to Jots, or to a park dock stays faint at its old place until the write answers. A drop where no target takes it (for example on a lane header, or between lanes) shows "No drop here: it goes back to its place." at the pointer.
+- **Join orbs.** Hold the pointer on an orb: a small dot shows on its rim, at the top right. Drag from the dot (or ⌥-drag the orb) onto another orb: that orb now follows the first one, and a line with an arrow joins them. Hold Shift during the drag to reverse the arrow: the first orb then follows the other orb. You can press or release Shift at any time before you drop. Drop on an empty place to make a new orb that follows the first one. A join that makes a loop is refused, and the reason shows at the orb. The links stay when the orbs move between the zones, so the done area shows each chain as you completed it.
+- **Select many.** Drag on an empty place of a lane to draw a box around orbs, or Shift+click orbs. A selected group moves and changes its state together. ⌥C joins the selected orbs in order. Delete removes them (the toast has Undo). Click a line to select it; Delete removes that link.
+- **Done and Back to here.** Hold the pointer on an orb in progress: a ✓ button shows at its right. Click it, and the orb goes just under the line; the done orbs under it move down one step, so the newest is nearest the line. Hold the pointer on a done orb: a ↺ button shows. Click it, and the orb is in progress again; the done orbs that follow it go back above the line, in the same shape.
+- **Scroll down for the done chains.** The map opens with the now line at two thirds of the window. Scroll down to see all the done chains.
+- **Tidy.** A tidy arranges one section of a lane, never both. Right-click an empty place of a lane and choose **Tidy to-do** (above the line or on it) or **Tidy done** (under the line). The lane menu has both items, and the palette has "Tidy to-do of X" and "Tidy done of X". Tidy to-do puts the planned paths above the line and the orbs in progress on it. Tidy done puts the done chains under the line, the newest near the line. The other section does not move. Undo puts the old places back.
+- **The Now bar** shows the orbs in progress of your Now stream, the time since the newest start, and the ready orbs as **Next** chips. A ready orb is a planned orb whose orbs before it are all in progress or done; it has the full color. Click a chip to start it.
+- **The panel** shows the selected stream in three sections: In progress (each with Done), Planned (each with Start), and Done (the newest first, each with Back to here). Since Task 1267, a click on a row opens that orb in the orb view of the panel.
+- **Right-click** an orb for the actions of its state: Start and Done for a planned orb; Done and Put back for an orb in progress; Back to here and Put back for a done orb; and Rename, Park, Move to…, Remove links, and Remove.
+- **Undo** (⌘Z) and **Redo** (⇧⌘Z) work for each of these changes, as in Task 1244.
+
+## Roots, Backtrack, and Undo
+
+> [!note] Task 1266 removed the roots, the trail, and backtrack. Undo and redo stay as written here.
+
+Since Task 1244, a stream can have many roots, a root can go back in time, and every change can be undone.
+
+- **Many roots.** A root is one thread of a stream. The stream itself is the **main root**. To start another root, click **+ Root** at the right end of the lane (or right-click a root and choose **New root**, or use **New root in `<stream>`** in the palette). Type a title and press Enter: the field then opens the "+" of the new root, so you can type its first steps. Each root has its own column in the lane, its own current state, its own trail, and its own next steps above it. **Start** on an orb moves only its root, and that root becomes the Now root ("Trident › Polish" in the Now bar). Click an added root to rename it, write its note, go back one step, set it as Now, or remove it (its steps go to the main root).
+- **Backtrack.** Click the trail chip under a root (the "back in time" icon and the count). The trail popover lists the past states of that root, the newest first. Click **Back to here** on a state, or **Back to start**. The states after it come back as next steps, in a chain, and the steps that were next follow the last of them. **Back one step** is also in the root menu, the root editor, the panel section Trail, and the palette. A toast says "Back to `<state>` · Undo".
+- **Undo and redo.** Press ⌘Z (Ctrl+Z) to undo the last change, and ⇧⌘Z (Ctrl+Shift+Z or Ctrl+Y) to redo it. This works for every change: an orb, a root, a jot, a move, a park, a backtrack, the Now stream, a delete, and the order of the lanes. The buttons Undo and Redo in the header name the change ("Undo Park “Alpha”"). In the palette, the group **History** lists the last changes: choose "Undo back to: `<change>`" to undo many changes at once. In a text field, ⌘Z undoes your typing, not the store.
+- **What undo does not do.** A promote and **Start an agent** make a real item outside Trident. An undo stops there and says "Undo stops at: `<change>`. It made a real item." When `spheres.json` changes outside Trident, an undo of that stream refuses and the history starts again. Trident keeps the newest 200 changes in `<data folder>/history.json`, so the history stays after a restart.
+- **The look.** Each lane has a header at the top that stays in view when you scroll: the color of the stream, its title, the count of its steps, **Parked · N**, and "⋯" (the menu of the stream). The roots stand on a floor at the bottom. A stream whose attached work is all done keeps its color and shows a small check at its root. The jots are small cards. The parked column folds to a narrow rail with its button; it starts folded when the selected stream has no parked sphere.
+
+## Lanes, Jots, and the Now Bar
+
+> [!note] Task 1266 removed the root at the bottom of a lane, the "+", the ghost lane "+ New stream", and the chain key `c` (use ⌥C). The Jot field stays. Task 1267 replaced the parked column with the park dropdown of each lane, and the orb editor next to an orb with the orb view of the panel. The orb "Better parking" of the stream Trident then replaced the dropdown with the park dock, a canvas under the header of the lane.
+
+Since Task 1243, the map is a board of lanes. The sections below this one were written before that change: where they say that a Sphere climbs, read "the root stays at the bottom of its lane".
+
+- **Lanes.** Each stream is one lane, with a thin divider line on each side. The first lane is **Jots**. The last lane is **+ New stream**: click it, type a title, and press Enter.
+- **The root.** The orb of the stream is at the bottom of its lane. Under it: the title, "Now: \<current state>", "✓ N" (click it to see the trail in the panel), and **Now** (click it to make this stream the Now stream).
+- **Add orbs.** Click the "+" next to the root. Type a step and press Enter: the field stays open for the next step. A paste adds one orb for each line.
+- **Jot a task.** Press `j` from anywhere, type, and press Enter. The task goes to the Jots lane. You do not choose a stream. To put the task in a stream at once, start the line with `@<stream> ` (for example `@trident fix the menu`). A line that does not save stays in a row under the field, with **Retry** and **Copy**.
+- **The Now bar.** The bar under the header shows the stream that you work in now, its current state, and the time since that state. Its chips are the next steps: click one to start it.
+- **Edit an orb.** Click an orb. The editor opens next to it: the title, the note, **Start** (a next step only), **Park**, **Move to…**, **Remove**, the orbs that it follows, and its attachments. Click **+ Attach** to attach an Orbh session, a task, or another item to this orb.
+- **Draw the next steps.** Hold the pointer on an orb: a small dot shows above it. Drag from the dot onto another orb of the same lane: that orb now follows the first one. Drop on an empty part of the lane to add a new orb after the first one.
+- **Move an orb.** Drag the orb itself to another lane, to the Jots lane, or to the parked column. Drag a jot to a lane to file it in that stream.
+- **Chain many orbs.** Shift+click orbs of one lane in order, then press `c`. Each orb then follows the one before it. Escape clears the selection.
+- **Right-click** an orb, a root, a jot, or a parked orb for its menu (Task 1242).
+
+## Streams and Spheres
+
+Since Task 1242, the page uses the words of the operator. The rest of this guide was written before that change and still says "Sphere" for a stream and "location" for a sphere.
+
+| On the page | What it is | In the store |
+|-------------|------------|--------------|
+| **Stream** | One line of work: one column of the map | A record of `spheres.json` |
+| **Sphere** | One piece of work of a stream | A location of the `route` of the stream |
+| **Parked sphere** | A sphere that waits out of the map | An entry of `parked`, in your order |
+
+- **Spheres.** A stream holds any list of spheres. A sphere that follows no other sphere is a **next step**, one level above the stream. A sphere that follows other spheres is a **future state**, one level above them. Spheres that are not connected sit side by side; a level with more than 3 spheres makes the column of the stream wider. A next step is a full sphere in the hue of the stream; a future state is lighter.
+- **Add spheres.** In the section **Spheres** of the panel, type a title in "Add a sphere" and press Enter. Each Enter adds an unconnected next step, and a paste adds one sphere for each line. Click **Chain: off** to turn it to **Chain: on**: then each new sphere follows the one before it.
+- **Park.** Right-click a sphere on the map and choose **Park**. **Park** is also in the toolbar of a sphere on the map, and in the menu of its row in the panel. The sphere leaves the map and goes to the top of the **Parked** column at the right of the map. The spheres that followed it now follow the spheres before it. The column shows the parked spheres of the selected stream, each with its title and the start of its note.
+- **Right-click.** Right-click a sphere, the orb of a stream, a parked sphere, or the empty map. A menu opens with the actions of that element: for a sphere, **Park**, Rename, Add after, Branch into a stream, Merge into…, and Remove; for a stream, Add a sphere, Progress, Move left, Move right, Pause, Mark as done, Merge into…, and **Delete stream** (it goes to the trash, and the toast has Undo); for a parked sphere, Unpark, Move to top, Move up, Move down, and Remove.
+- **Order the parked column.** Drag a row up or down, or focus it and press Alt with Up or Down. Trident keeps the order.
+- **Unpark.** Hover on a row and click **Unpark**. The sphere goes back after the spheres that it followed, when they are still in the route, else as a next step. **×** removes a parked sphere.
+- **Scroll.** The map shows every level of every stream. When the streams are taller than the window, the map scrolls up and down. It opens at the ground.
+
+## Start Trident
+
+### Before You Start
+
+- A checkout of the Flint repository, with `pnpm install` done.
+- Node.js.
+- For the Operations tasks: the `ops` command, signed in.
+- For a promote to a Projects task: the `flint` command.
+
+Trident looks for the `flint` and `ops` commands in `PATH`, then in `<NUU_HOME>/ndv/bin`.
+
+### Start with `trident` From Any Terminal
+
+`ndv` links Trident as the command `trident`, as it links `orbit` and the other tools of the Flint repository. Do these steps once:
+
+```bash
+ndv scan                 # ndv finds apps/trident/ndv.toml
+ndv use trident prod     # builds the page and links bin/trident.js as ~/.nuucognition/ndv/bin/trident
+```
+
+Then start Trident from any terminal of this machine:
+
+```bash
+trident                          # serves on http://127.0.0.1:13090 and opens the browser
+trident --no-open --port 13098
+```
+
+- The server runs from its source. After a change in `server/`, start `trident` again.
+- After a change of the page, build the page again: `ndv build trident prod`.
+- `ndv use trident dev` links the dev launcher in its place: see The Data Mode above.
+- `ndv which trident` shows the link. `ndv off trident` removes it.
+
+### Build and Start From the Repository
+
+You can also start Trident with Node.js. Run these commands in the root of the Flint repository:
+
+```bash
+pnpm --filter @nuucognition/trident build
+node apps/trident/bin/trident.js
+```
+
+```text
+trident: data folder /Users/you/.nuucognition/trident
+URL: http://127.0.0.1:13090
+```
+
+The server serves the page and the API on `127.0.0.1` only. It opens the page in the browser. The command refuses to start when the page is not built:
+
+```text
+trident: the page is not built. Run: pnpm --filter @nuucognition/trident build
+```
+
+| Option | What it does |
+|--------|--------------|
+| `--port <n>` | Use another port. The default port is `13090`. |
+| `--no-open` | Do not open the browser. |
+| `--help` | Show the usage. |
+
+One port holds one Trident. When the port holds a live Trident (`GET /health` answers `service: "trident"`), the command prints the URL of that Trident and exits 0:
+
+```text
+trident: Trident already runs (pid 41237).
+URL: http://127.0.0.1:13090
+```
+
+When another program holds the port, the command stops with exit 1. Stop that program, or use `--port <n>`. Press Ctrl-C to stop the server.
+
+### Dev Mode
+
+The dev version of Trident runs the page of the checkout with hot reload. It runs beside the prod Trident, so you do not stop the prod Trident first. Start it from any terminal:
+
+```bash
+trident dev                                  # the server on 13091, and the page on http://localhost:5190
+trident dev --no-open --server-port 13093
+node apps/trident/bin/trident-dev.js         # the same, from the root of the Flint repository
+```
+
+`pnpm --filter @nuucognition/trident dev` runs the same launcher.
+
+- The page is on `http://localhost:5190`. Vite opens the browser unless you give `--no-open` (or `TRIDENT_OPEN=0`).
+- The server of the dev version uses port **13091** (`--server-port <n>`). The prod Trident keeps port 13090.
+- The dev version uses the data folder of the prod Trident: `TRIDENT_HOME`, else `<NUU_HOME>/trident`. Both pages show the same streams, and a change on one page shows on the other page. The code under development writes your real streams. To try it on a scratch store, start it with `TRIDENT_HOME=$(mktemp -d) trident dev`.
+- The two servers can run at the same time. A lock file keeps their writes apart, they share one undo history, and only one of them writes the activity log. The old dev folder `<NUU_HOME>/trident-dev` is not used any more.
+- Vite sends `/api` and `/health` to the server. The server accepts the origin of Vite only when the dev command started that server.
+- The dev page has the **Agentation** toolbar at the bottom right. Click it, click an element of the page, and write a comment. Agentation copies Markdown with the selector of each element, for an agent to act on. The guard `import.meta.env.DEV` in `src/main.tsx` removes the toolbar from the production build, so `trident` never shows it.
+
+### The Data Folder and the Env Values
+
+| Env value | What it sets | Default |
+|-----------|--------------|---------|
+| `TRIDENT_PORT` | The port of the server. `--port` wins over it. | `13090` |
+| `TRIDENT_HOME` | The data folder | `<NUU_HOME>/trident` |
+| `NUU_HOME` | The NUU home: Trident reads the sources and the machine name there | `~/.nuucognition` |
+| `TRIDENT_OPEN` | `0` does not open the browser, as `--no-open` does | — |
+| `TRIDENT_DEBUG` | `1` prints the debug lines of the source adapters | — |
+| `TRIDENT_DATA_MODE` | A dev build only: the data mode of the agent commands (`dev` or `prod`) | the switch file, else `dev` |
+
+The store is `<data folder>/spheres.json`. The activity log of each Sphere is in `<data folder>/activity/<sphereId>.jsonl`. Trident makes the data folder at the first change. A start alone writes nothing. To try Trident with no change to your Spheres, use a scratch data folder:
+
+```bash
+TRIDENT_HOME=$(mktemp -d) node apps/trident/bin/trident.js --no-open --port 13092
+```
+
+A scratch data folder changes only the store. Trident still reads the real sources of the NUU home.
+
+## The Sphere
+
+Click **New sphere** in the header, or press `n`. Type a title in the one field, and press Enter. Trident creates the Sphere on the ground, selects it, and puts the focus on the field of its route. You can also start a Sphere from live work: see Starters in Ease of Use below.
+
+The panel on the right is always open. It shows the selected Sphere, else the last selected Sphere, else the first active Sphere. With no Sphere, it shows a short start: **New sphere** and up to 5 live items to start from. Escape and a click on the empty map do not close the panel. The section **Attached** is the first section of the panel. On the map, the selected Sphere has an inner border on its orb. The keyboard focus has a ring outside the orb.
+
+| Part | What it is |
+|------|------------|
+| Title | The name of the line of work. Click the title in the panel to change it. Enter or a click outside saves. Escape cancels. |
+| Free text | Your notes, in your words. Trident saves the text about 600 ms after the last key, and when the field loses focus. The mark shows "Saving…", "Saved", or "Not saved". |
+| Ideas | Raw ideas. Type an idea in "Add an idea" and press Enter. The list shows the newest first. You can delete an idea, or promote it to a task. |
+| State | `Active`, `Paused`, or `Done`. A paused Sphere is dim on the map. A done Sphere is hidden. When one Sphere or more is done, the header shows the check box **Show done**. |
+| Address | `@/sphere/<slug>#<machine>`, for example `@/sphere/trident#katana`. The copy button of the panel copies it. |
+| Attachments | The real things of the work. See Attach below. |
+| Trail and route | The locations that the Sphere reached, and the locations ahead. See The Climb and the Route below. |
+
+The header shows the count of active Spheres. Only active Spheres get a tone on the map and items in the inbox.
+
+The slug comes from the title in kebab case. It is unique in the store: a second Sphere "Trident" gets the slug `trident-2`. The machine part is `machine-slug` of the NUU config (`<NUU_HOME>/config.toml`), else the host name. The slug and the address never change, also when you rename the Sphere. The address starts with `@/`: it names no org, and only this machine resolves it.
+
+**A Sphere is a place.** A task describes one piece of work, and it ends when that work is done. A Sphere holds a line of work for as long as that line lives. It holds its attachments, as a folder holds its files. The work happens in the things that it holds: the sessions, the tasks, and the commits. The Sphere shows where that work is now and where it goes next.
+
+To delete a Sphere, click **Delete sphere** at the bottom of the panel, then **Confirm delete**. The Sphere goes to the trash: it stays in the file with `deletedAt`, and its slug stays taken. A toast says "Deleted `<title>` · Undo" for 8 seconds. **Undo** brings the Sphere back to its old column. Later, open the palette: it lists the trash as "Recently deleted", and Enter restores a Sphere. The trash keeps the newest 50 Spheres. A delete does not change the things that the Sphere attached.
+
+The map has keys. Tab goes to a Sphere. Left and Right move the focus between the Spheres, and Home and End go to the first and the last Sphere. Enter or Space selects a Sphere. Up goes from a Sphere to its route, and Down goes back. Escape closes the top layer (a picker, a form, or a step). The panel stays open. See Ease of Use below for all keys.
+
+## The Climb and the Route
+
+The level of a Sphere is the length of its trail. A new Sphere has an empty trail, so it is on the ground (level 0). A branch starts at the level of its parent Sphere.
+
+### The Words
+
+| Word | What it is |
+|------|------------|
+| Route | All the locations ahead of a Sphere: planned, not reached. The route has no cycle. |
+| Next location | A location of the route that no other location comes before. A Sphere can have many. |
+| Branch | Two or more locations follow one location (or the Sphere itself). |
+| Join | One location follows two or more locations. It becomes a next location when all of them are reached. |
+
+### Plan the Route
+
+Use the section **Climb** of the panel. It shows the next locations first, each with **Progress**. Below them, it shows the route as a compact tree: the indent shows the depth, and a join says "after A and B".
+
+- **Fast entry.** Type a title in the field "Where does this sphere go next?" and press Enter. The field keeps the focus, and the next title goes after the one that you just added. So "type, Enter, type, Enter" makes a chain.
+- **Paste a list.** Paste several lines in the field. Each line becomes one location of a chain (1 to 50 lines).
+- **The menu of a row:** **Add after**, **Insert before**, **Also after…** (it makes a join), **Edit**, **Branch into a sphere**, **Merge into…**, **Start an agent** (a next location only), and **Remove**. A click on the title edits it in place.
+- **From an idea:** **Use as next** on an idea adds the idea as a new next location. It replaces nothing.
+- **On the map:** each location ahead is a ring at its level, with a thin dashed line to the location before it (or to the Sphere). The next locations are hollow dashed rings. Two locations at one level sit side by side. The map shows at most 4 levels of the route, then a quiet "+N". Click the "+" above the top of the route to add a location after the top. Hover on a location, or focus it, to see a small toolbar: **Go here** (a next location only), **Add after**, **Branch**, **Merge into…**, and **Remove**.
+
+When you remove a location, the locations that followed it take its place in the route, so that the route stays connected.
+
+### Progress
+
+1. Click **Progress** on a next location, or **Go here** on the map. With one next location, you can also press `p`, or ⌘Enter (Ctrl+Enter) in the panel.
+2. With many next locations, `p` asks which one:
+   - On the map, a small chooser opens at the rings. Click a row, or press Enter on a row, or press the digit of a row. Escape closes the chooser.
+   - In the palette, each next location has a row **Progress to `<location>`**.
+3. Trident moves the location into the trail, with the time now. On the map, the Sphere glides up one level in about 600 ms, and its old position becomes a dot of the trail. The heading of the section shows the new level, for example "Level 1".
+
+**Progress** is off when the Sphere has no next location. The panel then shows "Define the next location first." On the map, `p` on a Sphere with no next location opens a small field to add one.
+
+**Undo.** After each progress, a quiet toast says "Moved to `<location>` · Undo" for 8 seconds. **Undo** puts the location back into the route as it was. It also undoes a merge that the progress made. After another change of the Sphere, Trident refuses the undo.
+
+On the map, the trail is a thin line from the Sphere down to the ground, with one dot for each level that the Sphere left. The dot of level 0 is "Start", with the date of creation. Hover on a dot, or focus it with the keyboard, to see the title and the date of that location. The panel shows the trail as a list, the newest first.
+
+In Trident 0.1, a Sphere never moves by itself. Only **Progress** moves a Sphere up, and only **Undo** of a progress moves it down. Nobody drags a Sphere up or down: a drag moves a Sphere only to the left or to the right, and it changes only the order of the columns. Alt+Left and Alt+Right do the same with the keyboard. The new order stays after a reload.
+
+## Branch and Merge
+
+### Branch Into a New Sphere
+
+A branch is a new active Sphere that starts from this Sphere at its current level. Start a branch in one of these ways:
+
+- Press `b`, or use **Branch into a new sphere** in the palette.
+- In the panel, open the menu of the section Climb ("…") and click **Branch into a new sphere…**.
+- On a location of the route: **Branch into a sphere** in the menu of its row, or **Branch** in the toolbar on the map.
+
+From the Sphere, type the title of the new Sphere, and click **Branch**. From a location, the new Sphere takes that location and the locations that come only after it. Its title is the title of the location. The branch goes into the column right of its parent. On the map, a thin curve (a fork) joins the trail of the branch to the column of its parent. The panel of the branch says "Branched from `<Sphere>` at level N". A click on the name selects that Sphere.
+
+### Merge Into a Sphere
+
+A merge ends this Sphere. The Sphere continues as a part of another Sphere. You can plan a merge, or merge now.
+
+- **Plan a merge.** On a location of the route, click **Merge into…**. Choose an active Sphere, then one of its route locations, or **Its position**. The row says "Merges into `<Sphere>`". On the map, a dashed curve with a small merge mark goes to the other column. The panel of the other Sphere says "Merges in: `<Sphere>` at `<location>`". **Remove the merge** removes the plan.
+- **Progress and merge.** A progress to a location with a merge asks first. Clear the check box **Move the attachments and the ideas** to keep them in this Sphere. Then click **Progress and merge**.
+- **Merge now.** Press `m`, or use **Merge into …** in the palette, or **Merge this sphere into…** in the menu of the section Climb. Choose the Sphere and the place, then click **Merge**.
+
+After a merge:
+
+- The Sphere gets a last location "Merged into `<Sphere>`" in its trail, and its state is **Done**.
+- When the check box is on (the default), the attachments that the other Sphere does not hold, and the ideas that are not promoted, move to the other Sphere.
+- A toast says "Merged into `<Sphere>` · Undo" for 8 seconds. **Undo** unmerges.
+- Later, the panel of the merged Sphere says "Merged into `<Sphere>`", with **Unmerge**. Unmerge works while the other Sphere still holds each moved item. The palette has **Unmerge** too.
+- A merged Sphere is done, so the map hides it. Turn on **Show done** to see it, and its curve into the other Sphere.
+
+Trident refuses a merge into the Sphere itself, a merge chain that comes back to the Sphere, and a merge into a Sphere that is done or in the trash.
+
+### Start an Agent
+
+You can start an agent session on a next location. Use **Start an agent** in the menu of the row of a next location, or **Start an agent on `<location>`** in the palette. A small form opens:
+
+- **Flint:** the Flint of the session. The default is the Flint that the Sphere holds.
+- **Target** (optional): `runtime` or `runtime/profile`. With no target, Trident uses the first available target of the Orbh default target list.
+- **Prompt:** Trident fills it from the location and the free text of the Sphere. You can change it.
+
+> **Warning:** Start runs a real session. Only the button **Start** starts it: Enter in a field and the palette only open the form.
+
+Trident starts a headless peer session and attaches it to the Sphere in the same step.
+
+## Attach
+
+Click **Attach** in the section Attached of the panel, or press `a`. The picker has one tab for each of the six kinds, and the tab **All**. Search, then click an item to attach it. The picker stays open, so you can attach more items. An item attaches once: the same kind, ref, and Flint give the same attachment.
+
+| Kind | Tab | The ref | What Trident reads |
+|------|-----|---------|--------------------|
+| `flint` | Flint | The id of the Flint | The roster of this machine (`discover` of `@nuucognition/places`, else `flint ls --json`), and `<NUU_HOME>/flint/servers.json` for the Flint servers |
+| `orbh-session` | Session | The session id | The Orbit API (`GET /api/sessions`) when `<NUU_HOME>/orbit/instance.json` exists, else the Orb store of each Flint. Also the spool of the session, for the newest `flint orbh update` text. |
+| `project-task` | Task | The frontmatter `id` of the task | The Flint server of the Flint of the task, else the files of `Mesh/Types/Tasks/` and `Mesh/Archive/Tasks/` of that Flint |
+| `ops-task` | Ops task | The id of the Operations task | One shared Convex client with the token of the NUU CLI credential (your tasks, and one subscription for each attached task). The `ops` command (`ops task search`, `ops task show <id> --json`) when the client has no answer. |
+| `strike-target` | Strike | `target-NNN` | The Strike files of the NUU home: `strike-local.json`, `strike-local.json.ops-cache.json`, and `strike-orbh.json` |
+| `repo` | Repo | The absolute path of the repository | `git status` and `git log` of the repository. The picker lists the codebase references of the Flints (`.flint/references.json`). |
+
+Notes on the picker:
+
+- Session and Task have a Flint filter. It starts with the first Flint that the Sphere holds. Session also has "All Flints".
+- Task needs a Flint. With no Flint, the picker shows "Choose a Flint first."
+- Session shows the newest 50 sessions. Search by the title or by the start of the id.
+- Ops task lists your open tasks of all your orgs. A search also finds the tasks of other people in the active org. Paste a task id or a web link of a task to find that task.
+- Strike lists the targets that are not archived: doing first, then todo, then done. It also lists the anchors of the subsections and the backlogs.
+- Repo: type an absolute path to attach a repository that the list does not show.
+- **Live now** is at the top of the picker, and in the empty section Attached. It shows up to 12 live items of the machine that the Sphere does not hold: the sessions that work or need input, the tasks in progress or in review, the Operations tasks and the Strike targets that are doing, and their Flints. Each item has a short reason, for example "needs your input". One click attaches the item.
+- **Paste anything:** paste a value in the tab **All**. Trident sees what the value is and searches only the kinds that it can be:
+
+| Pasted value | Kinds that Trident searches |
+|--------------|-----------------------------|
+| A UUID | Orbh session, Projects task, Flint |
+| An absolute path that ends in `.md` | Projects task, in the Flint of the path |
+| An absolute folder | Repository, Flint |
+| An Operations link (`…?task=<id>`) or a Convex id | Operations task |
+| `target-NNN` | Strike target |
+| Other text | All six kinds |
+
+To remove an attachment, hover on its row and click the "×". The remove does not change the source.
+
+### The Row Actions
+
+Each attached row has small actions. They show on hover and on keyboard focus.
+
+| Kind | Open or copy | Move or reply |
+|------|--------------|---------------|
+| Orbh session | A click on the row: its Obsidian tab. **Open in Obsidian**, "Copy attach command" (`flint orbh attach <id>`) | **Reply**, when the session waits for you |
+| Projects task | "Open in Obsidian" | **Start** (todo, deferred), **Ready for review** (in-progress), **Done** (reviewed) |
+| Operations task | "Open in Operations" | **Start** (todo), **Done** (doing), **Reopen** (done) |
+| Flint | "Open in Obsidian" | — |
+| Repository | "Copy path" | — |
+| Strike target | "Copy target id" | — |
+
+- **Reply** opens one line under the row. Enter sends, and Escape closes. Trident uses `respond` for a pending request of the session, else `message send`. It never starts an ended session again. The inbox items of a session have **Reply** too.
+- A move of a task asks "Mark done?" before **Done**. The row shows "Saving…" until the new state arrives on the live stream. After 10 seconds with no new state, it shows "No answer yet".
+
+**The tab of a session.** A click (or Enter) on a session row that has an Obsidian tab brings that tab to the front. A session item of the inbox does the same. A session with no tab has the button **Open in Obsidian** when the session is interactive. It opens the session in a new tab. It also attaches a detached session (a live session with no client and no tab). A click on the row never opens a new tab. A headless session has no tab.
+
+The tab shows on the row within about 1 second, also when another tool (Strike, Steel, a detached launch) opened it. If the tab does not show after the Flint server moved to a new port, go to Obsidian: Settings → NUU Flint → **Reattach**.
+
+> **Warning:** These actions change real items. **Reply** sends a real reply to the session. A move of a Projects task writes the task file (through the Flint server, else the frontmatter of the file). A move of an Operations task changes the real Operations task.
+
+### The Live Facts
+
+The store holds only the ref of each attachment, and its label at the time of the attach. Trident reads the facts live from each source. It reads an attachment again only when its source sends an event: see Live: Events Only below. Each read has a time limit of 4 seconds.
+
+Each row of the section Attached shows a tone dot, the title, the state word of the source, one line of detail, the age, and the links (for example "Open in Operations"). A new row shows "Reading…" until the facts arrive.
+
+| Kind | State | Detail |
+|------|-------|--------|
+| Flint | `server running` or `server stopped` | The path of the Flint, and the port of its server |
+| Orbh session | The work state: `working`, `needs-input`, `awaiting`, `finished`, or `abandoned` | The newest `flint orbh update` text, else the interface key `progress`, else `phase` |
+| Projects task | The `status` of the task | The Flint, and the priority |
+| Operations task | `todo`, `doing`, or `done` | The place of the task in Operations, and the link "Open in Operations" |
+| Strike target | `todo`, `doing`, or `done` | The subsection and the linked session. A target that is tied to an Operations task also has the link "Open in Operations". |
+| Repository | The branch | The count of changed files, and the last commit with its age |
+
+Each fact has a status:
+
+| Status | What it means |
+|--------|---------------|
+| `ok` | The source answered. |
+| `missing` | The source has no item with this ref, for example a deleted task. |
+| `unavailable` | The source cannot answer now. For example, `ops` is not signed in, or the source gave no answer in 4 seconds. |
+| `error` | The source failed. |
+
+For a status that is not `ok`, the row shows a quiet note, and the title is the label of the attach.
+
+### The Tones
+
+Each fact has one tone:
+
+| Tone | Dot in the panel | What gives this tone |
+|------|------------------|----------------------|
+| `active` | Accent | A session `working`. A task `in-progress` or `reviewing`. An Operations task or a Strike target `doing`. A repository with a commit in the last 24 hours. |
+| `waiting` | Amber | A session `needs-input`. A task `review`, `reviewed`, or `blocked`. |
+| `idle` | Faint | A session `awaiting`. A task `todo` or `deferred`. An Operations task or a Strike target `todo`. A repository with no commit in the last 24 hours. Every Flint. Every `unavailable` fact. |
+| `done` | Line | A session `finished`. A task `done`, `deprecated`, or `superseded`. An Operations task or a Strike target `done`. An archived Strike target. |
+| `error` | Red | A session `abandoned`. A source that failed. Every `missing` fact, of any kind. |
+
+A Flint that the roster has always has the tone `idle`: a Flint is a place, not a unit of work.
+
+The map gives each active Sphere one tone from the tones of its facts:
+
+1. When one fact or more is `waiting`, the tone is `waiting`.
+2. Else, when one fact or more is `active`, the tone is `active`.
+3. Else, when one fact or more is `error`, the tone is `error`.
+4. Else, when the Sphere holds one unit of work or more, and each unit of work is `done`, the tone is `done`. A unit of work is an attachment of any kind except `flint` and `repo`: a Flint and a repository are places.
+5. Else, the tone is `idle`. A Sphere with no attachment, or with only Flints and repositories, is `idle`.
+
+A session that waits on a done orb counts as `idle` here: it does not make the Sphere `waiting`, and the amber dot does not count it. Such a session is mostly finished. "Waits for you" still lists it.
+
+The map shows the tone as a halo:
+
+| Tone | Halo |
+|------|------|
+| `active` | A slow, soft pulse |
+| `waiting` | A small amber dot. With two waiting items or more, the dot shows the count ("9+" above 9). |
+| `error` | A small red dot |
+| `done` | A calm, grey fill |
+| `idle` | No halo |
+
+**Working sessions in motion.** A Sphere with Orbh sessions in the state `working` shows one small dot for each working session (at most 3) on a ring just outside the orb. The dots orbit slowly, one turn in about 8 seconds, in the hue of the Sphere. The fill of the Sphere breathes softly (about 3 seconds). This replaces the `active` pulse on that Sphere. The hover card says, for example, "2 sessions working". In the panel, the row of a working session has a small moving mark.
+
+The tones change when the live stream sends a new overview. No timer reads them. When the system asks for reduced motion (`prefers-reduced-motion`), the map has no glide, no fade, and no pulse, and the orbit dots and the working mark stand still.
+
+### The WIP Commits
+
+When a Sphere holds a repository and a Projects task, the section Commits shows the WIP commits of that task. Trident reads the commits of the last 14 days of each attached repository. It keeps each commit whose subject names an attached task: `[OR] wip: <Flint>/(Task) N <Name>`. The number of the task must match. The section shows 8 commits. **Show all N** shows the rest, at most 50.
+
+### Waits for You
+
+The inbox button is at the top right of the header. Its amber badge shows the count of the items that wait for you, and it hides at zero. Click the button to open "Waits for you". The list groups the items by Sphere. Each item shows its kind, its title, the reason in amber, and its age. Click an item to open its Sphere. Escape, or a click outside, closes the list. With no item, the list shows "Nothing waits for you."
+
+An item waits when its fact has a reason to wait:
+
+| Source | State | Reason |
+|--------|-------|--------|
+| Orbh session | `needs-input` | "needs your input" |
+| Projects task | `review` or `reviewed` | "waits for review" |
+| Projects task | `blocked` | "blocked" |
+
+The inbox shows only the items of active Spheres, the oldest first. It changes when the live stream sends a new inbox. While the stream reconnects, the badge shows no count. In 0.1, a Flint, an Operations task, a Strike target, and a repository never wait. Each item has its row actions, for example **Reply** for a session.
+
+### Notifications
+
+The bell in the header turns on desktop notifications. The browser asks once, and Trident keeps your choice. A new item in "Waits for you" gives one notification: "\<Sphere title>: \<item title> — `<reason>`". A click on it focuses the window and selects the Sphere. Trident gives at most one notification for each item, and none for the items at the start.
+
+## Live: Events Only
+
+Trident reads no source and no server on a timer. A change reaches the page in this chain:
+
+1. The source sends an event: a file changes, a stream of Orbit or of a Flint server sends a frame, or a Convex query updates.
+2. The `watch` of the adapter calls `onChange`.
+3. The hub of the server reads that one attachment again, 250 ms after its last event. A read that changes nothing sends nothing.
+4. The hub sends the new facts, and the overview and the inbox when they changed, on the stream `GET /api/events`.
+5. The page updates the map, the panel, and the inbox.
+
+The event channel of each kind:
+
+| Kind | Event channel |
+|------|---------------|
+| `flint` | A file watch on `<NUU_HOME>/flint/servers.json` and on the roster files |
+| `orbh-session` | One shared Orbit stream (`/api/live/events?channels=sessions`), filtered by the session id. Else a file watch on the spool file. |
+| `project-task` | The stream of the Flint server (`/events/stream`), filtered by the task. Else a file watch on the task file. |
+| `repo` | A file watch on `.git/HEAD`, `.git/logs/HEAD`, `.git/refs/heads/`, and `.git/packed-refs` |
+| `strike-target` | A file watch on `strike-local.json`, its `.ops-cache.json`, and `strike-orbh.json` |
+| `ops-task` | A Convex subscription (`onUpdate`) with the token of the NUU CLI credential |
+
+Only the attachments of active Spheres have a watcher. A paused or a done Sphere has none. An edit of `spheres.json` from outside Trident also reaches the page.
+
+**The live dot.** The header shows a small dot:
+
+- Green "Live": the stream is connected. Each change reaches the page at once.
+- Amber "Reconnecting…": the stream is down. The page connects again by itself, and it gets the missed changes. While it reconnects, the map and the inbox badge show no live marks.
+- "· N sources not live" in amber: N event channels are degraded, for example Orbit does not run. Hover on the dot to see the reason of each channel.
+
+**The timers that stay** read nothing on a loop: the debounces after an event (100 ms and 250 ms), the backoff of a reconnect, the heartbeat of the stream (25 s, a comment with no data), the time limit of one call, and one clock of 60 seconds that only changes the age labels, for example "5 min ago".
+
+**Check it.** The live smoke test starts a scratch server, makes a commit, changes a session, and edits the store. It checks that each change reaches `GET /api/events` as a frame within 5 seconds, with no poll. The page must be built first.
+
+```bash
+pnpm --filter @nuucognition/trident smoke:live
+```
+
+It prints the time of each frame, and exits 0 when each frame came within 5 seconds, else 1. The server and the temporary folders go away in all cases.
+
+## Promote an Idea
+
+A promote makes a real task from an idea of a Sphere, and attaches that task to the Sphere.
+
+1. Hover on the idea, or focus it with the keyboard. Click **Promote**.
+2. Choose the target:
+   - **Projects task** ("A task in a Flint"): choose the Flint. The list starts with the first Flint that the Sphere holds.
+   - **Operations task** ("The master backlog"): you can search a subsection in the field "Subsection (optional)". With no subsection, Trident makes the task in the master backlog of Operations.
+3. Click **Promote**.
+
+The idea then shows the badge of its target, "Projects task" or "Operations task", and the new task shows in the section Attached. An idea promotes once.
+
+> **Warning:** A promote makes a real item. A promote to an Operations task makes a real Operations task. A promote to a Projects task writes a real task file in the Flint. To try a promote, use a scratch Flint and a Projects task.
+
+### A Promote to a Projects Task
+
+Trident runs this command in the folder of the Flint:
+
+```bash
+flint helper artifact create Task --title=<title> --content-file=<file> --path=<flint> --json
+```
+
+- The title is the first line of the idea. Trident removes a list mark, a heading mark, or a quote mark. The title has at most 80 characters, cut at a word. The characters `\ / : * ? " < > | # ^ [ ]` become spaces.
+- The file follows the template `tmp-proj-task-v0.2`, with `status: todo`. Its Context quotes the idea and names the title and the address of the Sphere. The Task Log has one line: `<date>: Created from an idea of the Sphere "<title>" in Trident.`
+- When the helper cannot choose the folder of the tasks, Trident runs it again with `--folder=Mesh/Types/Tasks`.
+- The ref of the new attachment is the frontmatter `id` of the new task. The label is the title of the file, for example `(Task) 042 Title`.
+
+### A Promote to an Operations Task
+
+Trident runs this command:
+
+```bash
+ops task create --body-file=<file> --json -- <title>
+```
+
+- The title is the first line of the idea, at most 80 characters.
+- The body says that the task comes from an idea of the Sphere, names the address of the Sphere, and quotes the idea.
+- With a subsection, Trident adds `--subsection=<id>`. With no subsection, the task goes to the master backlog of the default org. The field reads `GET /api/ops/subsections?q=` 250 ms after the last key.
+
+### When a Promote Fails
+
+| Status | Code | When |
+|--------|------|------|
+| 400 | `invalid-input` | The idea has no text for a title, a promote to a Projects task has no `flintId`, the `subsectionId` is not valid, or the command refused the input |
+| 404 | `not-found` | No Flint of this machine has that `flintId` |
+| 409 | `already-promoted` | The idea is promoted, or a promote of it runs now |
+| 409 | `already-exists` | The Flint has a task with that title |
+| 502 | `promote-failed` | The command is not on this machine, you are not signed in, the network is down, the command gave no id, or the command gave no answer in time (30 s for `flint`, 20 s for `ops`) |
+
+After a time-out, the item can exist. Look in the Flint or in Operations before you try again.
+
+## Ease of Use
+
+### The Palette
+
+Press ⌘K (Ctrl+K on Linux and Windows), or `/`, or click the palette button in the header. Type to filter, and press Enter to run.
+
+| Group | Commands |
+|-------|----------|
+| The selected Sphere | **Add a location ahead** (`.`), **Progress to `<location>`** (`p`, one row for each next location), **Branch into a new sphere** (`b`), **Merge into …** (`m`), **Unmerge**, **Attach** (`a`), **Add idea** (`i`), **Pause** or **Resume**, **Done**, **Copy as Markdown** |
+| Start an agent | **Start an agent on `<location>`**, for each next location. It opens the form; it does not start the session. |
+| Create | **New sphere** (`n`) |
+| Start from live work | **Start a sphere from `<label>`**, for each live item |
+| Spheres | Each Sphere, by title: Enter selects it |
+| View | **Show done** or **Hide done**, **Keys** (`?`) |
+| Recently deleted | The Spheres in the trash: Enter restores one |
+
+The palette also searches the free text, the ideas, the trail, the first next location, the attachment labels, and the live fact titles of each Sphere. It shows where it matched, for example "idea: …" or "trail: …". Paste an address `@/sphere/<slug>#<machine>` to jump to its Sphere.
+
+**Copy as Markdown** copies a short summary of the selected Sphere: the title, the address, the free text, the trail with dates, the first next location (not the whole route), the ideas, and the attachments with their live state.
+
+### The Keys
+
+The keys work when no text field has the focus. Press `?` to see the list on the page.
+
+| Key | What it does |
+|-----|--------------|
+| ⌘K, Ctrl+K, `/` | Open the palette |
+| `n` | New sphere |
+| `.` | Add a location ahead to the selected Sphere. On the map, a small field opens at the focused Sphere: it adds a next location when there is none, else it renames the first next location. |
+| `p` | Progress the selected Sphere (on the map: the focused Sphere). With many next locations, a chooser opens: press the digit of a row. |
+| `b` | Branch the selected Sphere into a new Sphere |
+| `m` | Merge the selected Sphere into another Sphere (choose it in the palette) |
+| `i` | Add an idea to the selected Sphere |
+| `a` | Attach to the selected Sphere |
+| `[` and `]` | Select the previous or the next Sphere in the order of the map |
+| `f` | Focus mode on the focused Sphere, on or off |
+| `-` and `=` | A denser map, or a roomier map |
+| `?` | The list of keys |
+| Left, Right, Home, End | Move the focus between the Spheres on the map |
+| Up, Down | Move the focus from a Sphere to its route, and back |
+| Alt+Left, Alt+Right | Move the focused Sphere one column |
+| ⌘Enter, Ctrl+Enter | In the panel: Progress |
+| Escape | Close the top layer. The panel stays open. |
+
+### The Map
+
+- **The hover card.** Pause the pointer on a Sphere, or keep the keyboard focus on it. A card shows the next locations, the reason of the tone, the count of the working sessions, and the counts of the attachments and the ideas.
+- **Focus mode.** Press `f`, or click **Focus on the story** in the hover card. The other columns go dim, and each dot of the trail shows the title and the date of its location. Press `f` again or Escape, or click elsewhere, to leave focus mode.
+- **Densities.** The map has three densities: comfortable, compact, and overview. Use the buttons "−" and "+" at the corner of the map, or the keys `-` and `=`. Trident keeps your choice in the browser.
+- **Group by Flint.** The button **Group by Flint** puts the Spheres of one Flint side by side, with a faint label of the Flint under their columns. Trident keeps your choice in the browser.
+- **Starters.** The empty map shows up to 3 live items as chips "Start from: `<label>`". A click creates a Sphere with that title, attaches the item, selects the Sphere, and puts the focus on the field of its route. The palette and the empty panel have the same starters.
+- **The first run.** With no Sphere, one quiet line under the header says "Press n for a new sphere, ⌘K for commands, ? for keys." Close it once, and it stays closed.
+
+### The Header
+
+Trident uses the theme and the components of NUU UI. The header is one thin line. It holds the wordmark, the count of active Spheres, the today line, **Show done**, **New sphere**, the inbox, the live dot, the palette button, the theme, and the bell.
+
+- **The today line**: "`<n>` moved today · `<m>` wait for you · `<k>` sessions working". Each part is a button: the first selects the Sphere that moved last, the second opens the inbox, and the third opens the palette with the Spheres that hold a working session.
+- **The theme.** The theme control cycles System, Light, and Dark. Light and Dark win over the setting of the system. Trident keeps your choice in the browser.
+- **The bell** turns on the notifications: see Notifications above.
+- **The live dot**: see Live: Events Only above.
+
+### Recent Activity
+
+The section **Recent activity** is at the bottom of the panel, the newest first. It shows each change of a live fact (for example "Trident W2 · working → needs input") and each change of the Sphere: created, progress (with the location), undo, a change of the route, branch and merge (on both Spheres), unmerge, attach, detach, state, title, ideas, and promote. The free text and the order of the columns are not activity. The log stays after a reload. Trident keeps the newest 200 entries of each Sphere in `<data folder>/activity/<sphereId>.jsonl`.
+
+## The Store and the API
+
+### The Store
+
+`<data folder>/spheres.json` holds all Spheres:
+
+```ts
+interface StoreFile { version: 1; spheres: Sphere[]; updatedAt: string }
+interface Sphere {
+  id: string; slug: string; address: string
+  title: string; text: string; state: 'active' | 'paused' | 'done'; order: number
+  ideas: Idea[]; attachments: Attachment[]
+  trail: Location[]
+  route: RouteLocation[]      // the locations ahead: {id, title, note?, after: string[], merge?: {sphereId, locationId?}, setAt}
+  next: NextLocation | null   // in each answer: the first next location of the route; never stored
+  branchedFrom?: { sphereId, level, at }
+  mergedInto?: { sphereId, locationId?, at, moved: { attachmentIds, ideaIds } }
+  hue?: number    // 1 to 8; set at creation, never changed
+  createdAt: string; updatedAt: string
+}
+```
+
+- `after` names the locations that come before a location. `[]` makes it a next location. A reached location keeps its id in the trail.
+- A Sphere of an older store with `next` and no `route` gets a route of one next location when Trident reads it. The store version stays 1.
+- The hue of a new Sphere is the hue that the fewest active and paused Spheres show. It never changes.
+- A delete puts the Sphere in the trash: it keeps the Sphere in the file with `deletedAt`. The trash keeps the newest 50 Spheres.
+
+- The file holds only refs and your words. It never holds a copy of a fact of a source.
+- The ids are UUID v4, and the times are ISO 8601.
+- Each change writes the file atomically: a temporary file, then a rename. The old file stays as `spheres.json.bak` (one backup). The changes of one server run one at a time.
+- Trident does not write over a `spheres.json` that is not valid JSON, or that has another version. The API then answers 500 `store-unreadable`. Repair the file, or copy the backup back.
+
+The full types are in `apps/trident/src/lib/types.ts`.
+
+### The API
+
+All bodies are JSON. Each error is `{error: {code, message}}`.
+
+| Route | Result |
+|-------|--------|
+| `GET /health` | `{ok: true, service: "trident", pid, port, version}` |
+| `GET /api/spheres` | `{spheres: Sphere[]}`, in `order` |
+| `POST /api/spheres` `{title, text?}` | 201 `{sphere}` |
+| `GET /api/spheres/:id` | `{sphere}` |
+| `PATCH /api/spheres/:id` `{title?, text?, state?, order?}` | `{sphere}`. Other keys are ignored. |
+| `DELETE /api/spheres/:id` | 204. The Sphere goes to the trash. |
+| `POST /api/spheres/:id/restore` | `{sphere}`: the Sphere comes back from the trash, in its old column |
+| `GET /api/trash` | `{spheres}`: the Spheres in the trash, the newest delete first (at most 50) |
+| `PUT /api/spheres/:id/next` `{title, note?}` | `{sphere}`: adds a next location when the route has none, else renames the first next location |
+| `DELETE /api/spheres/:id/next` | `{sphere}`: removes the first next location |
+| `POST /api/spheres/:id/progress` `{to?, carry?}` | `{sphere}`, and `merged: {into}` when the location merges the Sphere. With no `to`: the one next location; 409 `choose-next` with `error.choices` when there are many |
+| `POST /api/spheres/:id/undo-progress` | `{sphere}`: the last location goes back into the route as it was, and a merge of that progress is undone. 409 `cannot-undo` after another change. |
+| `POST /api/spheres/:id/route` `{title, note?, after?, before?, merge?}` | `{sphere, location}`. Default `after: []` (a new next location). `before: X` puts the location under X |
+| `POST /api/spheres/:id/route/chain` `{titles, after?}` | `{sphere, locations}`: a chain, one after the other (1 to 50 titles) |
+| `PATCH /api/spheres/:id/route/:locationId` `{title?, note?, after?, merge? \| null}` | `{sphere}` |
+| `DELETE /api/spheres/:id/route/:locationId` | `{sphere}` |
+| `POST /api/spheres/:id/branch` `{locationId?, title?}` | 201 `{sphere, branch}`: a new active Sphere at the level of this Sphere |
+| `POST /api/spheres/:id/merge` `{into, locationId?, carry?}` | `{sphere, into}`: merge now. `carry` (default true) moves the attachments and the ideas |
+| `POST /api/spheres/:id/unmerge` | `{sphere, into}`: the reverse, while the other Sphere holds each moved item |
+| `POST /api/spheres/:id/ideas` `{text}` | `{sphere}` |
+| `DELETE /api/spheres/:id/ideas/:ideaId` | `{sphere}` |
+| `POST /api/spheres/:id/ideas/:ideaId/promote` `{to: "project-task", flintId}` or `{to: "ops-task", subsectionId?}` | `{sphere, attachment}` |
+| `POST /api/spheres/:id/attachments` `{kind, ref, flintId?, label?}` | `{sphere}` |
+| `DELETE /api/spheres/:id/attachments/:attachmentId` | `{sphere}` |
+| `GET /api/spheres/:id/synthesis` | `{sphereId, generatedAt, facts: Fact[], commits: Commit[]}` |
+| `GET /api/overview` | `{generatedAt, spheres: [{id, tone, waiting, working}]}`, for each active Sphere. `working` is the count of its working Orbh sessions. |
+| `GET /api/inbox` | `{items: [{sphereId, attachmentId, kind, title, reason, since?}]}` |
+| `GET /api/sources/:kind?q=&flintId=&limit=` | `{items: [{ref, label, flintId?, detail?, state?, tone?, updatedAt?}]}`: the picker of one kind. The default limit is 50, the maximum is 200, and the time limit is 8 s. |
+| `GET /api/events` | The live stream (server-sent events). The first frame is `snapshot` `{spheres, overview, inbox, facts, sources}`. Then the deltas: `sphere.upsert`, `sphere.remove`, `facts`, `overview`, `inbox`, `source`, and `activity`. Each frame has an id: a reconnect with `Last-Event-ID` gets the missed deltas from a ring of 512, else a new snapshot. A heartbeat comment every 25 s. |
+| `GET /api/suggestions?sphereId=` | `{items: [{kind, ref, label, flintId?, detail?, tone, state?, reason}]}`: at most 12 live items (`waiting` first, then `active`) that the Sphere does not hold. With no `sphereId`: the live items of the machine (the starters). |
+| `GET /api/places/:address` | A Sphere as a place: `{address, kind: "sphere", title, state, level, holds: [{kind, ref, label?, flintId?, address?}]}`. URL-encode the address. 404 `not-here` for the address of another machine. |
+| `GET /api/ops/subsections?q=&limit=` | `{items: [{id, label, org, orgName?, due?}]}`: the Operations subsections, for a promote |
+| `POST /api/ops-tasks/:id/action` `{action: "start" \| "done" \| "reopen"}` | `{ok: true}`: move an Operations task. **It changes a real Operations task.** |
+| `POST /api/tasks/:id/action` `{flintId, action: "start" \| "review" \| "done"}` | `{ok: true}`: move a Projects task. **It writes a real task file.** |
+| `POST /api/sessions/:id/reply` `{flintId?, text}` | `{ok: true, verb: "respond" \| "message send"}`: reply to a waiting Orbh session. **It sends a real reply.** |
+| `POST /api/sessions/:id/close` `{flintId?}` | `{ok: true}`: close a live Orbh session (`flint orbh close`). **It ends a real session.** |
+| `POST /api/spheres/:id/launch` `{flintId, target?, prompt?, locationId?}` | `{sphere, attachment}`: start a headless peer session on a next location of the Sphere, and attach it. **It starts a real session.** The form Start an Agent calls it. |
+| `POST /api/sessions/:id/focus` `{flintId?}` | `{ok: true, leafId, flintId}`: bring the Obsidian tab of the session to the front |
+| `POST /api/sessions/:id/open-tab` `{flintId?, requestId?}` | `{ok: true, requestId, leafId?}`: open an interactive session with no tab in a new Obsidian tab |
+| `GET /api/spheres/:id/activity?limit=` | `{sphereId, entries}`: the activity log of the Sphere, the newest first (`limit` 1 to 200, default 50) |
+
+The new state after an action comes back on the stream as a `facts` frame. A route of an action reads nothing back.
+
+The guard accepts only the Host `127.0.0.1:<port>` or `localhost:<port>`. A browser `Origin` must be Trident itself, or the origin of Vite in dev mode. A request that changes Trident must be `application/json`. Send `{}` when there is no input:
+
+```bash
+curl -s -X POST http://127.0.0.1:13090/api/spheres \
+  -H 'Content-Type: application/json' \
+  -d '{"title": "Trident"}'
+curl -s -X POST http://127.0.0.1:13090/api/spheres/<id>/progress \
+  -H 'Content-Type: application/json' -d '{}'
+```
+
+| Status | Code | When |
+|--------|------|------|
+| 400 | `invalid-input` | A body, a query, or a parameter is not valid |
+| 403 | `forbidden` | The guard refuses the Host or the Origin |
+| 404 | `not-found` | No Sphere, idea, attachment, Flint, or route has that id |
+| 404 | `not-here` | `GET /api/places/:address` with the address of another machine |
+| 409 | `no-next-location` | A progress with no next location |
+| 409 | `choose-next`, `not-next` | A progress with no `to` and many next locations, or a progress (or a launch) to a location that is not a next location |
+| 409 | `route-cycle` | A change of `after` that makes a cycle |
+| 409 | `merge-self`, `merge-cycle`, `not-active`, `cannot-unmerge` | A merge into the Sphere itself, a merge chain that comes back, a merge into a done Sphere or a Sphere in the trash, or an unmerge after a moved item left the other Sphere |
+| 404, 409, 502 | `no-tab`, `has-tab`, `not-interactive`, `running`, `no-obsidian`, `focus-failed`, `open-failed` | A focus or an open of the Obsidian tab of a session failed |
+| 502 | `launch-failed` | Orbit or the command refused the launch, or gave no answer |
+| 409 | `cannot-undo` | An undo of a progress after another change of the Sphere, or with no trail |
+| 409 | `already-promoted`, `already-exists` | See When a Promote Fails above |
+| 409 | `invalid-transition` | A move of a Projects task that its status does not allow |
+| 409 | `session-ended`, `not-waiting` | A reply to a session that ended, or that does not wait for you |
+| 502 | `task-write-failed`, `reply-failed`, `ops-action-failed` | The write of the task, the Orbh command of the reply, or the `ops` action failed. After a time-out, the change can have happened. |
+| 415 | `unsupported-media-type` | A browser change that is not `application/json` |
+| 500 | `store-unreadable` | `spheres.json` is not valid JSON, or it is not a Trident store of version 1 |
+| 500 | `internal` | Any other failure |
+| 502 | `source-failed`, `promote-failed` | The picker of a source failed, or a promote failed |
+| 504 | `source-timeout` | The picker of a source gave no answer in 8 s |
+
+## The Limits of 0.1
+
+Trident 0.1 does not have these parts:
+
+- **Shared locations.** Each Sphere climbs in its own column. Each location belongs to one Sphere. A merge can point to a location of another Sphere, but it does not share it.
+- **Automatic moves.** A Sphere never moves by itself. Only **Progress** moves it up, and only **Undo** moves it down. A session that finishes does not progress a Sphere.
+- **Blacksmith supervision.** Blacksmith does not start Trident and does not keep it alive. Start it by hand with `trident`.
+- **A `flint trident` command.** Use the command `trident` that `ndv` links, or run `node apps/trident/bin/trident.js` from a checkout of the Flint repository.
+- **An address that the NUU Network resolves.** The address `@/sphere/<slug>#<machine>` is local to this machine. `GET /api/places/:address` resolves it on this machine only.
+
+Also in 0.1:
+
+- The store is one JSON file on this machine. Git and the NUU Network do not carry it.
+- Only an action of the person writes to a source: a promote, a move of a task, a reply to a session, an open of a tab, or **Start** of an agent. All reads of the sources write nothing.
+- Only the attachments of active Spheres have a watcher. A paused or a done Sphere shows no live change until it is active again.
+
+## Related
+
+- [Agent Sessions](/flint/modules/agent-sessions): the Orbh sessions that a Sphere attaches
+- [The Roster](/flint/guide/the-roster): the Flints of this machine, which the Flint picker lists
+- [Global Configuration](/flint/guide/global-configuration): the NUU home and the NUU config
+- [CLI Commands](/flint/reference/cli-commands): `flint helper artifact create` and `flint orbit`

@@ -41,6 +41,9 @@ A Flint declares what it is and what it needs. Each machine fills in its own pat
 | `flint-hooks.toml` | Flint root | The hook configuration of the Flint server runtime | yes, when you use the runtime |
 | `~/.nuucognition/config.toml` | global | The NUU config: your Name, the machine names, and the org of this machine | yes |
 | `~/.nuucognition/machine.json` | global | The id of this machine | no |
+| `~/.nuucognition/orbh/settings.json` | global | The Orbh settings of this machine: the machine layer of the default target list (`defaultTargets`) | with `flint orbh profiles default set` |
+| `~/.nuucognition/computer-flint.json` | global | The claim of the Computer Flint: the id and the path of the Computer Flint of this machine | no |
+| `~/.nuucognition/flint/failures/` | global | The failure records of the failed Flint commands, the newest 20 (see [Doctor and Fix > The Failure Record](/flint/guide/doctor-and-fix#the-failure-record)) | no |
 | `~/.nuucognition/flint/config.toml` | global | The Flint CLI config of this machine (`flint-dev/config.toml` for a dev build) | yes |
 | `~/.nuucognition/places.json` | global | The roster: the Flints that this machine knows | no |
 | `~/.nuucognition/flint/registry.json` | global | The copy of the roster | usually no |
@@ -88,6 +91,9 @@ flints = [
 bundles = [
   { source = "flint", name = "Research Hub/Guide" },
 ]
+
+[orbh]
+default = ["claude/o55h", "codex/a6h"]
 
 [obsidian.applied.appearance]
 enabledCssSnippets = { add = ["blockquote-tables"] }
@@ -183,6 +189,19 @@ A bundle entry names a bundle of a producer Flint. `flint sync` copies `Exports/
 | `orb-browse` | `true` or `false`: turns on the Orbh browse of the Flint server. The environment variable `FLINT_ORBH_BROWSE` wins over it. Absent means off. |
 | `dev-origins` | Authorizes nothing. Git shares `flint.toml`, so it cannot authorize an origin. The Flint server prints one notice that names `[orbit] devOrigins` of the Flint CLI config. |
 
+### `[orbh]`
+
+Current field:
+
+- `default`: the Flint layer of the default target list of Orbh. It is a list of one or more `runtime/profile` targets, in order.
+
+```toml
+[orbh]
+default = ["codex/a6h", "claude/o55h"]
+```
+
+A command of Orbh with no target (`flint orbh i`, `flint orbh launch "<prompt>"`, `flint orbh request "<prompt>"`) in this Flint starts the first available target of this list. The Flint layer replaces the machine layer and the shipped list; it does not merge with them. `flint orbh profiles default set --flint <target>...` writes the key, and `flint orbh profiles default unset --flint` removes it. A value that is not a list of targets stops each launch with no target in this Flint. The refusal names `flint orbh profiles default unset --flint -p <the Flint root>`. See [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list).
+
 ### `[obsidian]`
 
 `[obsidian]` holds only `applied`: the Flint layer of applied settings. See [Using Obsidian](/flint/guide/using-obsidian).
@@ -257,7 +276,7 @@ The keys of `[schedules.<name>]`:
 | `overlap` | `skip` (the default) or `allow`. |
 | `enabled` | `false` pauses this schedule. |
 
-A value of `machine` with the UUID shape is compared with the machine id. Each other value is compared with the machine slug (`machine-slug` of the NUU config). Only the owner machine makes and fires the schedule. Flint does not check that two machines have different slugs, so a slug owner is safe only when each machine that syncs the Flint has a different machine slug. A machine id names one exact machine: `nuu machine id` prints it. `flint module crons own [<name>]` writes the slug of this machine. A schedule that does not parse is an issue, and sync keeps its object as it is. A wrong type of `machine`, `target`, or `schedules` fails the plan, and sync changes no schedule. An unknown key is an issue, and the module ignores it.
+A value of `machine` with the UUID shape is compared with the machine id. Each other value is compared with the machine slug (`machine-slug` of the NUU config). Only the owner machine makes and fires the schedule. Flint does not check that two machines have different slugs, so a slug owner is safe only when each machine that syncs the Flint has a different machine slug. A machine id names one exact machine: `nuu computer id` prints it. `flint module crons own [<name>]` writes the slug of this machine. A schedule that does not parse is an issue, and sync keeps its object as it is. A wrong type of `machine`, `target`, or `schedules` fails the plan, and sync changes no schedule. An unknown key is an issue, and the module ignores it.
 
 #### The Settings of the Module dms
 
@@ -383,7 +402,21 @@ The managed block of `.gitignore` always ignores `flint.env` and `flint.env.loca
 | `default-org-id` | The id of the org of this machine. | `flint config org set` |
 | `[orgs.<slug>]` `github` | The GitHub owner of an org. `flint migrate run` reads it for the Git records that the shard registry does not know. | `flint config org map <slug> <github-owner>` |
 
+`flint setup --machine-proper-name "<name>"` and `flint rename "<name>"` in the Computer Flint change `machine-display-name` and rename the Computer Flint too. See [The Computer Flint > Rename the Machine](/flint/guide/the-computer-flint#rename-the-machine).
+
 `flint config org unset` makes new Flints local again. A NUU account and an org are optional. Flint works with no NUU account and no org.
+
+## The Orbh Settings
+
+`~/.nuucognition/orbh/settings.json` holds the Orbh settings of this machine. The key `defaultTargets` is the machine layer of the default target list:
+
+```json
+{
+  "defaultTargets": ["codex/a6h", "claude/o55h"]
+}
+```
+
+`flint orbh profiles default set <target>...` writes the key, `flint orbh profiles default unset` removes it, and step 4 of `flint setup` writes it when you put another target first. The Flint layer (`[orbh] default` in `flint.toml`) wins over this key. With no key, the shipped list applies: `claude/o55h`, then `codex/a6h`. The variable `ORBH_SETTINGS_PATH` names another settings file. See [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list).
 
 ## The Flint CLI Config
 

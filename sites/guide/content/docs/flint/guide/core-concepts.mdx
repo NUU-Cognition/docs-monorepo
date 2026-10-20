@@ -8,7 +8,7 @@ This guide defines the core words of Flint. Each section defines one word in sho
 
 A Flint is one folder of notes and shards with its own id. The `flint` command manages it. One Flint covers one coherent area of work, such as a product, a research area, or a client engagement. A new Flint holds `flint.toml`, `flint.json`, `.flint/`, `Mesh/`, `Media/`, `Shards/`, `Sources/`, and `Workspace/`. It has no `Modules/` folder and no env files. `flint module install` creates `Modules/`. You create the env files when the Flint needs them. See [Creating a Flint](/flint/guide/creating-a-flint).
 
-Each Flint has one type: `flint` (a normal Flint), `computer` (the Computer Flint), `guide`, or `member`. The type shows in the folder name, for example `(Flint) My Notes`. See [The Roster#The Flint Types](/flint/guide-the-roster-the-flint-types).
+Each Flint has one type: `flint` (a normal Flint), `computer` (the Computer Flint), `guide`, or `member`. The type shows in the folder name, for example `(Flint) My Notes`. See [The Roster > The Flint Types](/flint/guide/the-roster#the-flint-types).
 
 ## Mesh
 
@@ -44,7 +44,7 @@ Each shard has two forms. The source holds the files that a person edits. It liv
 
 A module is a package, as a shard is, but it serves the machine, not agents. Its code runs as a process (in Node.js, in Python, or as an executable). Examples are the cron schedules of a Flint (`crons`) and direct messages to a Flint (`dms`). `flint module install <spec>` writes the record of the module in `[modules]` of `flint.toml` and puts its build in `Modules/<Name>/`. The settings of the module in this Flint are in `Modules/<Name>.settings.toml`. Then `flint sync` runs the plan of the module and makes its objects real on this machine. `flint module <name> <command>` runs a command of a module. The command `flint module list` shows the modules of the Flint. See [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms) and [Write a Module](/flint/guide/write-a-module).
 
-The env values of a Flint, such as tokens, are in `flint.env` (the Flint) and `flint.env.local` (this machine). Git ignores both files. `flint.env.example` names the values with no values. See [Configuration#Env Files](/flint/reference-configuration-env-files).
+The env values of a Flint, such as tokens, are in `flint.env` (the Flint) and `flint.env.local` (this machine). Git ignores both files. `flint.env.example` names the values with no values. See [Configuration > Env Files](/flint/reference/configuration#env-files).
 
 ## The Intent: flint.toml
 
@@ -76,7 +76,7 @@ The roster is the list of Flints that this machine knows. It lives in the NUU ho
 
 ## The Computer Flint
 
-The Computer Flint is the home Flint of this machine. One machine has one. Its folder is `(Computer) <Machine Display Name>` in the home folder. The word `computer` is reserved for it: `flint open computer` and `flint cd computer` always reach it. No other Flint can take the word as its name. The Computer Flint holds the "Start here" note and the repair notes of `flint fix`. `flint setup` always makes it. Its name and the machine display name are one name: a rename changes both. See [Setting Up a Machine#The Computer Flint](/flint/guide-setting-up-a-machine-the-computer-flint).
+The Computer Flint is the home Flint of this machine. One machine has one. Its folder is `(Computer) <Machine Display Name>` in the home folder. The word `computer` is reserved for it: `flint open computer` and `flint cd computer` always reach it. No other Flint can take the word as its name. The Computer Flint holds the "Start here" note and the repair notes of `flint fix`. `flint setup` always makes it. Its name and the machine display name are one name: a rename changes both. See [Setting Up a Machine > The Computer Flint](/flint/guide/setting-up-a-machine#the-computer-flint).
 
 ## Agents
 

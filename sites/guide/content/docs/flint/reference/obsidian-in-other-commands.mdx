@@ -128,7 +128,7 @@ When the vault is closed, Flint does these steps in order:
 
 1. It completes the pending vault registry changes.
 2. It installs a missing, pending, or stale payload.
-3. It runs the trust check (see [Using Obsidian#Open a Flint](/flint/guide-using-obsidian-open-a-flint)).
+3. It runs the trust check (see [Using Obsidian > Open a Flint](/flint/guide/using-obsidian#open-a-flint)).
 4. The NUU Flint plugin of another open vault opens the vault (`open-vault`). With the trust setting `auto` and a passed check, the request asks Obsidian to trust the vault.
 5. When no plugin can open the vault, the check passed, and a Computer Flint exists that is not the target, Flint starts Obsidian with the Computer Flint. Then the plugin of the Computer Flint opens the vault with trust.
 6. Else Flint launches `obsidian://open?path=<path>`. A link opens only a folder that the vault registry of Obsidian knows. When the folder has no entry and no Obsidian process runs, Flint writes the entry first. When Obsidian runs, Flint launches nothing and names the step in Obsidian.

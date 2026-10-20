@@ -13,7 +13,9 @@ flint doctor
 flint doctor -p <dir>
 ```
 
-When `flint sync`, `flint create`, `flint git sync`, `flint shard install`, `flint setup`, or `flint tinderbox sync` fails, Flint writes one failure record. The output then ends with `Or: flint fix`. Run `flint fix` to start a repair session for the newest record. The session runs in the Computer Flint. An input refusal (a wrong command line) and a stop (Ctrl-C) write no record.
+### Repair a Failure with flint fix
+
+When `flint sync`, `flint create`, `flint git sync`, `flint shard install`, `flint setup`, or `flint tinderbox sync` fails, Flint writes one failure record. The output then ends with `Or: flint fix`. Run `flint fix` to start a repair session for the newest record. The session runs in the Computer Flint (see [The Computer Flint](/flint/guide/the-computer-flint)). With no Computer Flint, it runs in the failed Flint, and `flint fix` prints `Later: flint setup computer`. An input refusal (a wrong command line) and a stop (Ctrl-C) write no record.
 
 ```bash
 flint fix --list
@@ -21,7 +23,13 @@ flint fix
 flint fix <n>
 ```
 
-To report a problem to NUU Cognition, run `flint feedback`. It builds a report and opens a new issue of `NUU-Cognition/flint-public` after you agree. `--with-failure` adds only the facts of the newest failure record: the command words, the exit code, the error code, the Flint version, and the time. The removal of secrets from your text is not complete: read the report and remove each secret before you submit it. [Doctor and Fix#Report a Problem to NUU Cognition](/flint/guide-doctor-and-fix-report-a-problem-to-nuu-cognition) explains the flags.
+A failure record is one JSON file in `<NUU home>/flint/failures/`. The default NUU home is `~/.nuucognition`. Only you can read the file (mode 600). Flint keeps the newest 20 records. [Doctor and Fix > The Failure Record](/flint/guide/doctor-and-fix#the-failure-record) lists the fields of a record.
+
+The failed Flint is usually outside the working folder of the session. The agent CLI can then ask your permission for each edit there. That is expected.
+
+### Report a Problem to NUU Cognition
+
+To report a problem to NUU Cognition, run `flint feedback`. It builds a report and opens a new issue of `NUU-Cognition/flint-public` after you agree. `--with-failure` adds only the facts of the newest failure record: the command words, the exit code, the error code, the Flint version, and the time. The removal of secrets from your text is not complete: read the report and remove each secret before you submit it. [Doctor and Fix > Report a Problem to NUU Cognition](/flint/guide/doctor-and-fix#report-a-problem-to-nuu-cognition) explains the flags.
 
 ```bash
 flint feedback --bug "<what went wrong>" --with-failure
@@ -44,6 +52,8 @@ Many commands find the Flint from the working folder. Any folder inside the Flin
 ```
 
 Old names such as `flint heal`, `flint repair`, `flint agent`, `flint code`, and `flint export` print this, with exit 1. A name that is near a command also gets an `Or:` line, for example `Or:   flint cd` for `flint code`. Run `flint --help` to see the current commands. Use `flint orbh` for agent sessions.
+
+In place of `flint heal` and `flint repair`, run `flint doctor` to find the problem, or `flint fix` to repair the last failure. The repair commands of each subsystem stay: `flint obsidian repair`, `flint shard reinstall`, and `flint tinderbox heal`.
 
 Some removed commands print the command that replaces them instead. For example, `flint obsidian reset` prints `flint obsidian repair --replace --reset-settings --dry-run`, and `flint open --no-plugin` prints its replacement. [Obsidian in Other Commands](/flint/reference/obsidian-in-other-commands) lists the removed Obsidian commands.
 
@@ -258,7 +268,7 @@ The module <name> needs the secret <NAME>, and no env file of this Flint sets it
   Next: Set <NAME> in flint.env.local (this machine) or flint.env (the Flint).
 ```
 
-Set the value in `flint.env.local` (this machine) or `flint.env` (the Flint). A value in `flint.env.local` wins. Never commit these files. See [Configuration#Env Files](/flint/reference-configuration-env-files).
+Set the value in `flint.env.local` (this machine) or `flint.env` (the Flint). A value in `flint.env.local` wins. Never commit these files. See [Configuration > Env Files](/flint/reference/configuration#env-files).
 
 ### An Env Line Is Not Loaded
 
@@ -416,18 +426,37 @@ This pulls the latest shared default profiles into the Orbh home. It leaves your
 
 ### No Target of the Default Target List Is Available
 
+`flint orbh i`, `flint orbh launch`, and `flint orbh request` with no target start the first available target of the default target list. When no target is available, the command refuses. It names the install command or the login command of the first target:
+
+```text
+✘ No target of the default target list is available.
+  claude/o55h skipped: claude is not installed
+  codex/a6h skipped: codex is not installed
+  Next: npm install -g @anthropic-ai/claude-code
+```
+
+An explicit target never falls back to another target:
+
+```text
+✘ The target claude/o55h is not available: claude is not installed. An explicit target does not fall back.
+  Next: npm install -g @anthropic-ai/claude-code
+```
+
+`flint doctor` fails the Agent row when no target can launch:
+
 ```text
 No target of the default target list (<list>) is available. <reasons>
 ```
 
-`flint doctor` fails the Agent row when no target can launch. The next command is the install command of the missing runtime, or `flint fix` when the repair needs judgement. To see the layers of the list and the target that a launch selects, run:
+The next command is the next command of the first target, for example its install command or its login command. With no such command, it is `flint fix`. To see the layers of the list and the target that a launch selects, run:
 
 ```bash
-flint orbh profiles default
-flint orbh runtimes
+flint orbh profiles default   # The default target list, its layer, and the state of each target
+flint orbh runtimes           # The runtimes, their CLIs, and whether each one is installed
+flint orbh profiles           # The profiles of each runtime
 ```
 
-Make sure the target runtime is installed. For example, Claude sessions need Claude Code installed, and Codex sessions need Codex installed.
+Make sure the target runtime is installed. For example, Claude sessions need Claude Code installed, and Codex sessions need Codex installed. [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list) lists each skip reason and its next command. For any agent workflow, also check that the Flint has the shards and the references that the agent expects.
 
 ## A Flint Does Not Appear in `flint list`
 
@@ -573,7 +602,7 @@ Obsidian: open "<name>" once from Obsidian: Manage vaults, then Open folder as v
 
 ### The Plugins of a New Vault Are Off
 
-With the trust setting `auto`, `flint open` asks Obsidian to trust a Flint that passes the trust check. Else Obsidian asks once for the new vault. Click **Trust author and enable plugins**. `flint obsidian status` shows the setting and the result of the check on the line `Trust`. [Using Obsidian#Open a Flint](/flint/guide-using-obsidian-open-a-flint) explains the check.
+With the trust setting `auto` (the default), `flint open` asks Obsidian to trust a Flint that passes the trust check. Else Obsidian asks once for the new vault. Click **Trust author and enable plugins**. `flint obsidian status` shows the setting and the result of the check on the line `Trust`. For example, the check fails when the setting is `ask`, when a plugin file of the payload changed, or when `.obsidian/plugins` holds another plugin. [Using Obsidian > Open a Flint](/flint/guide/using-obsidian#open-a-flint) explains the check.
 
 When the plugin of the vault does not answer and the trust check failed, `flint open` prints a notice with the reason, for example `Flint did not ask Obsidian to trust "<name>": a plugin file of the payload changed outside Flint.` Next: `flint obsidian status`.
 

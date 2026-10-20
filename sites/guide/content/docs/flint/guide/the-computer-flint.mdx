@@ -1,0 +1,176 @@
+---
+title: "The Computer Flint"
+---
+
+The **Computer Flint** is the home of this machine. It is a Flint of the type `computer`, and one machine has one Computer Flint. `flint setup` makes it and opens it in Obsidian. You do not have to use it every day, but three things of Flint use it:
+
+- **The one trust click.** Its first open in Obsidian is the only time that Obsidian asks you to trust the plugins of a vault on this machine. After that, `flint open` opens each new Flint through it, with its plugins on.
+- **The repair sessions.** `flint fix` starts its agent in the Computer Flint, and the agent writes one repair note there.
+- **The notes about this machine.** Keep the notes about its tools, its accounts, and the Flints that are on it here.
+
+## Its Name
+
+The name of the Computer Flint is the machine display name: the name that people read, such as "Ada Laptop". Its folder is `(Computer) <Machine Display Name>` in your home folder:
+
+```text
+~/(Computer) Ada Laptop
+```
+
+The name takes a capital letter at the start of each word: `flint setup --machine-proper-name "sam box"` gives `(Computer) Sam Box`.
+
+Every command that finds a Flint by its name also knows the reserved word `computer`:
+
+```bash
+flint open computer          # Open the Computer Flint in Obsidian
+cd "$(flint cd computer)"    # Go to its folder
+```
+
+The word follows each rename and each move. No other Flint can have the word as its name. The old spelling `your computer` still names the Computer Flint.
+
+## What Is in It
+
+```text
+(Computer) Ada Laptop/
+├── flint.toml                      type = "computer", visibility = "private"
+├── flint.json
+├── .obsidian/
+├── Mesh/
+│   ├── Start Here.md
+│   ├── (System) Computer Flint.md
+│   └── (System) Flint Init.md
+├── Media/
+├── Shards/
+├── Sources/
+└── Workspace/
+```
+
+- **`Mesh/Start Here.md`** tells you what the Computer Flint is for, how to make a Flint, how to start an agent, how to check this machine with `flint doctor`, and how to use `flint fix`. Read it first.
+- **`Mesh/(System) Computer Flint.md`** says what to keep here, and the rules: the Computer Flint is private, and it holds no secrets.
+- The shards are the core shards (Flint and Orbh) and Invironments. The Flint shard needs Invironments.
+- The Computer Flint has the Obsidian payload and the NUU Flint plugin, as each Flint has.
+- The Computer Flint is a local Git repository on the branch `main` with a first commit and no remote, as each new Flint is. When a Computer Flint has no repository, the next `flint setup` or `flint setup computer` makes one, and `flint doctor` names that command. With no Git author, setup makes no repository and names `flint setup`.
+
+The Computer Flint is private: other machines cannot read it through the network. Do not keep secrets in it. A Flint can travel in Git, and secrets stay in `~/.nuucognition`.
+
+## Make It
+
+`flint setup` makes the Computer Flint at step 5, "Computer Flint". It asks no question. Step 7, "Open and onboarding", then opens it in Obsidian. See [Setting Up a Machine > Step 5: Computer Flint](/flint/guide/setting-up-a-machine#step-5-computer-flint) and [Setting Up a Machine > Step 7: Open and Onboarding](/flint/guide/setting-up-a-machine#step-7-open-and-onboarding).
+
+The step needs the network: the Computer Flint gets its shards and its Obsidian payload. Setup checks the network before step 1. With no network, setup stops. It asks nothing and writes nothing. When setup cannot make the Computer Flint, the run fails. The screen names the repair command.
+
+You cannot skip the Computer Flint. The flags `--computer` and `--no-computer` are retired. Each prints one line, and the run continues.
+
+To make only the Computer Flint:
+
+```bash
+flint setup computer
+```
+
+```text
+✓ Made the Computer Flint: ~/(Computer) Ada Laptop
+Next: flint open computer
+```
+
+`flint setup computer` always makes a new Computer Flint. It asks no question. It never converts a Flint that exists. The flags:
+
+```bash
+flint setup computer --create               # Make a new Computer Flint (the default)
+flint setup computer --dry-run              # Say what it would do; change nothing
+flint setup computer --show-claim           # Show which Flint holds the claim of this machine
+```
+
+The flag `--convert` is retired. To convert a Flint to the Computer Flint, use `flint convert`. The id of the Flint stays:
+
+```bash
+flint convert "<flint>" --to computer
+```
+
+A second run of `flint setup` keeps the Computer Flint that exists. Step 7 opens it again. When the Computer Flint has no "Start here" note, setup adds the note. It never writes over a note that exists.
+
+## The Repair Notes
+
+When a command fails, `flint fix` starts a repair session in the Computer Flint. The agent reads the failure record, repairs the failure with you, and then writes one repair note with the Invironments shard:
+
+```bash
+flint shard ie note "Repair - flint sync - 2026-09-27 1430" --description "<what failed and the cause>" --body-file <file>
+```
+
+The note goes to the New section (`Mesh/Main/`) of the Computer Flint. It says what failed, the cause, what changed, and the commands that ran. So the Computer Flint keeps a history of the repairs of this machine.
+
+The failure records are not in the Computer Flint. They are in the NUU home. See [Troubleshooting > Repair a Failure with flint fix](/flint/reference/troubleshooting#repair-a-failure-with-flint-fix).
+
+## Rename the Machine
+
+The machine and its Computer Flint have one name. A rename of one renames the other. In the Computer Flint, run `flint rename`:
+
+```bash
+cd "$(flint cd computer)"
+flint rename "Office Laptop"
+```
+
+```text
+✓ Renamed the machine and its Computer Flint: Ada Laptop → Office Laptop
+  Machine display name : Office Laptop
+  Computer Flint       : ~/(Computer) Ada Laptop → ~/(Computer) Office Laptop
+  Mesh                 : 0 file(s) rewritten
+  Open                 : flint open computer
+The machine word of addresses stays ada-laptop.
+Your shell is still in the old folder: cd '/home/ada/(Computer) Office Laptop'
+```
+
+From any folder, `flint setup` does the same:
+
+```bash
+flint setup --machine-proper-name "Office Laptop"
+```
+
+Step 1 of the setup names the new name and the machine name that stays: `✓ Set up Ada Lovelace on Office Laptop (ada-laptop, branch prefix nuu1).`
+
+The rename changes:
+
+- the machine display name in the NUU config (`machine-display-name`)
+- the folder `(Computer) <Machine Display Name>`
+- the `name` in `flint.toml` of the Computer Flint
+- the row of the roster
+- the vault registry entry of Obsidian. The vault keeps its vault id and its trust.
+- the claim of the Computer Flint (`computer-flint.json` in the NUU home)
+
+The rename does not change the machine name (`machine-slug` in the NUU config): the short word after `#` in addresses, such as `@nuucognition/flint/team-notes#ada-laptop`. The last line of the screen says so. Addresses that other machines keep stay correct.
+
+The rename refuses before it writes anything:
+
+- when the new name is the name of another Flint of this machine. The next command gives a free name, for example `Next: flint rename 'My Notes 2'`.
+- when the vault of the Computer Flint is open in Obsidian. Close the vault, then run the command again from a terminal outside Obsidian.
+
+`nuu setup --machine-proper-name "<name>"` renames only the machine. It warns that the Computer Flint keeps its old name, and it prints `Later: flint setup --machine-proper-name '<name>'`. Run that command to give both one name again.
+
+## Move It
+
+To move the Computer Flint to another folder, use `flint move`:
+
+```bash
+flint move computer "$HOME/machines/(Computer) Ada Laptop"
+```
+
+```text
+✓ Moved ~/(Computer) Ada Laptop → ~/machines/(Computer) Ada Laptop
+  Roster updated: Ada Laptop
+  Computer Flint claim updated: ~/machines/(Computer) Ada Laptop
+```
+
+`flint move` updates the claim of the Computer Flint (`computer-flint.json` in the NUU home), so Flint finds the Computer Flint at its new path. Do not move the folder by hand: the claim then names a missing folder, and `flint setup computer --show-claim` says `stale`. Move the folder back to its old path, then use `flint move`.
+
+## With No Computer Flint
+
+Flint works with no Computer Flint. Then:
+
+- `flint open` cannot open a new Flint through the Computer Flint. Obsidian asks for the trust click once for each new vault.
+- `flint fix` runs the repair session in the failed Flint, and prints `Later: flint setup computer`.
+- `flint doctor` fails its `Computer Flint` row, with `Next: flint setup computer`.
+
+## Related
+
+- [Quick Start](/flint/guide/quick-start)
+- [Using Obsidian > Trust](/flint/guide/using-obsidian#trust)
+- [Troubleshooting](/flint/reference/troubleshooting)
+- [The Roster](/flint/guide/the-roster)

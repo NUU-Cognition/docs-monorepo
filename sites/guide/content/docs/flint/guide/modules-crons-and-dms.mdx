@@ -143,11 +143,11 @@ Module logs
   · (module) demo: Wrote 160 bytes to greeting.json.
 ```
 
-To write log lines in your own module, see [Write a Module#Log Lines](/flint/guide-write-a-module-log-lines).
+To write log lines in your own module, see [Write a Module > Log Lines](/flint/guide/write-a-module#log-lines).
 
 A log line is information only. It never fails a sync, and it does not change `flint doctor`. `flint module status <name>` shows the log lines of the plan in the row `Logs`, under the plan. `flint sync --json` gives them in `moduleLogs`.
 
-Some modules need env values, such as a token. Write them in `flint.env.local` (this machine) or `flint.env` (the Flint). Git ignores both files. See [Configuration#Env Files](/flint/reference-configuration-env-files).
+Some modules need env values, such as a token. Write them in `flint.env.local` (this machine) or `flint.env` (the Flint). Git ignores both files. See [Configuration > Env Files](/flint/reference/configuration#env-files).
 
 ## Run a Live Module
 
@@ -191,7 +191,7 @@ timezone = "Australia/Sydney"
 prompt   = "Write the brief of the day."
 ```
 
-The name of a schedule has lower-case letters, digits, and hyphens. To keep a long prompt in a file of the Flint, use `prompt-file = "<path>"` in place of `prompt`. [Configuration#The Settings of the Module crons](/flint/reference-configuration-the-settings-of-the-module-crons) lists each key.
+The name of a schedule has lower-case letters, digits, and hyphens. To keep a long prompt in a file of the Flint, use `prompt-file = "<path>"` in place of `prompt`. [Configuration > The Settings of the Module crons](/flint/reference/configuration#the-settings-of-the-module-crons) lists each key.
 
 ### Step 3: Sync
 
@@ -230,7 +230,7 @@ To fire the schedule now, run `flint module crons run morning-brief`. The orches
 
 Only the owner machine fires a schedule. The owner is `machine` of the schedule, else `machine` at the top of the settings file. When you commit the settings file and another machine gets it, the sync on that machine does not make the schedule. So only the owner machine fires the schedule.
 
-The owner check compares the `machine` value with the machine slug of each machine. `flint whoami` shows the slug of this machine in parentheses. Flint does not check that two machines have different slugs. So a slug owner is safe only when each machine that syncs the Flint has a different machine slug. When one exact machine must own a schedule, write its machine id (a UUID) in `machine`. `nuu machine id` prints the machine id of this machine.
+The owner check compares the `machine` value with the machine slug of each machine. `flint whoami` shows the slug of this machine in parentheses. Flint does not check that two machines have different slugs. So a slug owner is safe only when each machine that syncs the Flint has a different machine slug. When one exact machine must own a schedule, write its machine id (a UUID) in `machine`. `nuu computer id` prints the machine id of this machine.
 
 To make this machine the owner of a schedule, run `flint module crons own <name>`:
 
