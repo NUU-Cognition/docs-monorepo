@@ -521,9 +521,9 @@ function publishedSlugs(contentRoot: string): Set<string> {
 
 /**
  * The URLs of the pages of the other doc sets of the Flint that the site
- * publishes (the same site, and a slug in the root meta.json). A link to one
- * of these pages goes to its product tab. A link to a doc set that the site
- * does not publish stays text.
+ * publishes (the same site, and a slug in the root meta.json or in the slugs
+ * that this run ports). A link to one of these pages goes to its product tab.
+ * A link to a doc set that the site does not publish stays text.
  */
 function siblingDocSetLinks(options: {
   meshPath: string;
@@ -531,9 +531,10 @@ function siblingDocSetLinks(options: {
   site: string;
   contentRoot: string;
   targetSite?: string;
+  alsoPublished?: readonly string[];
 }): Map<string, string> {
-  const { meshPath, configPath, site, contentRoot, targetSite } = options;
-  const published = publishedSlugs(contentRoot);
+  const { meshPath, configPath, site, contentRoot, targetSite, alsoPublished } = options;
+  const published = new Set([...publishedSlugs(contentRoot), ...(alsoPublished ?? [])]);
   const links = new Map<string, string>();
 
   for (const other of discoverDocsConfigs(meshPath)) {
@@ -618,8 +619,10 @@ export function portDocConfig(options: {
   flintPath: string;
   docsRepoPath: string;
   targetSite?: string;
+  /** Product slugs of this site that the same run ports, so links to them resolve */
+  alsoPublished?: readonly string[];
 }): PortResult {
-  const { configPath, flintPath, docsRepoPath, targetSite } = options;
+  const { configPath, flintPath, docsRepoPath, targetSite, alsoPublished } = options;
   const meshPath = path.join(flintPath, "Mesh");
 
   const config = parseDocsConfig(configPath);
@@ -646,7 +649,7 @@ export function portDocConfig(options: {
   // deletes nothing. The links of this doc set win over the sibling links.
   const docSet = resolveDocSet(meshPath, configPath, config, true);
   const linkMap = new Map([
-    ...siblingDocSetLinks({ meshPath, configPath, site, contentRoot, targetSite }),
+    ...siblingDocSetLinks({ meshPath, configPath, site, contentRoot, targetSite, alsoPublished }),
     ...docSet.links,
   ]);
   const { indexPage, sections: resolvedSections } = docSet;
@@ -763,12 +766,32 @@ export function portAllDocConfigs(options: {
     console.log(`  - ${path.relative(meshPath, c)}`);
   }
 
+  // The product slugs that this run ports, by site. Each doc set can link to
+  // the others before they are in the root meta.json of the site.
+  const runSlugs = new Map<string, string[]>();
+  for (const configPath of configs) {
+    try {
+      const config = parseDocsConfig(configPath);
+      if (!config.slug) continue;
+      const site = targetSite ?? resolveSite(config);
+      runSlugs.set(site, [...(runSlugs.get(site) ?? []), config.slug]);
+    } catch {
+      // A config that does not parse fails again below, with its error
+    }
+  }
+
   const ok: PortResult[] = [];
   const failed: { configPath: string; error: string }[] = [];
 
   for (const configPath of configs) {
     try {
-      ok.push(portDocConfig({ configPath, flintPath, docsRepoPath, targetSite }));
+      let alsoPublished: string[] = [];
+      try {
+        alsoPublished = runSlugs.get(targetSite ?? resolveSite(parseDocsConfig(configPath))) ?? [];
+      } catch {
+        // portDocConfig reports the parse error
+      }
+      ok.push(portDocConfig({ configPath, flintPath, docsRepoPath, targetSite, alsoPublished }));
     } catch (err) {
       const error = (err as Error).message;
       failed.push({ configPath, error });

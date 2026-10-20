@@ -7,7 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { portDocConfig } from "../src/port.ts";
+import { portAllDocConfigs, portDocConfig } from "../src/port.ts";
 
 const roots = [];
 after(() => {
@@ -163,4 +163,19 @@ test("a doc set whose index does not resolve deletes nothing", () => {
     })
   );
   assert.ok(fs.existsSync(kept));
+});
+
+test("a first run of new doc sets links each set to the others of the run", () => {
+  const f = fixture();
+  // No doc set is on the site yet: the root meta.json lists only the landing page
+  write(path.join(f.contentRoot, "meta.json"), JSON.stringify({ title: "NUU Guide", pages: ["index"] }));
+  portAllDocConfigs({ flintPath: f.flint, docsRepoPath: f.repo });
+  const links = fs.readFileSync(path.join(f.contentRoot, "alpha", "guide", "links.mdx"), "utf-8");
+  assert.match(links, /Other set: \[Sessions and Runs\]\(\/beta\/concepts\/sessions-and-runs\)\./);
+  assert.match(links, /Other set home: \[Beta\]\(\/beta\)\./);
+  // Gamma is ported in the same run, so its page is published too
+  assert.match(links, /Not published: \[Hidden\]\(\/gamma\)\./);
+  assert.match(links, /Missing: Task 1125 Something\./);
+  const meta = JSON.parse(fs.readFileSync(path.join(f.contentRoot, "meta.json"), "utf-8"));
+  assert.deepEqual(meta.pages, ["index", "alpha", "beta", "gamma"]);
 });
