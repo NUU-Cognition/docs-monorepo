@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "commander": "^13.1.0",
