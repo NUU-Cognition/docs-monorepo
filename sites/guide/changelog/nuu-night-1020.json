@@ -1,0 +1,32 @@
+{
+  "title": "Correct links, a page-not-found page, and feedback links",
+  "publishedAt": "2026-10-20T23:55:00+11:00",
+  "intro": "NUU Guide has correct links in the Flint, Orbh, and Vessel guides, and new ways to send feedback.",
+  "sections": [
+    {
+      "heading": "Changes",
+      "changes": [
+        {
+          "kind": "added",
+          "text": "Links to the changelog, a suggestion, and a bug report in the sidebar."
+        },
+        {
+          "kind": "added",
+          "text": "A page-not-found page with the sidebar and the search, and a link to the Guide home."
+        },
+        {
+          "kind": "added",
+          "text": "The Orbh tab shows the Orbh mark."
+        },
+        {
+          "kind": "fixed",
+          "text": "The NUU Vessel examples show the wikilink form `[[Page]]` again, and the Vessel template pages link to pages that exist."
+        },
+        {
+          "kind": "fixed",
+          "text": "A link to a heading of another page, or to a page of another guide, opens that page. A link to a page that the Guide does not publish is now plain text."
+        }
+      ]
+    }
+  ]
+}
