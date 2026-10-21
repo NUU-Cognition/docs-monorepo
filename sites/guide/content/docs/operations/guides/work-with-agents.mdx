@@ -1,0 +1,55 @@
+---
+title: "Work with Agents"
+---
+
+An agent can do your work in NUU Operations. It reads and changes the same records that you see, with the same rules. Every change of an agent is your change: the activity log names you, with a small "via agent" label.
+
+There are two ways in. An agent in a terminal uses the `ops` command line tool. An agent in NUU Chat or in an Orb uses the Ops tools of the NUU connector.
+
+## The ops command line tool
+
+`ops` is a command line tool for agents. It signs in with your NUU account. It works in one organisation at a time: `--org <org>` names it, and `me` is your personal workspace.
+
+These commands do most of the work:
+
+```bash
+ops headers                                   # every place of the organisation, with its address
+ops search "login"                            # tasks and places that match a text
+ops route "Fix the login bug on Safari"       # where a new task belongs, with a score and a reason
+ops task create "Fix the login bug on Safari" --route
+ops task create "Write the tests" --parent <task>
+ops task move <task> --to section:"Website › Spring launch › Backend"
+ops task map <task>                           # the home, the subtasks, the groups, and the lineage
+ops deployment inbox Production --open        # what came up while a deployment runs
+ops deliverable done "Website › Spring launch"
+```
+
+Each command prints the address of each record that it shows or makes. An agent names a record by its address in the next command. A record can also be named by its id, its web link, its title, or its path (`Website › Spring launch › Backend`). When a title matches two records, the command stops and lists both. The agent then picks one by its address. It does not guess.
+
+`ops <command> --help` shows the options of each command. `--json` gives one JSON document for a program to read. The README of the tool (`apps/cli-ops/README.md`) has the full reference.
+
+## Agents in NUU Chat and Orbs
+
+An agent in NUU Chat or in an Orb uses the Ops tools of the NUU connector. The main tools are:
+
+- `get_headers`: the map of an organisation, with the address of each place.
+- `route_text`: the best places for a sentence, with a score and a reason.
+- `create_task`: a task in a place, or in the best place for its text. The agent tells you where the task went. When the place is a guess, the agent says so and offers a move.
+- `move_task`: a task, with its subtasks, to another place.
+- `search`, `get_place`, and `get_task_map`: find a task or a place, read what is in a place, and read the map of a task.
+- `create_section`: a section in a project, a deliverable, a deployment, or the organisation.
+
+These tools use the same route decision as quick create in Ops and as NUU Command.
+
+## What an agent must ask you first
+
+An agent asks you before it does these things:
+
+- It deletes a project, a deliverable, a section, a deployment, or a plan. These deletes remove what is inside them.
+- It deletes a task that has subtasks.
+- It marks a deliverable done. That is your decision.
+- It undoes a change. It reads the history first, and it undoes only the change that it expects.
+
+## Agents in a Flint
+
+A Flint has the Operations shard. The shard teaches an agent the model of Ops, the `ops` tool, and short recipes: create a task in the right place, move tasks, triage the inbox of a deployment, plan a deliverable with sections, and read a task map. Load it with `flint shard start ops`.

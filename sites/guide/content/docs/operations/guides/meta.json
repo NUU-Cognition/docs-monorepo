@@ -7,6 +7,7 @@
     "move-tasks",
     "run-a-deployment",
     "read-a-task-map",
-    "use-nuu-command"
+    "use-nuu-command",
+    "work-with-agents"
   ]
 }
