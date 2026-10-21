@@ -8,21 +8,25 @@ NUU Operations is a delivery graph. You need a small set of nouns to use it. Eac
 
 **Workspace.** A workspace is the place you work. It is either personal, or it is an organisation you belong to. See [About Workspaces](/operations/concepts/about-workspaces).
 
-**Project.** A project is the top container in a workspace. It holds deliverables and a project backlog.
+**Project.** A project is the top container in a workspace. It holds deliverables, sections, and deployments. It has one backlog section.
 
-**Deliverable.** A deliverable is a scoped chunk of work inside a project. Its state comes from its subsections, not from a manual status you type in. See [About Deliverables](/operations/concepts/about-deliverables).
+**Deliverable.** A deliverable is a scoped chunk of work inside a project. It holds sections. A person marks a deliverable done. See [About Deliverables](/operations/concepts/about-deliverables).
 
-**Subsection.** A subsection is one node in the delivery graph. Tasks live in it. A subsection can depend on other subsections. A subsection is ready, in progress, blocked, or done.
+**Section.** A section is a group of tasks with one purpose. It is one node in the delivery graph. A section has one home: a deliverable, a project, a deployment, or the workspace. A section can depend on other sections. See [About Sections](/operations/concepts/about-sections).
 
-**Closer.** The closer is the last subsection of a deliverable. Every deliverable has exactly one. Completing the closer completes the deliverable.
+**Task.** A task is one unit of work. It lives in a section. It has a state of to do, doing, or done. A task can have subtasks. See [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs).
 
-**Task.** A task is one unit of work. It can sit in the master backlog, in a project backlog, or in a subsection. It has a state of to do, doing, or done. See [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs).
+**Subtask.** A subtask is a task under another task. Subtasks form a tree. A subtask lives where its root task lives.
 
-**Backlog.** A backlog is a holding place for tasks that are not yet in a subsection. There is one master backlog for the workspace. Each project also has its own backlog.
+**Backlog.** A backlog is a section that holds work that is not committed yet. Each project has one backlog section. The workspace has one master backlog section.
+
+**Deployment.** A deployment is something that you keep running, for example a site or a service. An active deployment has an inbox section for the work that comes up while it runs. See [About Deployments](/operations/concepts/about-deployments).
+
+**Address.** Every project, deliverable, section, task, deployment, and notepad has an address. An address names one record exactly. See [About Addresses](/operations/concepts/about-addresses).
 
 **Calendar.** The calendar is a time view of the active workspace. It shows open deadlines. It also holds day labels, which are banners across one or more days.
 
-**Map.** The map is a picture of the organisation delivery graph. It shows deliverables as blocks. It shows subsections and the links between them.
+**Map.** The map is a picture of the organisation delivery graph. It shows deliverables as blocks. It shows sections and the links between them.
 
 **Plan.** A plan is a shared, left-to-right graph of steps. Many plans can exist at once. A plan answers what is workable now across projects.
 
@@ -34,31 +38,45 @@ NUU Operations is a delivery graph. You need a small set of nouns to use it. Eac
 
 ## How the nouns relate
 
-A workspace contains projects. A project contains deliverables. A deliverable contains subsections. One of those subsections is the closer.
+A workspace contains projects. A project contains deliverables, sections, and deployments. A deliverable contains sections. A section contains tasks. A task can contain subtasks.
 
-Tasks move between backlogs and subsections. When a task sits in a subsection, it is committed work. When it sits in a backlog, it is not yet committed.
+Tasks live in sections. The backlog is a section too. When a task sits in the backlog, it is not committed yet. When it sits in a section of a deliverable, it is committed work.
 
-Deadlines attach to projects, deliverables, subsections, tasks, and plan steps. The calendar plots those dates. The personal deadline view shows dates from every organisation you belong to.
+A deployment has an inbox section. A deliverable can come from the inbox of a deployment, and it can ship to a deployment. That loop is how a running thing gets its next piece of work.
 
-Plans and the map both read the same delivery records. They do not replace the subsection graph. They are other views of work.
+Deadlines attach to projects, deliverables, sections, tasks, and plan steps. The calendar plots those dates. The personal deadline view shows dates from every organisation you belong to.
+
+Plans and the map both read the same delivery records. They do not replace the section graph. They are other views of work.
 
 Strikes sit beside this graph. You can use a strike to run your own day. You do not need a strike to deliver a project.
 
 Notifications and the changelog sit beside the graph too. Notifications tell you about assignments, moves, comments, and due dates. The changelog tells you what is new in the product.
 
-## Status that the service derives
+## Done and not done
 
-You do not set deliverable status by hand. The service derives it.
+The service derives the status of a section. You set the status of a deliverable.
 
-- A subsection is done when every task in it is done.
-- A subsection is blocked when a subsection it depends on is not done.
-- A deliverable is completed when its closer is completed.
+- A section is done when it has root tasks and every root task is done.
+- A section is blocked when a section it depends on is not done.
+- A deliverable is done when a person marks it done. A person can also reopen it.
 
-This is why the closer matters. The closer is the gate. Work above it can be done. The deliverable is not delivered until the closer is done.
+This keeps "we did the work" distinct from "we delivered it". The sections can all be done while the deliverable is still open. You decide when it is delivered.
+
+## Getting around
+
+Ops keeps a live list of the places of the active workspace: its projects, deliverables, sections, and deployments. Three tools read that list, so they open with no wait:
+
+- **Go to** (Cmd+K) takes you to any place.
+- **Quick create** (`C` or `N`) makes a task and suggests the place for it.
+- **Move** (`M`) moves tasks or a section to another place.
+
+See [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place) and [Move Tasks](/operations/guides/move-tasks).
 
 ## Further reading
 
 - [About Workspaces](/operations/concepts/about-workspaces)
 - [About Deliverables](/operations/concepts/about-deliverables)
+- [About Sections](/operations/concepts/about-sections)
 - [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs)
+- [About Deployments](/operations/concepts/about-deployments)
 - [Introduction](/operations)
