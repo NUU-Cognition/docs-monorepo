@@ -15,7 +15,7 @@ Select a task in a list, point at a task row, or open the task. Press `M`. The M
 
 You can also open Move from the menu of a task row, or from Go to: press Cmd+K and choose "Move this task".
 
-The dialog lists the places of the workspace. It opens at once, because Ops keeps a live list of those places. Type part of a name to filter the list.
+The dialog opens at once, because Ops keeps a live list of the places of the workspace. It shows your recent places first, then the places of the current project. Type part of a name to search every place.
 
 ## Choose a place
 
@@ -26,16 +26,19 @@ Choose where the task goes:
 | A section | That section |
 | A project | The backlog section of the project |
 | A deliverable | The first open section of the deliverable. If it has no open section, the service makes one. |
-| A deployment | The inbox of the deployment |
-| A task | Under that task, as a subtask |
+| An active deployment | The inbox of the deployment |
 
-Confirm the move. The task does not copy. It moves.
+Press Enter to move. Press Esc to cancel. The task does not copy. It moves.
+
+After the move, a message shows where the task went. Choose **Open** to go there, or **Undo** to move it back.
+
+The dialog also has the choice **No home (unplaced)**. It takes the task out of every section. Use it only when the task has no place yet.
 
 ## Subtasks move too
 
 When you move a task, its subtasks move with it. The whole tree goes to the new place. You do not move subtasks one by one.
 
-To move a subtask out of its tree, move it to a section. It becomes a root task there.
+To change the tree itself, use the subtasks of the task. You can put a subtask under another subtask, or take it up one level. A subtask that goes up from the first level becomes a root task in the same home. See [Read a Task Map](/operations/guides/read-a-task-map).
 
 ## Move many tasks
 
@@ -45,9 +48,11 @@ Each selected task moves with its subtasks. Use this to clear a backlog or an in
 
 ## Move a section
 
-Open the menu in the header of the section. Choose **Move…**. Choose a new home in the same project: the project, a deliverable, or a deployment.
+Open the menu in the header of the section. Choose **Move…**. Choose a new home: a project, a deliverable, or a deployment.
 
-The section keeps its tasks and their order. Use this when work that started in the project becomes part of a deliverable.
+The section keeps its tasks, their subtasks, and their order. It goes to the end of its new home. Use this when work that started in the project becomes part of a deliverable.
+
+A backlog, a queue, or an inbox section cannot move.
 
 ## Capture first, commit later
 

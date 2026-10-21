@@ -2,7 +2,7 @@
 title: "Read a Task Map"
 ---
 
-This guide shows you how to read the task map of a task. The task map shows where a task sits and how it connects to other work. At the end you know the tree of the task, its home, its groups, and its history.
+This guide shows you how to read the task map of a task. The task map shows where a task sits and how it connects to other work. At the end you know the home of the task, its history, its groups, and its subtasks, and you can link it to other tasks.
 
 ## Prerequisites
 
@@ -10,45 +10,34 @@ This guide shows you how to read the task map of a task. The task map shows wher
 
 ## Open the task map
 
-Open the task. Open its task map.
+Open the task. Choose **Task map**. The task map opens on its own page.
 
-The map has five parts: the tree, the home, the groups, the lineage, and the related tasks.
+The map has these parts, from top to bottom: a search, the home, the lineage, the task groups, the subtasks, and the related records.
 
-## The tree
-
-The tree shows the root task and all the subtasks under it. The task that you opened is marked in the tree.
-
-If you opened a subtask, the tree starts at its root task. So you always see the whole tree.
-
-Each task in the tree shows its state. The root task shows how many of its subtasks are done.
-
-To add a subtask, open the task that should hold it, and add a subtask there. A tree can be at most six levels deep.
+Each task on the map opens its own map. The card of the task opens the task.
 
 ## The home
 
-The home shows where the task lives:
+The home is the path to the task: the project, the deliverable, the section, or the deployment. Choose a part of the path to go there.
 
-- the project
-- the deliverable, when the task is in a deliverable
-- the section
-- the deployment, when the task is in the inbox of a deployment
-
-A subtask has the home of its root task. Choose a part of the home to go there.
-
-## The groups
-
-A task can be in task groups. A task group collects tasks that belong together, across sections and projects. The map lists each group of the task with its members.
+A subtask has the home of its root task.
 
 ## The lineage
 
-The lineage shows where the task came from and where its work went:
+The lineage shows where the task came from and where its work went. It reads from top to bottom:
+
+- **Continues from**: the earlier tasks that this task continues.
+- The task itself.
+- **Continued by**: the later tasks that continue this task.
+
+Under the flow, the map lists the other links:
 
 | Link | Meaning |
 | --- | --- |
 | Split from | This task was split out of another task. |
+| Split into | This task was split into these tasks. |
 | Merged into | This task was merged into another task. |
-| Continues from | This task continues the work of an earlier task. |
-| Continued by | A later task continues the work of this task. |
+| Absorbed | These tasks were merged into this task. |
 | After | This task comes after these tasks. |
 | Before | This task comes before these tasks. |
 
@@ -56,13 +45,31 @@ A split, a merge, or a continue never deletes a task. The old task closes as sup
 
 Use the lineage to follow a piece of work over time, when it moved through more than one task.
 
-## Related tasks
+## The task groups
 
-Related tasks are other tasks that are linked to this task. The link has no order and no history. Use it for work that touches the same thing.
+A task group collects tasks that belong together, across sections and projects. The map shows each group of the task with its members. A group is Open or Done.
+
+## The subtasks
+
+The subtasks part shows the tree under the task, with the count of done subtasks, for example `2/5`. A very large tree shows only its first part.
+
+A tree can be at most six levels deep under its root task.
+
+## Related
+
+Related lists the records that are linked to the task with no order, for example a project, a deliverable, or an address.
+
+## Link the task to other work
+
+Use the search at the top of the map. Choose **Find a task…** and type part of a title. Pick a task. Then choose one:
+
+- **Open map** opens the map of that task.
+- **This task comes after it** puts this task after the picked task.
+- **Add it to a group…** adds the picked task to a group of this task. You can also make a new group with both tasks.
 
 ## What the task page shows
 
-The task page shows what you need to do the work, in this order:
+The task page shows what you need to do the work:
 
 - the status and the title
 - the address of the task
@@ -70,6 +77,7 @@ The task page shows what you need to do the work, in this order:
 - the description, in Markdown
 - the subtasks
 - the updates: the discussion of the task
+- the **Task map** link, and the notepads that mention the task
 
 The rare parts and the developer parts are under **More**, closed by default: the type of the task, commits, changes to the lineage and the groups, relations, attachments, launches, and sessions. Open More when you need them.
 

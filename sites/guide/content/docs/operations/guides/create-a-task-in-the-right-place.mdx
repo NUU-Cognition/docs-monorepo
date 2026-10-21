@@ -38,29 +38,43 @@ Go to also has actions. "New task" opens quick create with the text that you typ
 
 ## Quick create a task
 
-Press `C` or `N` anywhere in Ops. Quick create opens. The key does nothing while the cursor is in a text field, or while a menu or a dialog is open.
+Open quick create in one of these ways:
 
-Quick create starts with the place of the page that you are on.
+- Press `C` or `N` anywhere in Ops. The key does nothing while the cursor is in a text field, or while a menu or a dialog is open.
+- Choose **New task** in the header.
+- Choose "New task" in Go to. The text that you typed in Go to becomes the title.
 
-Type the task. Write it the way you would say it, for example `Fix the checkout total on mobile`.
+Type the task in the field "What needs to be done?". Write it the way you would say it, for example `Fix the checkout total on mobile`.
 
-As you type, Ops suggests places for the task. The best place is first. Each suggestion shows its path.
+Under the field, quick create lists the places where the task can go, in groups:
 
-The first suggestions come at once, from a fast match of the place titles. A moment later the suggestions of the server arrive, and the list can change.
+| Group | What it holds |
+| --- | --- |
+| Chosen | The place that you picked |
+| This page | The place of the page that you are on |
+| Suggested | The places that match your text |
+| Recent | The places that you used recently |
+| Other | The workspace backlog, and **Other place…** to search every place |
 
-Keep the first place, or choose another one. Then create the task. Ops makes the task in that place.
+The highlighted place is where the task goes. At first, it is the place of the page that you are on. The line at the bottom says where the task goes, for example "The task goes to Website / Spring launch / Checkout".
+
+Press Tab or Shift+Tab to move through the places. Or choose **Other place…** and search for any place.
+
+Press Enter to create the task. Press Shift+Enter to create it and keep the field open for the next task.
+
+A message shows where the task went. Choose **Open** to go to the task, or **Undo** to remove it.
 
 If you choose a project, the task goes to the backlog section of the project. If you choose a deliverable, it goes to the first open section of the deliverable. If you choose a deployment, it goes to the inbox of the deployment.
 
 ## Smart suggestions
 
-Quick create has a switch: Smart suggestions. It is on by default.
+As you type, the Suggested group fills at once from a fast match of the place titles. After a short pause, the server ranks the places again, and the group can change. While the server works, the group says "thinking…".
 
-The server matches your text against the titles of the places, their hidden context, and the titles of their recent tasks. When Smart suggestions is on, Ops also asks a decision model to choose the best place from those matches. The model has a short time limit. If it does not answer in time, you get the text match. You never wait for it.
+The server matches your text against the titles of the places, their hidden context, and the titles of their recent tasks. When **Smart suggestions** is on, Ops also asks a decision model (AI) to choose the best place from those matches. The model has a short time limit. If it does not answer in time, you get the text match. You never wait for it.
 
-When it is off, Ops makes no model call. The suggestions come from the text match only.
+When it is off, Ops makes no model call. The suggestions match the words only.
 
-The switch is your setting. It stays the same the next time you open quick create.
+The switch Smart suggestions is at the bottom of quick create. It is also in Settings. It is on by default. It is your setting, so it stays the same on every device where you sign in.
 
 ## Help the suggestions
 
