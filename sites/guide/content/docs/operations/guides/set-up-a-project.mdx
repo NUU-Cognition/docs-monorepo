@@ -2,7 +2,7 @@
 title: "Set Up a Project"
 ---
 
-This guide shows you how to create a project and give it deliverables. At the end you have a project with one or more deliverables. Each deliverable already has a closer.
+This guide shows you how to create a project and give it structure. At the end you have a project with a backlog, one or more deliverables, and sections for the work.
 
 ## Prerequisites
 
@@ -21,30 +21,52 @@ Create a project. Give it a name. You can add a next-update date. That date is o
 
 The new project is active. Open it.
 
-A project has several views. Use the overview for the project itself. Use the backlog for uncommitted tasks. Use deliverables for the delivery graph. Use activity for what changed on this project.
+The project page shows what you need to do the work: its deliverables, its sections, its backlog, and its deployments. Activity is behind a tab or a link.
 
 You can attach a deadline to the project now, or later. The date lives on the deadline. See [Plan Your Week](/operations/workflows/plan-your-week).
 
+## Give the project context
+
+Open the edit sheet of the project. Fill in the Context field: "What this is about, for search and suggestions". Write a short paragraph in Markdown. Name the product, the people it is for, and the words that people use for it.
+
+The page does not show the context. Search and the place suggestions read it. A good context helps a new task find this project.
+
+## Capture work in the backlog
+
+The project has one backlog section. The service makes it the first time the project needs it. Put work there that is not committed yet.
+
+In the backlog, tasks sort by priority, then by order.
+
 ## Add deliverables
 
-Open the deliverables view of the project. Create a deliverable. Give it a title. You can give it a date at creation. If you do, the service creates a deadline on the closer.
+Create a deliverable for each scoped outcome. Give it a title. You can give it a date at creation. If you do, the service creates a deadline for it.
 
-The service also creates the closer subsection. The closer has the deliverable name. It holds one Delivered task. You do not create the closer yourself.
+A new deliverable is empty. The service makes no section and no task for it. Add the sections yourself. See [Plan Work with Sections](/operations/guides/plan-work-with-sections).
 
-Add one deliverable for each scoped outcome. Do not put every outcome in one deliverable. The graph works better when each deliverable is one chunk.
+Do not put every outcome in one deliverable. The graph works better when each deliverable is one chunk.
 
 A workspace-wide deliverables list also shows these rows across projects. You can search that list by deliverable name or by project name.
 
+## Add project sections
+
+Some work has no deliverable yet. You can still name it. Add a section to the project itself. Add tasks to it.
+
+When you scope a deliverable later, move the section into it. See [Move Tasks](/operations/guides/move-tasks).
+
+## Add a deployment
+
+If the project runs something, for example a site, an app, or a service, add a deployment to the project. See [Run a Deployment](/operations/guides/run-a-deployment).
+
 ## Check what you have
 
-Open a deliverable. You should see the closer. You should see the Delivered task inside it. The deliverable is open. It stays open until the closer is done.
+Open the project. You should see the backlog, the deliverables, and the project sections. Open a deliverable. You should see its sections. The deliverable is open. It stays open until a person marks it done.
 
-You can rename the project. You can rename a deliverable. If you rename a deliverable, the closer title follows.
+You can rename the project. You can rename a deliverable.
 
-You can delete a project or a deliverable. Deleting a deliverable removes its subsections and its tasks. Do that only when the chunk is wrong.
+You can delete a project or a deliverable. Deleting a deliverable removes its sections and its tasks. Do that only when the chunk is wrong.
 
 ## Next steps
 
-- Add subsections and set dependencies in [Plan Work with Subsections](/operations/guides/plan-work-with-subsections).
-- Capture work in a backlog in [Move Tasks from Backlog](/operations/guides/move-tasks-from-backlog).
-- Read [About Deliverables](/operations/concepts/about-deliverables) if the closer is not clear.
+- Add sections and set dependencies in [Plan Work with Sections](/operations/guides/plan-work-with-sections).
+- Make tasks in the right place in [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place).
+- Read [About Deliverables](/operations/concepts/about-deliverables) to learn when a deliverable is done.

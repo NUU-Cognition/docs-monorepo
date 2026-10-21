@@ -1,0 +1,86 @@
+---
+title: "Run a Deployment"
+---
+
+This guide shows you how to set up a deployment, keep its inbox in order, and turn its work into the next deliverable. At the end you have a deployment that collects its own work and feeds it back into delivery.
+
+## Prerequisites
+
+- You have a workspace open. A project is optional. See [Set Up a Project](/operations/guides/set-up-a-project).
+- You know what a deployment and its inbox are. See [About Deployments](/operations/concepts/about-deployments).
+
+## Create the deployment
+
+Open Deployments. You can open it for the whole workspace, or from the Deployments tab of a project.
+
+Choose **New deployment**. Fill in the form:
+
+- **Name.** What people call it, for example `NUU Ops on the web`.
+- **Version (optional).** A free label, for example `1.4` or `Spring launch`.
+- **Project (optional).** The project that the deployment belongs to. Choose No project when it stands alone.
+- **Notes.** Text that the page shows.
+- **Context.** What this is about, for search and suggestions. The page does not show it.
+
+Choose **Create**.
+
+## Make it active
+
+Set the status of the deployment to Active. The service makes its inbox section.
+
+The other statuses are Paused and Retired. Use Paused when it stops for a while. Use Retired when it is finished.
+
+The deployments list shows each deployment with its project, its status, the number of tasks in its inbox, and its check-up schedule.
+
+## Set a check-up schedule
+
+Set the check-up of the deployment to Daily, Weekly, or Monthly. The list shows the schedule and the next check-up, for example `Weekly · next Wed 28 Oct, 11:20 pm`.
+
+At each due time, the service adds a task to the inbox: "Check" and the name of the deployment. Do the check. Look at the deployment. Add a task for each problem that you find. Then mark the check task done.
+
+Set the check-up to Off when you do not want it.
+
+## Triage the inbox
+
+Open the inbox of the deployment. It holds the tasks that came up while the deployment runs.
+
+Give each task a tag:
+
+- **Feedback**: something a person said about it.
+- **Hotfix**: a bug to fix now.
+- **Ongoing**: upkeep that goes on while it runs.
+- **Recurring**: comes back on a schedule.
+
+Then decide what to do with each task:
+
+- Do a small task in the inbox, and mark it done.
+- Move a task that belongs to planned work into a section. See [Move Tasks](/operations/guides/move-tasks).
+- Leave the rest for the next deliverable.
+
+## Recurring tasks
+
+Give a task a repeat when the work comes back: daily, weekly, or monthly. When you mark the task done, the service makes its next copy.
+
+## Start a deliverable from the inbox
+
+When the inbox holds enough work for a delivery, turn it into a deliverable.
+
+1. Open the inbox.
+2. Select the tasks for the next delivery.
+3. Choose **Start a deliverable from the inbox**.
+4. Give the deliverable a title.
+
+The service makes a new deliverable with one section. It moves the selected tasks into that section, with their subtasks. The deliverable records that it came from this deployment.
+
+Plan the deliverable as usual. See [Plan Work with Sections](/operations/guides/plan-work-with-sections).
+
+## Ship to the deployment
+
+Set the deployment on the deliverable: the deliverable ships to it. When the work is delivered, mark the deliverable done.
+
+The deployment keeps running. New work comes up in its inbox. The loop starts again.
+
+## Next steps
+
+- Read the loop in [About Deployments](/operations/concepts/about-deployments).
+- Move inbox work in [Move Tasks](/operations/guides/move-tasks).
+- Capture work fast in [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place).
