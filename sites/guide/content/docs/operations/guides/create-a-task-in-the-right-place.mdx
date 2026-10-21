@@ -15,15 +15,32 @@ Ops keeps a live list of the places of the active workspace: each project, deliv
 
 ## Go to a place
 
-Press Cmd+K. Go to opens.
+Press Cmd+K (Ctrl+K on Windows and Linux). Go to opens.
 
-Type part of a name. The list shows the matching projects, deliverables, sections, and deployments. Each row shows the path to the place, for example `Website / Spring launch / Checkout`. Places that you opened recently rank higher.
+With no text, Go to shows your recent places. Type part of a name. The list shows the matching places first: projects, deliverables, sections, and deployments. Each row shows the path to the place, for example `Website / Spring launch / Checkout`. Then the list shows matching tasks and notepads.
 
-Choose a place. Ops opens it.
+Choose a row. Ops opens it. Press Cmd+Enter, or Cmd+click the row, to open it in a new tab.
+
+To narrow the list to one kind, start the text with a prefix:
+
+| Prefix | Kind |
+| --- | --- |
+| `p:` | Projects |
+| `d:` | Deliverables |
+| `s:` | Sections |
+| `y:` | Deployments |
+| `t:` | Tasks |
+| `n:` | Notepads |
+
+Start the text with `>` to switch to another organisation. Paste an address to go straight to its record. See [About Addresses](/operations/concepts/about-addresses).
+
+Go to also has actions. "New task" opens quick create with the text that you typed. "Move this task" opens the Move dialog.
 
 ## Quick create a task
 
-Press `C` or `N` anywhere in Ops, when the cursor is not in a text field. Quick create opens.
+Press `C` or `N` anywhere in Ops. Quick create opens. The key does nothing while the cursor is in a text field, or while a menu or a dialog is open.
+
+Quick create starts with the place of the page that you are on.
 
 Type the task. Write it the way you would say it, for example `Fix the checkout total on mobile`.
 

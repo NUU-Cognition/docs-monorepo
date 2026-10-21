@@ -24,6 +24,8 @@ A workspace can have many deployments. A project can have many deployments too.
 
 **Paused** means it does not run for now. **Retired** means it is finished.
 
+If you delete a deployment, its inbox stays as a plain section. The tasks in it are not lost.
+
 The deployments list shows active deployments first, then paused ones, then retired ones.
 
 ## The inbox
@@ -43,13 +45,15 @@ You can add a task to the inbox, do it there, or move it to another section.
 
 ## Check-ups
 
-A deployment can have a check-up schedule: daily, weekly, or monthly. At each due time, the service adds a task "Check" and the name of the deployment to the inbox. Then it sets the next due time.
+A deployment can have a check-up schedule: daily, weekly, or monthly. At each due time, the service adds a task "Check" and the name of the deployment to the inbox, with the tag Ongoing. Then it sets the next due time.
+
+Check-ups run only while the deployment is active. The service does not add a second check-up task while the last one is still open in the inbox. You can also add a check-up task at once with **Check now**.
 
 Use a check-up to look at the deployment on a regular basis. Find bugs, add hotfix tasks, and move work to where it belongs.
 
 ## Recurring tasks
 
-A task can repeat: daily, weekly, or monthly. When you mark a recurring task done, the service makes its next copy. The work comes back without a new capture.
+A task can repeat: daily, weekly, or monthly. When you mark a recurring task done, the service makes its next copy in the same place. The work comes back without a new capture.
 
 ## The loop
 
@@ -57,8 +61,8 @@ A deployment and its deliverables form a loop:
 
 1. A deliverable ships to a deployment.
 2. The deployment runs. Tasks come up in its inbox.
-3. You select inbox tasks and start a deliverable from the inbox. The service makes a new deliverable with one section, and moves the selected tasks into that section. The deliverable records that it came from the deployment.
-4. You do the work and mark the deliverable done. It ships to the deployment again.
+3. You select inbox tasks and start a deliverable from the inbox. The service makes a new deliverable with one section, and moves the selected tasks into that section. The deliverable records that it came from the deployment, and it ships to the deployment.
+4. You do the work and mark the deliverable done. The deployment runs on, and new work comes up in its inbox.
 
 Each turn of the loop is one deliverable. The deployment stays. See [Run a Deployment](/operations/guides/run-a-deployment).
 

@@ -23,61 +23,72 @@ Choose **New deployment**. Fill in the form:
 
 Choose **Create**.
 
+The deployments list shows each deployment with its version label, its project, its status, the number of open tasks in its inbox, and its check-up.
+
 ## Make it active
 
-Set the status of the deployment to Active. The service makes its inbox section.
+Open the deployment. Set its status to Active, or choose **Make active** in the Inbox part of the page. The service makes the inbox section.
 
-The other statuses are Paused and Retired. Use Paused when it stops for a while. Use Retired when it is finished.
+The other statuses are Paused and Retired. Use Paused when it stops for a while. Use Retired when it is finished. The inbox stays, but check-ups run only while the deployment is active.
 
-The deployments list shows each deployment with its project, its status, the number of tasks in its inbox, and its check-up schedule.
+## Add work to the inbox
 
-## Set a check-up schedule
+The Inbox part of the page is for what comes up while the deployment runs: feedback, hotfixes, and upkeep.
 
-Set the check-up of the deployment to Daily, Weekly, or Monthly. The list shows the schedule and the next check-up, for example `Weekly · next Wed 28 Oct, 11:20 pm`.
-
-At each due time, the service adds a task to the inbox: "Check" and the name of the deployment. Do the check. Look at the deployment. Add a task for each problem that you find. Then mark the check task done.
-
-Set the check-up to Off when you do not want it.
-
-## Triage the inbox
-
-Open the inbox of the deployment. It holds the tasks that came up while the deployment runs.
-
-Give each task a tag:
+To add a task, choose its tag, type the task, and choose **Add**. The tags are:
 
 - **Feedback**: something a person said about it.
 - **Hotfix**: a bug to fix now.
 - **Ongoing**: upkeep that goes on while it runs.
 - **Recurring**: comes back on a schedule.
 
-Then decide what to do with each task:
+For a recurring task, also choose how often it comes back: daily, weekly, or monthly. When you mark a recurring task done, the service makes its next copy in the same place.
+
+You can also put tasks in the inbox from anywhere: choose the deployment as the place in quick create or in the Move dialog. See [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place).
+
+## Triage the inbox
+
+Use the tag chips to show the tasks of one tag. Choose **Show done** to see the done tasks too.
+
+Decide what to do with each task:
 
 - Do a small task in the inbox, and mark it done.
 - Move a task that belongs to planned work into a section. See [Move Tasks](/operations/guides/move-tasks).
 - Leave the rest for the next deliverable.
 
-## Recurring tasks
+## Set a check-up
 
-Give a task a repeat when the work comes back: daily, weekly, or monthly. When you mark the task done, the service makes its next copy.
+In the Check-up part of the page, choose Daily, Weekly, or Monthly. The page shows the next check-up. Choose Off to stop the check-ups.
+
+When a check-up is due, the service adds the task "Check" and the name of the deployment to the inbox, with the tag Ongoing. The service looks for due check-ups once an hour, so the task can come up to an hour after the due time. If the last check-up task is still open in the inbox, the service does not add a second one.
+
+Choose **Check now** to add a check-up task at once.
+
+Do the check. Look at the deployment. Add a task for each problem that you find. Then mark the check-up task done.
 
 ## Start a deliverable from the inbox
 
 When the inbox holds enough work for a delivery, turn it into a deliverable.
 
-1. Open the inbox.
-2. Select the tasks for the next delivery.
-3. Choose **Start a deliverable from the inbox**.
-4. Give the deliverable a title.
+1. Choose **Start a deliverable**.
+2. Give the deliverable a title.
+3. If the deployment has no project, choose the project where the deliverable goes.
+4. Under Tasks to move, pick the tasks for this delivery. Choose **Pick all** to pick every task.
+5. Choose **Start**.
 
-The service makes a new deliverable with one section. It moves the selected tasks into that section, with their subtasks. The deliverable records that it came from this deployment.
+The tasks that you pick move out of the inbox into the new deliverable. The service makes the deliverable with one section and moves the tasks into it, with their subtasks. The deliverable records that it came from this deployment, and it ships to this deployment.
 
 Plan the deliverable as usual. See [Plan Work with Sections](/operations/guides/plan-work-with-sections).
 
-## Ship to the deployment
+## Close the loop
 
-Set the deployment on the deliverable: the deliverable ships to it. When the work is delivered, mark the deliverable done.
+The Deliverables part of the deployment page shows what ships here and what started from the inbox. Each deliverable shows Open or Done.
 
-The deployment keeps running. New work comes up in its inbox. The loop starts again.
+When the work is delivered, mark the deliverable done. The deployment keeps running. New work comes up in its inbox. The loop starts again.
+
+## Delete a deployment
+
+When you delete a deployment, its inbox stays as a plain section. The tasks in it are not lost.
 
 ## Next steps
 
