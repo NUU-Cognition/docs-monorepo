@@ -12,9 +12,12 @@ You need:
 - Node.js 26.1 or newer, with `npm` (an older Node.js stops `flint` with one line that names the version)
 - Git
 - internet access for the setup
-- Obsidian, if you want it (it is optional)
+- Obsidian, if you want it (it is optional). On Linux, use the AppImage or the `.deb` of Obsidian. Flint does not open a Flatpak or a Snap Obsidian.
+- an agent CLI, if you want agents: Claude Code (`claude`) or Codex (`codex`)
 
-An agent can do Steps 1 and 2 with you: `curl -fsSL https://flint.nuucognition.com/install.sh | bash` starts Claude Code with the setup procedure. See [Setting Up a Machine#Set Up With an Agent](/flint/guide-setting-up-a-machine-set-up-with-an-agent).
+You do not have to check these tools yourself. `flint setup` checks them and gives the install command for each tool that is missing.
+
+An agent can do Steps 1 and 2 with you: `curl -fsSL https://flint.nuucognition.com/install.sh | bash` starts Claude Code with the setup procedure. See [Setting Up a Machine > Set Up With an Agent](/flint/guide/setting-up-a-machine#set-up-with-an-agent).
 
 ## Step 1: Install the CLI
 
@@ -24,6 +27,16 @@ flint --version
 ```
 
 The package installs two commands: `flint` and `nuu`. You type `flint`. `nuu` manages the identity of this machine and the network; most people never type it.
+
+On a new machine, `flint` with no command starts `flint setup` in a terminal. With no terminal, it names the first step and exits 0:
+
+```text
+Flint is not set up on this machine. Start with: flint setup
+It sets your Name, checks the tools of this machine, selects the agent default, and makes your Computer Flint.
+Or create a Flint now: flint create "<name>" (it asks your Name first).
+
+Common commands: create, list, open, sync, shard, whoami, status. All commands: flint --help
+```
 
 To see if a newer release exists later:
 
@@ -43,11 +56,47 @@ flint setup
 2. **Git author**: the author of the first commits of new Flints.
 3. **Environment**: a check of Git, Node.js, Obsidian, and the agent CLIs, and the terminal font `JetBrainsMono Nerd Font` (setup asks before it installs the font).
 4. **Agent default**: the first copy of the Orbh profiles and the default target list.
-5. **Computer Flint**: the home Flint of this machine.
+5. **Computer Flint**: the home Flint of this machine. It holds the "Start here" note and the notes of the repair sessions. See [The Computer Flint](/flint/guide/the-computer-flint).
 6. **Guide**: a clone of the Guide of NUU Cognition, a Flint that answers Flint questions with an agent (optional).
 7. **Open and onboarding**: the open of the Computer Flint with your first agent session.
 
-For the full detail of each step, read [Setting Up a Machine](/flint/guide/setting-up-a-machine). To change your Name only later, run `flint config name "<Name>"`. Login and an org stay optional; to share Flints with an org, read [Join Your Org](/flint/guide/join-your-org).
+**The one trust click.** Obsidian asks you to trust the plugins of a new vault. At step 7, click **Trust author and enable plugins** in the Computer Flint. This is the only trust click on this machine. After it, `flint open` opens each new Flint with its plugins on, and Obsidian does not ask again. See [Using Obsidian](/flint/guide/using-obsidian).
+
+> [!note] "Vault not found" at the first open
+> Obsidian does not know the folder of the Computer Flint yet, so the first open can show "Vault not found". Then open Obsidian, choose **Open folder as vault**, and select the folder of the Computer Flint. Click **Trust author and enable plugins**. Later, `flint open computer` opens it.
+
+After setup, `flint` with no command shows your Computer Flint and the next command, and exits 0:
+
+```text
+Flint is set up on this machine.
+Computer Flint: ~/(Computer) Ada Laptop
+
+Next: flint create "<name>"
+Optional: flint doctor
+
+All commands: flint --help
+```
+
+With no Computer Flint, the second line is `Computer Flint: none`, and the block adds `Later: flint setup computer`.
+
+Run `flint setup` again at any time. A second run asks nothing that is stored. It keeps the Computer Flint and the Guide. It opens the Computer Flint and resumes the onboarding session.
+
+When Git has no author, `flint create` stops before it writes anything:
+
+```text
+✘ Git has no author name (user.name) and no author email (user.email) on this machine. The first commit of the Flint needs a name and an email. flint setup sets them. Nothing was written.
+  Next: flint setup
+  Or:   flint create "My Notes" --no-git
+```
+
+You can also set the Git author yourself:
+
+```bash
+git config --global user.name "Ada Lovelace"
+git config --global user.email "ada@example.com"
+```
+
+For the full detail of each step, read [Setting Up a Machine](/flint/guide/setting-up-a-machine). To change your Name only later, run `flint config name "<Name>"`. If you skip setup, `flint create` asks for your Name first. Login and an org stay optional; to share Flints with an org, read [Join Your Org](/flint/guide/join-your-org).
 
 ## Step 3: Create a Flint
 
@@ -64,11 +113,21 @@ flint create "My Notes"
   Shards   : invironments, flint, orbh (preset blank)
   Git      : a local repository (no remote)
   Obsidian : payload 0.7.0 installed · opened
-             Click "Trust author and enable plugins" once in Obsidian.
 Next: flint open "My Notes"
 Or start an agent: cd '/home/ada/notes/(Flint) My Notes' && flint orbh i
 Later: flint git publish <url>
 ```
+
+In a terminal, `flint create` installs the Obsidian payload and opens the Flint in Obsidian. After the trust click in your Computer Flint, the new Flint opens with its plugins on, and Obsidian does not ask.
+
+On a machine with no Computer Flint, or when the NUU Flint plugin of the new vault does not answer, Obsidian asks once for the new vault. The `Obsidian` row then has one more line:
+
+```text
+  Obsidian : payload 0.7.0 installed · opened
+             Click "Trust author and enable plugins" once in Obsidian.
+```
+
+With `--no-open`, or with no terminal, Obsidian does not open, and the row says `payload 0.7.0 installed · not opened`. See [Using Obsidian](/flint/guide/using-obsidian).
 
 An address that starts with `@/` names no org. It works only on this machine. To share the Flint, give it an org: `flint org set <org>`.
 
@@ -87,7 +146,7 @@ If the network is down, `flint create` still makes the Flint. It names each part
 
 ## Step 4: Open the Flint in Obsidian
 
-In a terminal, `flint create` already installs the Obsidian payload and opens the Flint in Obsidian. Obsidian asks once for the new vault: click **Trust author and enable plugins**. To open or focus the Flint later, run:
+In a terminal, `flint create` already installs the Obsidian payload and opens the Flint in Obsidian (see Step 3). To open or focus the Flint later, run:
 
 ```bash
 flint open "My Notes"
@@ -150,14 +209,35 @@ From inside the Flint, run:
 flint orbh i
 ```
 
-This starts an interactive agent session with Orbh session tracking. With no target, Orbh uses the default target list and selects the first target that can run. If no target can run, it prints the one install command that makes one available. For the full detail, read [Agent Sessions](/flint/modules/agent-sessions).
+This starts an interactive agent session with Orbh session tracking. With no target, Orbh uses the default target list and selects the first target that can run. The list that Orbh ships is `claude/o55h`, then `codex/a6h`. Before the session starts, Orbh prints the target, and the reason for each target that it skipped:
+
+```text
+claude/o55h skipped: claude is not installed
+Target: codex/a6h (default list)
+```
+
+If no target can run, it prints the one install command that makes one available. `flint orbh profiles default` shows the list and the state of each target. An explicit target, such as `flint orbh i codex/a6h`, never falls back to another target. For the full detail, read [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list).
+
+## When a Command Fails
+
+When `flint sync`, `flint create`, `flint git sync`, `flint shard install`, `flint setup`, or `flint tinderbox sync` fails, its output ends with one more line:
+
+```text
+  Or:   flint fix
+```
+
+`flint fix` starts a repair session: an agent in your Computer Flint that reads the failure and helps you repair it. The agent asks you before each change to the Git history, to the lock, or to `flint.toml`.
+
+`flint doctor` checks this machine and the current Flint at any time. It starts no agent. Each failed check has one next command. See [Doctor and Fix](/flint/guide/doctor-and-fix).
 
 ## Next Steps
 
 - [Setting Up a Machine](/flint/guide/setting-up-a-machine) — the seven setup steps in full detail
+- [The Computer Flint](/flint/guide/the-computer-flint) — the home of this machine, its rename, and the repair notes
 - [Creating a Flint](/flint/guide/creating-a-flint) — presets, types, clones, and the result rows
 - [Join Your Org](/flint/guide/join-your-org) — log in, set your org, enroll this machine, and share Flints
 - [Doctor and Fix](/flint/guide/doctor-and-fix) — check this machine with `flint doctor`, and repair a failure with `flint fix`
+- [Troubleshooting](/flint/reference/troubleshooting) — the common problems and the next command for each
 - [The Roster](/flint/guide/the-roster) — the list of Flints on this machine
 - [Using Obsidian](/flint/guide/using-obsidian) — the Obsidian payload, applied settings, and backups
 - [Agent Sessions](/flint/modules/agent-sessions) — interactive sessions, targets, and profiles

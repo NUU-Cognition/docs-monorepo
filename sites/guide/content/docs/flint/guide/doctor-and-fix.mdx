@@ -64,7 +64,7 @@ Inside a Flint, the doctor adds six rows:
 
 The doctor runs the plan of each module, as `flint module status` does, and writes nothing. A plan that fails gives `Next: flint fix`. Two cases are a warning: the row passes and shows the next command. A legacy table `[modules.<id>]` of the 0.7.0 pre-releases gives a step by hand (move its keys to `Modules/<Name>.settings.toml`, then remove the table) and `Next: flint module install @nuucognition/module/<id>`. No migration moves the table. A cron schedule that this machine owns, with no Orbh orchestrator that runs, gives `Next: flint orbh orchestrator ensure`. With no module, the row shows `No module is installed`. [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms) explains the modules.
 
-When `flint.toml` cannot be read, the Lock row fails with the error and `flint fix`. The rows flint.toml, Sync plan, Modules, and Obsidian payload then say `Not checked` with `flint fix`. The Git row still runs. Correct the file, then run the doctor again (see [Troubleshooting#A State File Does Not Parse](/flint/reference-troubleshooting-a-state-file-does-not-parse)).
+When `flint.toml` cannot be read, the Lock row fails with the error and `flint fix`. The rows flint.toml, Sync plan, Modules, and Obsidian payload then say `Not checked` with `flint fix`. The Git row still runs. Correct the file, then run the doctor again (see [Troubleshooting > A State File Does Not Parse](/flint/reference/troubleshooting#a-state-file-does-not-parse)).
 
 When `flint.json` does not parse, the Lock row names the file, the line, the column, and the cause.
 

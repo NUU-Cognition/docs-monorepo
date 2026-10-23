@@ -8,7 +8,7 @@ An agent session is a durable record of one agent task. It keeps the prompt, the
 
 A Flint is an environment where agents run shard-based programs. Each run of an agent gets a session. The session tracks the work over time. The Mesh stores the notes and artifacts that the work produces.
 
-Orbh manages sessions. It assigns each session a stable id. It records each run inside the session. This page covers sessions from the view of a Flint user. The Orbh docs cover session management in depth: see [Sessions and Runs](/flint/concept-sessions-and-runs) and [Launching and Resuming Sessions](/flint/guide-launching-and-resuming-sessions).
+Orbh manages sessions. It assigns each session a stable id. It records each run inside the session. This page covers sessions from the view of a Flint user. The Orbh docs cover session management in depth: see [Sessions and Runs](/orbh/concepts/sessions-and-runs) and [Launching and Resuming Sessions](/orbh/guides/launching-and-resuming-sessions).
 
 ## Start an Interactive Session
 
@@ -20,7 +20,7 @@ flint orbh i "Summarise the open tasks in this Flint."
 flint orbh i claude "Review my notes."
 ```
 
-The first argument is an optional runtime target. The next argument is an optional prompt. With no target, Orbh uses its default target list. With no prompt, the session starts empty.
+The first argument is an optional runtime target. A target is `runtime/profile`, such as `codex/a6h`, or a bare runtime, such as `claude`. `flint orbh profiles` lists the profiles of each runtime. The next argument is an optional prompt. With no target, Orbh uses its default target list (see [The Default Target List](#the-default-target-list)). With no prompt, the session starts empty.
 
 Useful flags:
 
@@ -42,6 +42,90 @@ flint obshn "" "Review my notes."
 ```
 
 The first argument is the Orbh profile target. An empty string lets Orbh select from its default target list. The second argument is an optional prompt. See [Using Obsidian](/flint/guide/using-obsidian) for the Obsidian setup.
+
+## The Default Target List
+
+A command with no target (`flint orbh i`, `flint orbh launch "<prompt>"`, `flint orbh request "<prompt>"`) starts the first available target of the **default target list**. The list that Orbh ships:
+
+1. `claude/o55h`: Claude Opus 5.5, high effort
+2. `codex/a6h`: GPT-6 Astra, high effort
+
+Before the session starts, the command prints the selected target and each skipped target with its reason:
+
+```text
+claude/o55h skipped: claude is not installed
+Target: codex/a6h (default list)
+```
+
+A target is available when its runtime CLI is installed, its profile exists, its account exists and has no active limit, and its login is not known to be expired. The skip reasons:
+
+| Reason | Next command |
+|---|---|
+| `claude is not installed` | `npm install -g @anthropic-ai/claude-code` |
+| `codex is not installed` | `npm install -g @openai/codex` |
+| `the profile <target> does not exist` | `flint orbh profiles <runtime>`. When this machine has no copy of the shared profiles (`default.json`), the next command is `flint orbh profiles update` |
+| `account '<runtime>/<name>' does not exist` | `flint orbh auth list <runtime>` |
+| `the account <runtime>/<name> is limited until <time>` | `flint orbh auth usage <runtime>` |
+| `the claude login expired`, or `the login of the account claude/<name> expired` | `claude auth login`. For an account, the command sets `CLAUDE_CONFIG_DIR` to the home of the account first |
+| `<entry> is not a runtime/profile target` | `flint orbh profiles default` |
+
+Only Claude has a local check of the login. An expired access token with a valid refresh token is not an expired login.
+
+When no target is available, the command refuses with exit 1. It names the install command or the login command of the first target:
+
+```text
+✘ No target of the default target list is available.
+  claude/o55h skipped: claude is not installed
+  codex/a6h skipped: codex is not installed
+  Next: npm install -g @anthropic-ai/claude-code
+```
+
+### The Three Layers
+
+| Layer | Where | Written by |
+|---|---|---|
+| Flint | `[orbh] default` in `flint.toml` of the Flint | `flint orbh profiles default set --flint <target>...` |
+| Machine | The key `defaultTargets` in the Orbh settings file `~/.nuucognition/orbh/settings.json` | `flint orbh profiles default set <target>...`, and step 4 of `flint setup` |
+| Shipped | The list that Orbh ships: `claude/o55h`, `codex/a6h` | Orbh |
+
+The highest layer that has a list applies. It replaces the lower list; the layers do not merge. The Flint layer in `flint.toml`:
+
+```toml
+[orbh]
+default = ["codex/a6h", "claude/o55h"]
+```
+
+See [Configuration](/flint/reference/configuration) for the `[orbh]` table and the Orbh settings file.
+
+### Show and Change the List
+
+```bash
+flint orbh profiles default                              # The list, its layer, the state of each target, and the selected target
+flint orbh profiles default set codex/a6h claude/o55h    # Write the machine layer
+flint orbh profiles default unset                        # Remove the machine layer
+flint orbh profiles default set --flint claude/o55h      # Write the Flint layer of this Flint
+flint orbh profiles default unset --flint                # Remove the Flint layer
+```
+
+```text
+Orbh Default Target List
+  Layer:     shipped (the value that Orbh ships)
+  Selected:  codex/a6h
+
+  1. claude/o55h  ✘ claude is not installed
+                  Next: npm install -g @anthropic-ai/claude-code
+  2. codex/a6h    ✓ available
+```
+
+`-p <dir>` acts on the Flint at `<dir>`. `--json` prints one JSON value. `unset` names the list that applies after it.
+
+### Rules
+
+- **An explicit target never falls back.** `flint orbh i codex/a6h` starts `codex/a6h`, or refuses: `✘ The target codex/a6h is not available: codex is not installed. An explicit target does not fall back.`
+- **A bare runtime** takes the first target of the list for that runtime: `flint orbh i claude` starts `claude/o55h`. When the list has no target of that runtime, the session starts with no profile.
+- **The account is checked.** With `--account <name>`, Orbh checks the targets with that account. A session that a session of the same runtime starts is checked with the account of that session. An account never moves to another runtime.
+- **The selection is made once, when a session launches.** A running session keeps its target. A resumed session keeps its target too.
+- The agents of Orbh (`flint orbh agent`), the workers (`flint orbh worker`), the workflows (`--target default`, the default), and the NUU Flint plugin (an empty Orbh profile) use the list too.
 
 ## Where Sessions Live
 
@@ -147,5 +231,6 @@ flint fix 2        # Repair the second record of the list
 - [Modules, Crons, and DMs](/flint/guide/modules-crons-and-dms)
 - [Shards](/flint/modules/shards)
 - [Mesh](/flint/modules/mesh)
+- [Configuration](/flint/reference/configuration)
 - [CLI Commands](/flint/reference/cli-commands)
-- [(NUU Docs) Orbh](/flint/nuu-docs-orbh)
+- [Orbh](/orbh)

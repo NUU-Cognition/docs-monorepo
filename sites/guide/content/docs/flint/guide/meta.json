@@ -3,6 +3,7 @@
   "pages": [
     "quick-start",
     "setting-up-a-machine",
+    "the-computer-flint",
     "join-your-org",
     "core-concepts",
     "creating-a-flint",
@@ -13,6 +14,7 @@
     "modules-crons-and-dms",
     "write-a-module",
     "doctor-and-fix",
+    "trident",
     "tutorial-project-planning",
     "tutorial-research-notes",
     "tutorial-agent-collaboration"

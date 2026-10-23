@@ -1,0 +1,94 @@
+---
+title: "Create a Task in the Right Place"
+---
+
+This guide shows you how to make a task from anywhere in NUU Operations and put it in the right place at once. It also shows you how to go to any place fast. At the end you can capture work without a click through the project pages.
+
+## Prerequisites
+
+- You have a workspace open. See [About Workspaces](/operations/concepts/about-workspaces).
+- You know that a task lives in a section. See [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs).
+
+## Why it is fast
+
+Ops keeps a live list of the places of the active workspace: each project, deliverable, section, and deployment, with its title and its home. It loads the list once and keeps it up to date. Go to, quick create, and Move read that list. So they open and filter with no wait.
+
+## Go to a place
+
+Press Cmd+K (Ctrl+K on Windows and Linux). Go to opens.
+
+With no text, Go to shows your recent places. Type part of a name. The list shows the matching places first: projects, deliverables, sections, and deployments. Each row shows the path to the place, for example `Website / Spring launch / Checkout`. Then the list shows matching tasks and notepads.
+
+Choose a row. Ops opens it. Press Cmd+Enter, or Cmd+click the row, to open it in a new tab.
+
+To narrow the list to one kind, start the text with a prefix:
+
+| Prefix | Kind |
+| --- | --- |
+| `p:` | Projects |
+| `d:` | Deliverables |
+| `s:` | Sections |
+| `y:` | Deployments |
+| `t:` | Tasks |
+| `n:` | Notepads |
+
+Start the text with `>` to switch to another organisation. Paste an address to go straight to its record. See [About Addresses](/operations/concepts/about-addresses).
+
+Go to also has actions. "New task" opens quick create with the text that you typed. "Move this task" opens the Move dialog.
+
+## Quick create a task
+
+Open quick create in one of these ways:
+
+- Press `C` or `N` anywhere in Ops. The key does nothing while the cursor is in a text field, or while a menu or a dialog is open.
+- Choose **New task** in the header.
+- Choose "New task" in Go to. The text that you typed in Go to becomes the title.
+
+Type the task in the field "What needs to be done?". Write it the way you would say it, for example `Fix the checkout total on mobile`.
+
+Under the field, quick create lists the places where the task can go, in groups:
+
+| Group | What it holds |
+| --- | --- |
+| Chosen | The place that you picked |
+| This page | The place of the page that you are on |
+| Suggested | The places that match your text |
+| Recent | The places that you used recently |
+| Other | The workspace backlog, and **Other place…** to search every place |
+
+The highlighted place is where the task goes. At first, it is the place of the page that you are on. The line at the bottom says where the task goes, for example "The task goes to Website / Spring launch / Checkout".
+
+Press Tab or Shift+Tab to move through the places. Or choose **Other place…** and search for any place.
+
+Press Enter to create the task. Press Shift+Enter to create it and keep the field open for the next task.
+
+A message shows where the task went. Choose **Open** to go to the task, or **Undo** to remove it.
+
+If you choose a project, the task goes to the backlog section of the project. If you choose a deliverable, it goes to the first open section of the deliverable. If you choose a deployment, it goes to the inbox of the deployment.
+
+## Smart suggestions
+
+As you type, the Suggested group fills at once from a fast match of the place titles. After a short pause, the server ranks the places again, and the group can change. While the server works, the group says "thinking…".
+
+The server matches your text against the titles of the places, their hidden context, and the titles of their recent tasks. When **Smart suggestions** is on, Ops also asks a decision model (AI) to choose the best place from those matches. The model has a short time limit. If it does not answer in time, you get the text match. You never wait for it.
+
+When it is off, Ops makes no model call. The suggestions match the words only.
+
+The switch Smart suggestions is at the bottom of quick create. It is also in Settings. It is on by default. It is your setting, so it stays the same on every device where you sign in.
+
+## Help the suggestions
+
+The suggestions are only as good as the places. To help them:
+
+- Give projects, deliverables, sections, and deployments clear titles.
+- Fill in the Context field of the places that matter. Write what each one is about, in the words people use. The page does not show the context. The suggestions read it.
+
+## Fix a wrong place
+
+If a task lands in the wrong place, move it. Open the task and press `M`. See [Move Tasks](/operations/guides/move-tasks).
+
+## Next steps
+
+- Move work between places in [Move Tasks](/operations/guides/move-tasks).
+- Make a task from outside Ops in [Use NUU Command](/operations/guides/use-nuu-command).
+- Read about the places in [About Sections](/operations/concepts/about-sections).

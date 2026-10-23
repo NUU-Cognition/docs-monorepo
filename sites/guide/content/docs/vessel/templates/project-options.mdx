@@ -2,7 +2,7 @@
 title: "Project Template Options"
 ---
 
-Complete reference for the `project` template configuration options. These are set under the `options` field in a [vessel definition](/module-vessel-definitions).
+Complete reference for the `project` template configuration options. These are set under the `options` field in a [vessel definition](/vessel/guide/publishing#vessel-definitions).
 
 ---
 
@@ -83,7 +83,7 @@ Custom content sections displayed as a grid on the homepage. Each section can li
 sections:
   - id: string             # Route segment (used in URL)
     title: string          # Section title
-    content: string        # [wikilink](/wikilink) to content page (optional)
+    content: string        # [[wikilink]] to content page (optional)
     external: string       # External URL — opens in new tab (optional)
     icon: string           # Lucide icon name (optional)
     description: string    # Section description (optional)
@@ -112,7 +112,7 @@ milestones:
     date: string           # Target/completion date (ISO format, e.g., "2026-03-01")
     status: string         # "planned" | "in-progress" | "completed" | "delayed"
     summary: string        # Details (optional)
-    content: string        # [wikilink](/wikilink) to content page (optional)
+    content: string        # [[wikilink]] to content page (optional)
 ```
 
 **Status indicators:**
@@ -149,7 +149,7 @@ updates:
   - date: string           # Update date (ISO format)
     title: string          # Update title
     summary: string        # Update summary
-    content: string        # [wikilink](/wikilink) to detailed content (optional)
+    content: string        # [[wikilink]] to detailed content (optional)
 ```
 
 On the homepage, update titles are clickable links when `content` is set. The linked document's frontmatter `date` is used if available, falling back to the inline `date`.
@@ -251,7 +251,7 @@ The homepage renders these sections in order (each hidden if empty or toggled of
 ---
 
 See also:
-- [Module - Templates](/module-templates) - Template system overview
-- [Module - Vessel Definitions](/module-vessel-definitions) - How to configure vessels
-- [Reference - Vessel Schema](/reference-vessel-schema) - Complete vessel YAML schema
+- [Templates](/vessel/guide/introduction#templates) - Template system overview
+- [Vessel Definitions](/vessel/guide/publishing#vessel-definitions) - How to configure vessels
+- [Required Fields](/vessel/guide/publishing#required-fields) - The fields of a vessel definition
 - [Reference - Blog Options](/vessel/templates/blog-options) - Blog template options

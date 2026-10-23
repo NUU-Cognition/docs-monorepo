@@ -4,7 +4,7 @@ title: "Introduction"
 
 NUU Operations is the delivery system for a person and for an organisation.
 
-You use it to turn work into a clear chain. A project holds deliverables. A deliverable holds a graph of subsections. Each deliverable has one closer. Completing the closer is the delivery signal.
+You use it to turn work into a clear chain. A project holds deliverables. A deliverable holds a graph of sections. A section holds tasks. When the work is delivered, you mark the deliverable done.
 
 The product is for people who ship work with others. It is also for a person who ships work alone. You sign in with your NUU account. You then work in a workspace.
 
@@ -12,16 +12,16 @@ The product is for people who ship work with others. It is also for a person who
 
 Delivery work often lives in many places. Tasks sit in a list. Plans live in a document. Dates live in a calendar. The graph that decides what is ready next is missing.
 
-Operations keeps that graph in one place. You see what is ready. You see what is blocked. You see what closed a deliverable.
+Operations keeps that graph in one place. You see what is ready. You see what is blocked. You see what is delivered.
 
-A task is one model. It can live in the master backlog, in a project backlog, or in a subsection. The same task can show on a plan and on the map of the organisation.
+A task is one model. It lives in a section: the master backlog, the backlog of a project, a section of a deliverable, or the inbox of a deployment. The same task can show on a plan and on the map of the organisation.
 
 ## Where it fits
 
 NUU has more than one product. Each product has a job.
 
-- Your NUU account is how you sign in. It also lists the organisations you belong to.
-- NUU Operations is the shared delivery record. It holds projects, deliverables, tasks, plans, and deadlines.
+- Your NUU account is how you sign in. It also lists the organisations you belong to. It holds NUU Command, a one-line bar that makes a task in Operations or an idea in NUU Current.
+- NUU Operations is the shared delivery record. It holds projects, deliverables, sections, tasks, deployments, plans, and deadlines.
 - Strikes live inside Operations. They are your personal execution layer. They are not a team list.
 - NUU Guide is this documentation site. It explains the products in conceptual terms.
 
@@ -31,22 +31,41 @@ Operations does not replace your thinking notes. It records what must be deliver
 
 You switch between a personal workspace and each organisation you belong to. Work in an organisation is shared. Work in your personal workspace is yours.
 
-A project is the top container. You add deliverables to a project. You add subsections to a deliverable. You add tasks to a subsection, to a project backlog, or to the master backlog.
+A project is the top container. You add deliverables to a project. You add sections to a deliverable, or to the project when the work has no deliverable yet. You add tasks to a section. A task can have subtasks.
+
+Each project has a backlog section for work that is not committed yet. The workspace has a master backlog section.
+
+A project can have deployments. A deployment is something that you keep running, for example a site or a service. An active deployment has an inbox for the work that comes up while it runs. A deliverable can come from that inbox and ship back to the deployment.
 
 Dates live on deadlines, not on the records they attach to. The calendar shows those dates for the active workspace. Deadlines also have a personal view across every organisation you belong to.
 
 The map shows the delivery graph for the organisation. Plans show what is workable now across projects. Activity shows what changed. Notifications tell you when a task, a plan step, or a deadline involves you. The changelog shows what is new in the product.
 
-Search finds projects, deliverables, subsections, tasks, and organisations.
+## Move fast
+
+Operations keeps a live list of the places of your workspace. So its pickers open at once:
+
+- **Go to** (Cmd+K) takes you to any project, deliverable, section, or deployment.
+- **Quick create** (`C` or `N`) makes a task. Ops suggests the place for it. You can turn smart suggestions off.
+- **Move** (`M`) moves a task with its subtasks, many tasks, or a section to another place.
+
+From NUU Account, NUU Command does the same in one line. Type `@` and an organisation, then a sentence. It shows what it will do and where, before you press Enter.
+
+Every project, deliverable, section, task, deployment, and notepad has an address. You can copy it. Agents use it.
 
 ## How to read this guide
 
-Start with [Core Ideas](/operations/concepts/core-ideas). Then read [About Workspaces](/operations/concepts/about-workspaces) and [About Deliverables](/operations/concepts/about-deliverables).
+Start with [Core Ideas](/operations/concepts/core-ideas). Then read [About Sections](/operations/concepts/about-sections) and [About Deliverables](/operations/concepts/about-deliverables).
 
 When you want to do work, use the guides:
 
 - [Set Up a Project](/operations/guides/set-up-a-project)
-- [Plan Work with Subsections](/operations/guides/plan-work-with-subsections)
-- [Move Tasks from Backlog](/operations/guides/move-tasks-from-backlog)
+- [Plan Work with Sections](/operations/guides/plan-work-with-sections)
+- [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place)
+- [Move Tasks](/operations/guides/move-tasks)
+- [Run a Deployment](/operations/guides/run-a-deployment)
+- [Read a Task Map](/operations/guides/read-a-task-map)
+- [Use NUU Command](/operations/guides/use-nuu-command)
+- [Work with Agents](/operations/guides/work-with-agents)
 - [Plan Your Week](/operations/workflows/plan-your-week)
 - [Run Your Day with Strikes](/operations/workflows/run-your-day-with-strikes)

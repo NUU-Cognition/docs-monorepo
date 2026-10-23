@@ -24,9 +24,9 @@ template: project
 visibility: public
 
 content:
-  - [Getting Started Guide](/getting-started-guide)
-  - [API Reference](/api-reference)
-  - [Architecture Overview](/architecture-overview)
+  - [[Getting Started Guide]]
+  - [[API Reference]]
+  - [[Architecture Overview]]
 
 options:
   title: "Acme Docs"
@@ -46,7 +46,7 @@ options:
 
 | Field | Description |
 |-------|-------------|
-| `content` | Array of `[wikilink](/wikilink)` references to include |
+| `content` | Array of `[[wikilink]]` references to include |
 | `options` | Template-specific configuration (see template references) |
 | `homepage` | Homepage layout options (template-dependent) |
 
@@ -58,8 +58,8 @@ Use wikilinks to reference other markdown files in your workspace:
 
 ```yaml
 content:
-  - [Document Title](/document-title)
-  - [Subfolder/Another Document](/subfolder-another-document)
+  - [[Document Title]]
+  - [[Subfolder/Another Document]]
 ```
 
 Wikilinks match by document title (case-insensitive). At publish time, the CLI resolves each link to the actual file, reads its content and frontmatter, and bundles it into the vessel.
@@ -105,10 +105,10 @@ Images and other media referenced in your content are automatically uploaded whe
 ```
 
 ```markdown
-![image.png](/image-png)
+![[image.png]]
 ```
 
-All three formats work. Obsidian embeds (`![...](/vessel)`) are converted to standard markdown.
+All three formats work. Obsidian embeds (`![[...]]`) are converted to standard markdown.
 
 ### How It Works
 

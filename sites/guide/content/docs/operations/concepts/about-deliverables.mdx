@@ -2,58 +2,60 @@
 title: "About Deliverables"
 ---
 
-A deliverable is a scoped chunk of work inside a project. It is not a task list. It is a graph. The graph decides what is ready next. Completing the closer is the delivery signal.
+A deliverable is a scoped chunk of work inside a project. It is not a task list. It is a graph of sections. The graph decides what is ready next. A person marks the deliverable done when it is delivered.
 
-## The subsection graph
+## The sections of a deliverable
 
-When you create a deliverable, the service creates one subsection for it. That subsection is the closer. The closer takes the deliverable name. It holds one task named Delivered.
+A new deliverable is empty. The service makes no section and no task for it. You add the sections.
 
-You then add more subsections. New subsections sit above the closer. The closer stays last.
+Add one section for each chunk of work. Give the sections an order. A section can depend on other sections. Those links form a graph. See [About Sections](/operations/concepts/about-sections).
 
-A subsection can depend on other subsections. Those links form a graph. The service rejects a cycle. Inside one deliverable, a subsection can only depend on a subsection that sits above it.
+A deliverable can also start with work in it. When you start a deliverable from the inbox of a deployment, the service makes one section and moves the selected tasks into it. See [About Deployments](/operations/concepts/about-deployments).
 
-A subsection can also depend on a subsection in another deliverable. The map shows those cross links. The closer of a deliverable also depends on its sibling subsections. You do not remove those closer links. They are structural.
+## Done is a decision
 
-## Status of a subsection
+A deliverable is done when a person marks it done. The service does not decide it for you.
 
-The service derives subsection status from tasks and from dependencies.
+The sections show the progress. When every section is done, the work is done. But the deliverable stays open until you mark it done. That keeps "we did the work" distinct from "we delivered it".
 
-- A subsection is done when it has tasks and every task is done.
-- A subsection is blocked when a subsection it depends on is not done.
-- A subsection is in progress when a task in it is doing, and it is not blocked.
-- Otherwise the subsection is ready.
+You can reopen a done deliverable. Do that when the delivery was not complete, or when you need to add work to it.
 
-You can archive a done subsection. An archived subsection leaves the deliverable view. It still counts as done for dependents.
+There is no closer section and no "Delivered" task. A deliverable that was made before this change had a closer. That closer is now a plain section. If the closer was done, the deliverable is now marked done.
 
-## The closer gate
+## Deliverables and deployments
 
-The closer is the ship gate. Completing the closer completes the deliverable.
+A deliverable can ship to a deployment. Set the deployment on the deliverable when the work goes to a thing that runs, for example a site or a service.
 
-The closer is locked last. You can add tasks to it, as you can to any other subsection. One count rule guards it. A closer must always keep at least one task. You cannot delete or move the last task out of the closer.
+A deliverable can also come from a deployment. When you start a deliverable from the inbox of a deployment, the deliverable records where it came from.
 
-The born Delivered task is a lifecycle signal. It is not personal work. Completing it, once the rest of the closer is done, is how you mark the deliverable delivered.
+So a deployment and its deliverables form a loop. Work comes up in the inbox. A new deliverable takes that work. The deliverable ships back to the deployment.
 
-If you rename the deliverable, the closer title follows the new name.
+## Hidden context
+
+A deliverable has a Context field. You edit it in the edit sheet: "What this is about, for search and suggestions". Write it in Markdown. The page does not show it. Search and the place suggestions read it, so a new task finds this deliverable more easily.
 
 ## What a deliverable looks like in the rest of the product
 
 The project lists its deliverables. A workspace-wide list shows deliverables across projects.
 
-The map draws each deliverable as a block of subsections. You can hide completed work. You can hide blocks that have no cross links. You can mark a few subsections as highlights. The map then shows those subsections and the work that leads to them.
+The map draws each deliverable as a block of sections. You can hide completed work. You can hide blocks that have no cross links. You can mark a few sections as highlights. The map then shows those sections and the work that leads to them.
 
-A deadline can attach to a deliverable or to a subsection. The date lives on the deadline. The record shows the earliest attached date.
+A deadline can attach to a deliverable or to a section. The date lives on the deadline. The record shows the earliest attached date.
 
-A plan step can link to a deliverable or to a subsection. The step then follows that record.
+A plan step can link to a deliverable or to a section. The step then follows that record.
+
+Every deliverable has an address. See [About Addresses](/operations/concepts/about-addresses).
 
 ## Why this structure
 
-A flat task list cannot tell you what is ready. A graph can.
+A flat task list cannot tell you what is ready. A graph of sections can.
 
-The closer exists so delivery is one signal. Work above the closer can finish. The deliverable is still open until the closer is done. That keeps "we did the work" distinct from "we delivered it".
+The done mark is yours because delivery is a judgement. The tasks can all be done while the outcome is not yet in the hands of the people it is for.
 
 ## Further reading
 
 - [Core Ideas](/operations/concepts/core-ideas)
+- [About Sections](/operations/concepts/about-sections)
 - [Set Up a Project](/operations/guides/set-up-a-project)
-- [Plan Work with Subsections](/operations/guides/plan-work-with-subsections)
-- [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs)
+- [Plan Work with Sections](/operations/guides/plan-work-with-sections)
+- [About Deployments](/operations/concepts/about-deployments)

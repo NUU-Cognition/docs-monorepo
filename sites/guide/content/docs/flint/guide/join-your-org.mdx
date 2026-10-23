@@ -2,29 +2,29 @@
 title: "Join Your Org"
 ---
 
-This guide is for a person who is a member of an org, such as `nuucognition`. At the end, this machine belongs to the org, and the members of the org can see the Flints that you make here.
+This guide is for a person who is a member of an org, such as `nuucognition`. At the end, new Flints on this machine belong to the org, this computer is on the NUU Network with you as its owner, and the members of the org can see it.
 
 An **org** is a group of people and machines that share Flints. A Flint with no org is **local**: it stays on this machine. You can work local for as long as you like, and join an org later. Read [Quick Start](/flint/guide/quick-start) first if you have not installed Flint.
 
-Three things are separate. The **org of this machine** decides the org of each new Flint. The **enrollment** puts this machine on NUU Network so the org can reach it. The **NUU account** publishes shards to the shard registry. The account is optional, and it never puts this machine in an org.
+Three things are separate. The **org of this machine** decides the org of each new Flint. The **NUU Network** lets you and your orgs reach this computer: a computer on the NUU Network belongs to a person, its owner, and the owner **shares** it with an org. The **NUU account** is you: it puts this computer on the NUU Network (`nuu login`, then `nuu computer add`), and it publishes shards to the shard registry. Flint works with no account; the NUU Network needs it.
 
 ## What You Need
 
-Ask the admin of your org for two things:
+- **A NUU account** that is a member of the org in NUU Orgs. The owner or an admin of the org invites you.
+- **The org slug and the org id**, for example `nuucognition` and a UUID. Ask the admin of your org.
 
-- **the org slug and the org id**, for example `nuucognition` and a UUID
-- **the enrollment secret of the org**, in a file. Keep the file private (`chmod 600 <file>`). Never paste the secret into a note or a chat.
+There is no org secret: a computer joins the NUU Network with the sign-in of its owner.
 
 ## The Steps
 
 | Step | Command | What it gives |
 |---|---|---|
 | 1 | `npm install -g @nuucognition/flint-cli` | The commands `flint` and `nuu` |
-| 2 | `flint setup` | Your Name and the machine names |
-| 3 | `flint login` (optional) | The NUU account: shard publishing |
+| 2 | `flint setup` | Your Name, the machine names, the agent default, and your Computer Flint |
+| 3 | `flint login` | The NUU account: shard publishing, and the sign-in of step 5 |
 | 4 | `flint config org set <slug> --id <uuid>` | The org of this machine: new Flints belong to it |
-| 5 | `nuu client enroll --org <slug> --secret-file <file>` | This machine joins the network of the org |
-| 6 | `nuu client install-service` | A daemon that publishes the org Flints of this machine |
+| 5 | `nuu login`, then `nuu computer add` | This computer is on the NUU Network, owned by you |
+| 6 | `nuu computer share <slug> --view` (or `--full`) | The members of the org see this computer (or use it) |
 | 7 | `flint create "<name>"` | A Flint that the org can see |
 
 ## Step 1: Install
@@ -33,7 +33,7 @@ Ask the admin of your org for two things:
 npm install -g @nuucognition/flint-cli
 ```
 
-This installs `flint` and `nuu`. You type `flint` for your Flints. You type `nuu` for the network (steps 5 and 6). See [Quick Start](/flint/guide/quick-start) for the full install.
+This installs `flint` and `nuu`. You type `flint` for your Flints. You type `nuu` for the NUU Network (steps 5 and 6). The steps 5 and 6 need `nuu` release 0.1.0 or newer: `nuu --version` shows it. See [Quick Start](/flint/guide/quick-start) for the full install.
 
 ## Step 2: Set Up This Machine
 
@@ -45,13 +45,15 @@ Setup needs internet access. It asks your Name and the machine display name, che
 
 The machine name (for example `sam-laptop`) is the short word for this machine in addresses, such as `@nuucognition/flint/team-notes#sam-laptop`. It comes from the machine display name (for example `Sam Laptop`).
 
-## Step 3: Log In (Optional)
+At step 7, Obsidian opens your Computer Flint. Click **Trust author and enable plugins** one time. It is the only trust click on this machine: the Flints that you make later open with no prompt. The Computer Flint is private: other machines cannot read it through the network. See [The Computer Flint](/flint/guide/the-computer-flint).
+
+## Step 3: Log In
 
 ```bash
 flint login
 ```
 
-A NUU account publishes shards to the shard registry. It does not put this machine in an org. Skip this step if you do not publish shards.
+A NUU account publishes shards to the shard registry, and it is the owner of this computer on the NUU Network (step 5). `flint login` and `nuu login` use one sign-in on this computer. A login does not put this machine in an org.
 
 Follow the prompts to finish the login. These commands manage the account:
 
@@ -70,25 +72,40 @@ flint config org set nuucognition --id e17b42dd-1726-463c-861b-49d2a833c73e
 
 The org is stored in the NUU config. Each new Flint on this machine belongs to this org. `flint config org show` shows it.
 
-The org id is the truth; the slug is a name for it. You can leave out `--id` when this machine already knows the id: after step 5, or when a Flint of the org is on this machine. When the id is not known, the command stops and names the enroll command.
+The org id is the truth; the slug is a name for it. You can leave out `--id` when a Flint of the org is on this machine. When the id is not known, the command stops and asks for `--id <uuid>`.
 
 To remove the org of this machine later, run `flint config org unset`. Do not pass `none` to `set`: the command refuses it and names `unset`.
 
-## Step 5: Enroll This Machine
+## Step 5: Put This Computer on the NUU Network
 
 ```bash
-nuu client enroll --org nuucognition --secret-file ~/nuucognition.secret
+nuu login
+nuu computer add
 ```
 
-Enrollment puts this machine in one org of NUU Network. The secret of the org is the key; no NUU account is needed. Enroll once per machine.
+`nuu login` signs you in (skip it when step 3 signed you in). `nuu computer add` puts this computer on the NUU Network with you as its owner, and starts the NUU client:
 
-## Step 6: Start the Daemon
+```text
+Adding this computer to the NUU Network as "sam-laptop"...
+✓ sam-laptop is on the NUU Network. Its owner is you (Sam Rivera).
+✓ The NUU client runs.
+✓ sam-laptop is online. Release 0.1.0.
+```
+
+The NUU client publishes the Flints of this computer that are not hidden and not private, and it lets requests reach this computer. Add each computer once. When `computer add` prints `! The NUU client does not start again after a restart of this computer`, run `nuu client install-service`: it installs the NUU client as a service of your user. `nuu client status` shows whether the NUU client runs.
+
+## Step 6: Share This Computer With the Org
 
 ```bash
-nuu client install-service
+nuu computer share nuucognition --view
 ```
 
-This installs the NUU client as a service of your user and starts it. The daemon publishes the Flints of this machine that the org can see. It also lets requests from the org reach this machine. `nuu client install-service --dry-run` shows what it does and changes nothing. `nuu client status` shows whether the daemon runs.
+Only you reach this computer until you share it. A share puts the computer into the org with a mode:
+
+- `--view`: the members of the org see this computer, its Flints that are not hidden, and their live sessions.
+- `--full`: the members can also start and message sessions. A session uses your files and your AI accounts on this computer, so `--full` asks you to confirm.
+
+Keep a Flint out with `nuu computer hide "<flint>"`. Refuse each request from the NUU Network at once with `nuu computer lock`. `nuu computer unshare nuucognition` stops the share.
 
 ## Step 7: Create a Flint for the Org
 
@@ -96,7 +113,9 @@ This installs the NUU client as a service of your user and starts it. The daemon
 flint create "Team Notes"
 ```
 
-The new Flint belongs to the org of this machine. Its address is `@nuucognition/flint/team-notes`. On a machine that is not enrolled, the output names the enroll command.
+The new Flint belongs to the org of this machine. Its address is `@nuucognition/flint/team-notes`. When this computer is not on the NUU Network, the output names the next commands: `nuu computer add`, then `nuu computer share <org> --view`.
+
+After the trust click in your Computer Flint, the new Flint opens in Obsidian with its plugins on. When the plugin of the new vault does not answer, for example on a machine with no Computer Flint, the `Obsidian` row has one more line: `Click "Trust author and enable plugins" once in Obsidian.`
 
 To make a local Flint on this machine, run `flint create "<name>" --org none`. See [Creating a Flint](/flint/guide/creating-a-flint) for the other options.
 
@@ -104,23 +123,20 @@ To make a local Flint on this machine, run `flint create "<name>" --org none`. S
 
 ```bash
 flint whoami
+nuu whoami
 ```
+
+`flint whoami` shows your Name, this machine, the org of this machine, and your NUU account. With no login, the `Account` row says `not logged in (optional: flint login)`. With no org, the `Org` row says `none (local)`.
+
+`nuu whoami` shows you, this computer on the NUU Network, and your orgs:
 
 ```text
-  Name    : Sam Rivera
-  Machine : Sam Laptop (sam-laptop)
-  Org     : nuucognition (e17b42dd-1726-463c-861b-49d2a833c73e)
-  Account : sam@example.com (valid for 29 days)
-  Network : home   nuucognition  as sam-laptop  (prod)  daemon running
+You            Sam Rivera (signed in)
+This computer  sam-laptop · yours · on the NUU Network · release 0.1.0
+Your orgs      nuucognition (member)
 ```
 
-The `Network` row names the enrollment: the org, the machine name in the org, the network, and the state of the daemon. Before step 6, it ends with `daemon not running`. With no enrollment, it says `not enrolled (optional)`. With no login, the `Account` row says `not logged in (optional: flint login)`. With no org, the `Org` row says `none (local)`. With a guest enrollment in a second org, `flint whoami` shows one `Network` row per enrollment. When the data mode differs from the build mode (for example a dev build on prod data), `flint whoami` adds a `Data` row.
-
-After the daemon publishes, `nuu net machines` shows this machine as `online`. A colleague in the org can then describe your Flint:
-
-```bash
-nuu resolve "@nuucognition/flint/team-notes#sam-laptop" --verb describe
-```
+`nuu computer` shows the state of this computer, its shares, its lock, and its hidden Flints. `nuu computer list` shows your computers and the computers that your orgs share with you. A member of the org sees this computer in the console of the NUU Network (`https://network.nuucognition.com`), under "Shared with you". In release 0.1.0 a member acts on it from the console: a request from a computer of another person is refused.
 
 ## Flints You Already Have
 
@@ -146,7 +162,7 @@ The clone keeps the org of the Flint.
 flint config org unset
 ```
 
-New Flints on this machine are then local. The command prints what stays: your Flints keep their org, the machine stays enrolled, and the account does not change. To remove the machine from the network too, run `nuu net forget <machine>`.
+New Flints on this machine are then local. The command prints what stays: your Flints keep their org, and the account does not change. The computer stays on the NUU Network and keeps its shares. To stop the share with the org, run `nuu computer unshare <org>`. To take the computer off the NUU Network, run `nuu computer remove`: its token ends at once.
 
 ## Related
 

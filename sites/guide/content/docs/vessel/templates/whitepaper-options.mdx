@@ -2,7 +2,7 @@
 title: "Whitepaper Template Options"
 ---
 
-Complete reference for the `whitepaper` template configuration options. These are set under the `options` field in a [vessel definition](/module-vessel-definitions).
+Complete reference for the `whitepaper` template configuration options. These are set under the `options` field in a [vessel definition](/vessel/guide/publishing#vessel-definitions).
 
 ---
 
@@ -23,15 +23,15 @@ options:
   sections:
     - id: "design"
       title: "Design Principles"
-      content: "[Design Principles](/design-principles)"
+      content: "[[Design Principles]]"
       description: "Core design philosophy"
       version: "v1.0"
       updated: "Feb 2026"
       audiences:
         - audience: "Developers"
-          content: "[Design Principles - Developer Focus](/design-principles-developer-focus)"
+          content: "[[Design Principles - Developer Focus]]"
         - audience: "Operators"
-          content: "[Design Principles - Ops Focus](/design-principles-ops-focus)"
+          content: "[[Design Principles - Ops Focus]]"
     - id: "api-ref"
       title: "API Reference"
       external: "https://docs.example.com/api"
@@ -142,7 +142,7 @@ Ordered list of whitepaper sections. Each section appears as a card in the secti
 |-------|------|----------|-------------|
 | `id` | `string` | Yes | URL slug for the section (e.g., `"design"`) |
 | `title` | `string` | Yes | Display title |
-| `content` | `string` | No | Default content — wiki link reference (e.g., `"[Design Principles](/design-principles)"`) |
+| `content` | `string` | No | Default content — wiki link reference (e.g., `"[[Design Principles]]"`) |
 | `audiences` | `array` | No | Audience-specific content variants (see below) |
 | `description` | `string` | No | Short description shown on the homepage card and full paper view |
 | `version` | `string` | No | Version badge (e.g., `"v1.0"`) |
@@ -151,7 +151,7 @@ Ordered list of whitepaper sections. Each section appears as a card in the secti
 
 When `external` is set, the section card links to that URL in a new tab and is excluded from prev/next navigation and the full paper view.
 
-When `content` is set to a `[Title](/title)` wiki link, the template matches it against published mesh documents by title and renders the matched document's content.
+When `content` is set to a `[[Title]]` wiki link, the template matches it against published mesh documents by title and renders the matched document's content.
 
 Tags from the matched content document's frontmatter are displayed as badges in the top right of the section title.
 
@@ -160,7 +160,7 @@ Tags from the matched content document's frontmatter are displayed as badges in 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `audience` | `string` | Yes | Audience name (e.g., `"Developers"`, `"Operators"`) |
-| `content` | `string` | Yes | Wiki link to audience-specific content (e.g., `"[Design - Developer Focus](/design-developer-focus)"`) |
+| `content` | `string` | Yes | Wiki link to audience-specific content (e.g., `"[[Design - Developer Focus]]"`) |
 
 Audience variants allow the same section to have different content for different readers. In the full paper view, the audience selector switches between variants. When a variant exists for the selected audience, its content is shown; otherwise the section falls back to the default `content`.
 
@@ -169,12 +169,12 @@ Audience variants allow the same section to have different content for different
 ```yaml
 - id: architecture
   title: Architecture
-  content: [Architecture Overview](/architecture-overview)           # General audience (default)
+  content: [[Architecture Overview]]          # General audience (default)
   audiences:
     - audience: Developers
-      content: [Architecture Deep Dive](/architecture-deep-dive)       # More technical detail
+      content: [[Architecture Deep Dive]]      # More technical detail
     - audience: Operators
-      content: [Architecture - Ops Runbook](/architecture-ops-runbook)   # Operations-focused
+      content: [[Architecture - Ops Runbook]]  # Operations-focused
 ```
 
 ---
@@ -222,7 +222,7 @@ Section content documents can include any frontmatter fields. The fields below a
 ---
 
 See also:
-- [Module - Templates](/module-templates) - Template system overview
-- [Module - Vessel Definitions](/module-vessel-definitions) - How to configure vessels
-- [Reference - Vessel Schema](/reference-vessel-schema) - Complete vessel YAML schema
+- [Templates](/vessel/guide/introduction#templates) - Template system overview
+- [Vessel Definitions](/vessel/guide/publishing#vessel-definitions) - How to configure vessels
+- [Required Fields](/vessel/guide/publishing#required-fields) - The fields of a vessel definition
 - [Reference - Blog Options](/vessel/templates/blog-options) - Blog template options

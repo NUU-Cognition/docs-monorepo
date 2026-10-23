@@ -1,0 +1,79 @@
+---
+title: "Use NUU Command"
+---
+
+This guide shows you how to use NUU Command. NUU Command is a one-line bar in NUU Account. You type one sentence. It makes a task in NUU Operations, or it sparks an idea in NUU Current, in the right organisation and the right place. At the end you can capture work without opening Operations.
+
+## Prerequisites
+
+- You are signed in with your NUU account.
+- You belong to at least one organisation, or you use your personal workspace. See [About Workspaces](/operations/concepts/about-workspaces).
+
+## Open NUU Command
+
+Open NUU Account. Then do one of these:
+
+- Press Cmd+J on macOS, or Ctrl+J on other systems, on any page of NUU Account.
+- Choose **Command** in the header.
+- Go to the Command page, `/command`.
+
+The bar has one line. Type in it. Press Esc to close it.
+
+## Choose the organisation
+
+The bar starts with an organisation: the last one that you used, else your first team organisation, else your personal workspace. The org chip of the bar shows it, for example `@Acme`.
+
+To change it, type `@` and the start of an organisation name, for example `@ac`. The bar lists the organisations that match. Choose one with the arrow keys and Enter, or type the full name. Type `@personal` for your personal workspace.
+
+When you choose an organisation, NUU Command loads its places in the background: its projects, deliverables, sections, and deployments. It keeps a copy in the browser. So the suggestions are ready when you type the rest.
+
+## Type the sentence
+
+Type what you want, the way you would say it. For example:
+
+- `create a task to fix the checkout total on mobile`
+- `remind me to renew the domain`
+- `spark an idea: a weekly digest of the inbox`
+
+Words such as "create a task to", "task:", and "remind me to" ask for a task. Words such as "spark an idea", "idea:", and "spark" ask for an idea. The bar takes these words out of the title.
+
+With no such words, NUU Command decides the action from the sentence. To choose it yourself, click the action chip, or press Alt+T for a task and Alt+I for an idea.
+
+You can name the place at the end, for example `fix the login in Website`. When a place matches, the bar takes the name out of the title.
+
+## Read the preview
+
+Before you press Enter, the bar shows what it will do.
+
+For a task, the preview shows **Task**, then the organisation and the path of the place, for example `Acme › Website / Spring launch / Checkout`. The place can be a section, a deliverable, a project (its backlog), or a deployment (its inbox).
+
+For an idea, the preview shows **Spark**, then NUU Current.
+
+Each preview shows the confidence as a percentage and a word:
+
+| Word | Meaning |
+| --- | --- |
+| sure | 75% or more |
+| likely | 45% to 74% |
+| a guess | Less than 45% |
+
+When you choose the place or the action yourself, the preview says "your choice".
+
+For a task, the preview also lists other places, each with the reason for it. Press Tab to cycle through them, or click a place to choose it.
+
+## Run it
+
+Press Enter. NUU Command makes the task or the idea.
+
+For a task, the bar shows `Created` and the title, with an **Open** link to the task in Operations. For an idea, it shows that the spark was caught in NUU Current, with an **Open** link. In NUU Current, the spark has the label "Caught in NUU Command".
+
+## How it decides
+
+As you type, NUU Command ranks the places with a fast match in the browser. After a short pause, it asks a decision model for the action and the place. The model has a time limit of a second and a half. If it does not answer in time, NUU Command keeps the fast match. You never wait for it.
+
+Quick create in Operations works in a similar way. See [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place).
+
+## Next steps
+
+- Check or move the new task in [Move Tasks](/operations/guides/move-tasks).
+- Help the suggestions with good context in [Set Up a Project](/operations/guides/set-up-a-project).

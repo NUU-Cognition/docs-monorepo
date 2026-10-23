@@ -6,7 +6,7 @@ A Flint is one folder of notes and shards, with its own id. `flint create` makes
 
 ## Before You Create
 
-- **Set up the machine once:** `flint setup` sets your Name and the machine names. See [Setting Up a Machine](/flint/guide/setting-up-a-machine). `flint create` needs your Name. With no Name, in a terminal, `flint create` asks your Name first, and the machine names take their defaults. With no terminal, or with `--json`, it asks nothing. It refuses with exit 2, writes nothing, and names `flint setup --name '<your name>' --yes`.
+- **Set up the machine once:** `flint setup` sets your Name and the machine names, checks the tools of this machine, selects the agent default, and makes and opens your Computer Flint. After the one trust click in the Computer Flint, each new Flint opens in Obsidian with no prompt. See [Setting Up a Machine](/flint/guide/setting-up-a-machine) and [The Computer Flint](/flint/guide/the-computer-flint). `flint create` needs your Name. With no Name, in a terminal, `flint create` asks your Name first, and the machine names take their defaults. With no terminal, or with `--json`, it asks nothing. It refuses with exit 2, writes nothing, and names `flint setup --name '<your name>' --yes`.
 - **Give Git an author:** each new Flint is a Git repository with a first commit. With no Git author, `flint create` refuses before it writes anything. It prints `Nothing was written.` Its next steps are `flint setup` and a retry with `--no-git`.
 - **Have a network:** `flint create` installs the shards of the preset from Git, and it downloads the Obsidian payload. With no network, it still makes the Flint and names the repair command.
 
@@ -26,7 +26,7 @@ The command:
 - makes the folder `(Flint) My Notes/` in the current folder, with the standard folders
 - writes `flint.toml` (the intent) and `flint.json` (the id and the lock)
 - writes an empty `Mesh/People/@<Name>.md` marker for your Name
-- makes a Git repository on the branch `main`, with one commit, no remote, and a clean status
+- makes a Git repository on the branch `main` (also when Git has no `init.defaultBranch`), with one commit, no remote, and a clean status
 - adds the Flint to the roster of this machine (see [The Roster](/flint/guide/the-roster))
 - installs the shards of the preset
 - pins the recommended Obsidian payload in `flint.json`, also with `--no-obsidian` and with the machine choice `off` (a Flint from `--from <git url>` keeps its own pin)
@@ -65,7 +65,7 @@ The `Obsidian` row says what happened to the payload and to the launch:
 | Another platform (not macOS or Linux) | `off (Flint supports Obsidian on macOS and Linux only)` |
 | Obsidian from Flatpak or Snap on Linux | `off (Flint 0.7.0 does not support Obsidian from Flatpak. Install the AppImage or the native package of Obsidian)` (or `Snap`) |
 
-A failed payload install never fails `flint create`. When Obsidian opens the new vault, click **Trust author and enable plugins** once. See [Using Obsidian](/flint/guide/using-obsidian).
+A failed payload install never fails `flint create`. When Obsidian asks for the new vault (on a machine with no Computer Flint, or when the plugin did not answer), click **Trust author and enable plugins** once. See [Using Obsidian > Trust](/flint/guide/using-obsidian#trust).
 
 When the network is down, the Flint is still made. The screen names each part that is not installed: the shards, the Obsidian payload, or both. It prints one next command, for example `cd '<path>' && flint shard install && flint sync`.
 
@@ -162,7 +162,7 @@ The default visibility is `org` with an org, else `private`.
 
 ```bash
 flint create "My Notes" --path ~/notes     # Make the Flint in another folder
-flint create --from <git url>              # Clone a Flint from a Git repository; it keeps its id, org, and shards; its files give the name and the org
+flint create --from <git url>              # Clone a Flint from a Git repository; it keeps its id, org, shards, and the branch of its remote; its files give the name and the org
 flint create "My Notes" --no-obsidian      # Skip Obsidian for this run only
 flint create "My Notes" --open             # Open the Flint in Obsidian now (the default opens only in a terminal and without --json)
 flint create "My Notes" --no-open          # Install the Obsidian payload, but do not launch Obsidian

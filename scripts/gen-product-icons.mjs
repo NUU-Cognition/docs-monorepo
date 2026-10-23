@@ -5,8 +5,10 @@
 // Default source: the NUU Cognition Branding flint, Media/Logos/.
 // Output: sites/guide/lib/product-icons.ts and sites/guide/app/icon.svg.
 // Every mark is rewritten in currentColor so it follows the text colour in
-// light and dark mode. The favicon keeps the export as is: black on white,
-// the same style every NUU app uses for its tab icon.
+// light and dark mode. The favicon is the black Guide mark on a white tile,
+// the same style every NUU app uses for its tab icon. The script adds the
+// tile itself: a new Branding export has no tile, and a transparent favicon
+// is hard to see on a dark tab bar.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,18 +23,33 @@ const map = {
   docs: "Docs", surf: "Surf", operations: "Operations", orgs: "Organisations",
   profiles: "Profile", citations: "Citations", experience: "Experience",
   onyx: "Onyx", ncm: "ncm", mesh: "Mesh", vessel: "Vessel", guide: "Guide", flint: "Flint",
+  orbh: "Orbh",
 };
 
-function inner(file) {
+/** The drawing of one export: no XML header, no comment, no white tile, no frame. */
+function drawing(file) {
   let s = fs.readFileSync(path.join(src, file + ".svg"), "utf8");
-  s = s.replace(/<\?xml[^>]*>/, "");
+  s = s.replace(/<\?xml[^>]*>/, "").replace(/<!--[\s\S]*?-->/g, "");
   const m = s.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
   if (!m) throw new Error(`no <svg> in ${file}`);
   let body = m[1];
-  body = body.replace(/<rect[^>]*fill="#FFFFFF"[^>]*\/>/g, "");
+  body = body.replace(/<rect[^>]*fill="#FFFFFF"[^>]*\/>/gi, "");
   body = body.replace(/<rect width="412" height="412"[^>]*\/>/g, "");
-  body = body.replace(/#000000/gi, "currentColor").replace(/#FFFFFF/gi, "currentColor");
   return body.replace(/\s+/g, " ").trim();
+}
+
+function inner(file) {
+  return drawing(file).replace(/#000000/gi, "currentColor").replace(/#FFFFFF/gi, "currentColor");
+}
+
+/** The favicon: the black mark on a white 512 px tile. */
+function favicon(file) {
+  return (
+    `<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">\n` +
+    `  <rect width="512" height="512" fill="#FFFFFF" />\n` +
+    `  ${drawing(file)}\n` +
+    `</svg>\n`
+  );
 }
 
 let out = `import { createElement, type ReactElement } from "react";
@@ -85,5 +102,5 @@ export function GuideLogo({ size = 18, className }: { size?: number; className?:
 }
 `;
 fs.writeFileSync(path.join(repo, "sites/guide/lib/product-icons.ts"), out);
-fs.copyFileSync(path.join(src, "Guide.svg"), path.join(repo, "sites/guide/app/icon.svg"));
+fs.writeFileSync(path.join(repo, "sites/guide/app/icon.svg"), favicon("Guide"));
 console.log(`wrote ${Object.keys(map).length} marks and the favicon`);

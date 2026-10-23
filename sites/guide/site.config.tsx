@@ -17,7 +17,25 @@ export const siteConfig: SiteConfig = {
   logo: <GuideLogo size={18} className="text-fd-foreground" />,
   // No GitHub button. The NUU mark in the sidebar footer links to the main site.
   github: null,
+  // The guide has no sign-in, so it links to the public NUU Experience pages
+  // of the app id "guide". The suggestion and bug pages ask for a NUU
+  // sign-in, then open the form.
   links: [
+    {
+      text: "Changelog",
+      url: "https://exp.nuucognition.com/updates/guide",
+      external: true,
+    },
+    {
+      text: "Offer a suggestion",
+      url: "https://exp.nuucognition.com/offers?new=offer&app=guide",
+      external: true,
+    },
+    {
+      text: "Report a bug",
+      url: "https://exp.nuucognition.com/reports?new=report&app=guide",
+      external: true,
+    },
     {
       text: "NUU Cognition",
       url: "https://nuucognition.com",

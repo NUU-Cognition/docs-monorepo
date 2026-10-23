@@ -266,11 +266,11 @@ function headingId(heading: string): string {
 
 function convertWikiLinks(
   content: string,
-  urlPrefix: string,
-  linkMap: Map<string, string>
+  linkMap: Map<string, string>,
+  unresolved: Set<string>
 ): string {
   // Wiki links inside fenced or inline code are examples: keep them as written
-  return mapText(content, (text) => convertWikiLinksInText(text, urlPrefix, linkMap));
+  return mapText(content, (text) => convertWikiLinksInText(text, linkMap, unresolved));
 }
 
 const HTML_TAGS = new Set([
@@ -331,45 +331,55 @@ function escapeMdxText(content: string): string {
   );
 }
 
+/** The display name of a page: no page-type prefix and no "(NUU Docs)" prefix */
+function pageDisplayName(fileName: string): string {
+  return fileName
+    .replace(/^\(NUU Docs\)\s+/, "")
+    .replace(/^(Guide|Module|Reference|Concept)\s+-\s+/, "");
+}
+
 function convertWikiLinksInText(
   content: string,
-  urlPrefix: string,
-  linkMap: Map<string, string>
+  linkMap: Map<string, string>,
+  unresolved: Set<string>
 ): string {
   return content.replace(/\[\[([^\]]+)\]\]/g, (_, linkText) => {
     const parts = linkText.split("|");
     const target = parts[0].trim();
+    const alias = parts[1]?.trim();
 
     // A link to a heading of the same page: [[#Heading]] or [[#Heading|text]]
     if (target.startsWith("#")) {
       const heading = target.slice(1);
-      return `[${parts[1]?.trim() || heading}](#${headingId(heading)})`;
+      return `[${alias || heading}](#${headingId(heading)})`;
     }
+
+    // A link to a heading of another page: [[Page#Heading]]
+    const hash = target.indexOf("#");
+    const page = (hash === -1 ? target : target.slice(0, hash)).trim();
+    const heading = hash === -1 ? "" : target.slice(hash + 1).trim();
+
     // Drop the page-type prefix from the display text when no alias is given
     const display =
-      parts[1]?.trim() ||
-      target.replace(/^(Guide|Module|Reference|Concept)\s+-\s+/, "");
+      alias ||
+      (heading ? `${pageDisplayName(page)} > ${heading}` : pageDisplayName(page));
 
-    // Try to find in our link map
-    const url = linkMap.get(target);
+    const url = linkMap.get(page);
     if (url) {
-      return `[${display}](${url})`;
+      return `[${display}](${url}${heading ? `#${headingId(heading)}` : ""})`;
     }
 
-    // Fallback: convert to slug, rooted at the product / site prefix
-    const slug = target
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    return `[${display}](${urlPrefix}/${slug})`;
+    // The page is in no doc set on the site: keep the text, link nothing
+    unresolved.add(target);
+    return display;
   });
 }
 
 function processContent(
   content: string,
   title: string,
-  urlPrefix: string,
   linkMap: Map<string, string>,
+  unresolved: Set<string>,
   description?: string
 ): string {
   // Remove existing frontmatter
@@ -379,7 +389,7 @@ function processContent(
   processed = processed.replace(/^#\s+.+\n+/, "");
 
   // Convert wiki links
-  processed = convertWikiLinks(processed, urlPrefix, linkMap);
+  processed = convertWikiLinks(processed, linkMap, unresolved);
 
   // Escape the characters that MDX reads as expressions or tags
   processed = escapeMdxText(processed);
@@ -448,6 +458,102 @@ export function registerSlugInRootMeta(
 }
 
 // ============================================================================
+// Doc Sets
+// ============================================================================
+
+interface ResolvedDocSet {
+  indexPage: ResolvedPage;
+  sections: { config: SectionConfig; pages: ResolvedPage[] }[];
+  /** The URL on the site of each page, by file name */
+  links: Map<string, string>;
+}
+
+/** Resolve the pages of one doc set and the URL of each page on the site */
+function resolveDocSet(
+  meshPath: string,
+  configPath: string,
+  config: DocsConfig,
+  warn: boolean
+): ResolvedDocSet {
+  const configDir = path.dirname(configPath);
+  const urlPrefix = buildUrlPrefix(config);
+  const links = new Map<string, string>();
+
+  // A link to the config file itself goes to the landing page of the doc set
+  links.set(path.basename(configPath, ".md"), urlPrefix || "/");
+
+  const indexPage = resolvePage(meshPath, config.index, configDir);
+  links.set(indexPage.fileName, urlPrefix || "/");
+
+  const sections: ResolvedDocSet["sections"] = [];
+  for (const section of config.sections) {
+    const pages: ResolvedPage[] = [];
+    for (const pageLink of section.pages ?? []) {
+      try {
+        const page = resolvePage(meshPath, pageLink, configDir);
+        links.set(page.fileName, `${urlPrefix}/${section.id}/${page.slug}`);
+        pages.push(page);
+      } catch (err) {
+        if (warn) console.warn(`  Warning: ${(err as Error).message}`);
+      }
+    }
+    sections.push({ config: section, pages });
+  }
+
+  return { indexPage, sections, links };
+}
+
+/** The product slugs in the root meta.json of a site: the doc sets it publishes */
+function publishedSlugs(contentRoot: string): Set<string> {
+  const metaPath = path.join(contentRoot, "meta.json");
+  if (!fs.existsSync(metaPath)) return new Set();
+  try {
+    const meta = JSON.parse(fs.readFileSync(metaPath, "utf-8")) as { pages?: unknown };
+    return new Set(
+      Array.isArray(meta.pages)
+        ? meta.pages.filter((p): p is string => typeof p === "string")
+        : []
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+/**
+ * The URLs of the pages of the other doc sets of the Flint that the site
+ * publishes (the same site, and a slug in the root meta.json or in the slugs
+ * that this run ports). A link to one of these pages goes to its product tab.
+ * A link to a doc set that the site does not publish stays text.
+ */
+function siblingDocSetLinks(options: {
+  meshPath: string;
+  configPath: string;
+  site: string;
+  contentRoot: string;
+  targetSite?: string;
+  alsoPublished?: readonly string[];
+}): Map<string, string> {
+  const { meshPath, configPath, site, contentRoot, targetSite, alsoPublished } = options;
+  const published = new Set([...publishedSlugs(contentRoot), ...(alsoPublished ?? [])]);
+  const links = new Map<string, string>();
+
+  for (const other of discoverDocsConfigs(meshPath)) {
+    if (path.resolve(other) === path.resolve(configPath)) continue;
+    try {
+      const config = parseDocsConfig(other);
+      if ((targetSite ?? resolveSite(config)) !== site) continue;
+      if (!config.slug || !published.has(config.slug)) continue;
+      for (const [name, url] of resolveDocSet(meshPath, other, config, false).links) {
+        links.set(name, url);
+      }
+    } catch {
+      // A doc set that does not resolve adds no links
+    }
+  }
+  return links;
+}
+
+// ============================================================================
 // Public API
 // ============================================================================
 
@@ -513,10 +619,11 @@ export function portDocConfig(options: {
   flintPath: string;
   docsRepoPath: string;
   targetSite?: string;
+  /** Product slugs of this site that the same run ports, so links to them resolve */
+  alsoPublished?: readonly string[];
 }): PortResult {
-  const { configPath, flintPath, docsRepoPath, targetSite } = options;
+  const { configPath, flintPath, docsRepoPath, targetSite, alsoPublished } = options;
   const meshPath = path.join(flintPath, "Mesh");
-  const configDir = path.dirname(configPath);
 
   const config = parseDocsConfig(configPath);
   const site = targetSite ?? resolveSite(config);
@@ -538,6 +645,15 @@ export function portDocConfig(options: {
   const contentRoot = path.join(sitePath, "content", "docs");
   const targetPath = slug ? path.join(contentRoot, slug) : contentRoot;
 
+  // Resolve the pages before the clean, so a doc set that does not resolve
+  // deletes nothing. The links of this doc set win over the sibling links.
+  const docSet = resolveDocSet(meshPath, configPath, config, true);
+  const linkMap = new Map([
+    ...siblingDocSetLinks({ meshPath, configPath, site, contentRoot, targetSite, alsoPublished }),
+    ...docSet.links,
+  ]);
+  const { indexPage, sections: resolvedSections } = docSet;
+
   // Clean the target directory. With a slug this is only the product folder;
   // the site content root is never deleted in product mode.
   if (fs.existsSync(targetPath)) {
@@ -547,42 +663,18 @@ export function portDocConfig(options: {
 
   console.log(`  Target: ${targetPath}\n`);
 
-  // Build link map for wiki link resolution
-  const urlPrefix = buildUrlPrefix(config);
-  const linkMap = new Map<string, string>();
-
-  // Resolve index
-  const indexPage = resolvePage(meshPath, config.index, configDir);
-  linkMap.set(indexPage.fileName, urlPrefix || "/");
-
-  // Resolve all section pages first to build link map
-  const resolvedSections: { config: SectionConfig; pages: ResolvedPage[] }[] =
-    [];
-
-  for (const section of config.sections) {
-    const pages: ResolvedPage[] = [];
-    for (const pageLink of section.pages ?? []) {
-      try {
-        const page = resolvePage(meshPath, pageLink, configDir);
-        linkMap.set(page.fileName, `${urlPrefix}/${section.id}/${page.slug}`);
-        pages.push(page);
-      } catch (err) {
-        console.warn(`  Warning: ${(err as Error).message}`);
-      }
-    }
-    resolvedSections.push({ config: section, pages });
-  }
-
   // Process index page
   const indexContent = fs.readFileSync(indexPage.sourcePath, "utf-8");
+  const indexUnresolved = new Set<string>();
   const indexMdx = processContent(
     indexContent,
     indexPage.title,
-    urlPrefix,
-    linkMap
+    linkMap,
+    indexUnresolved
   );
   fs.writeFileSync(path.join(targetPath, "index.mdx"), indexMdx);
   console.log(`  index.mdx <- ${indexPage.fileName}.md (${indexPage.title})`);
+  warnUnresolved(indexUnresolved);
 
   // Track sections for the product / root meta.json
   const sectionIds: string[] = ["index"];
@@ -596,13 +688,15 @@ export function portDocConfig(options: {
 
     for (const page of pages) {
       const content = fs.readFileSync(page.sourcePath, "utf-8");
-      const mdx = processContent(content, page.title, urlPrefix, linkMap);
+      const unresolved = new Set<string>();
+      const mdx = processContent(content, page.title, linkMap, unresolved);
 
       fs.writeFileSync(path.join(sectionPath, `${page.slug}.mdx`), mdx);
       pageSlugs.push(page.slug);
       console.log(
         `  ${section.id}/${page.slug}.mdx <- ${page.fileName}.md (${page.title})`
       );
+      warnUnresolved(unresolved);
     }
 
     // Create section meta.json
@@ -627,6 +721,15 @@ export function portDocConfig(options: {
   console.log(`\n  Done: ${config.title} -> ${rel}/`);
 
   return { configPath, site, slug, title: config.title, targetPath };
+}
+
+/** Name the wiki links of a page that stay text: no published doc set has the page */
+function warnUnresolved(unresolved: Set<string>): void {
+  if (unresolved.size === 0) return;
+  console.warn(
+    `    Warning: ${unresolved.size} link(s) to a page in no published doc set, kept as text: ` +
+      [...unresolved].map((t) => `[[${t}]]`).join(", ")
+  );
 }
 
 function siteTitleFor(site: string): string {
@@ -663,12 +766,32 @@ export function portAllDocConfigs(options: {
     console.log(`  - ${path.relative(meshPath, c)}`);
   }
 
+  // The product slugs that this run ports, by site. Each doc set can link to
+  // the others before they are in the root meta.json of the site.
+  const runSlugs = new Map<string, string[]>();
+  for (const configPath of configs) {
+    try {
+      const config = parseDocsConfig(configPath);
+      if (!config.slug) continue;
+      const site = targetSite ?? resolveSite(config);
+      runSlugs.set(site, [...(runSlugs.get(site) ?? []), config.slug]);
+    } catch {
+      // A config that does not parse fails again below, with its error
+    }
+  }
+
   const ok: PortResult[] = [];
   const failed: { configPath: string; error: string }[] = [];
 
   for (const configPath of configs) {
     try {
-      ok.push(portDocConfig({ configPath, flintPath, docsRepoPath, targetSite }));
+      let alsoPublished: string[] = [];
+      try {
+        alsoPublished = runSlugs.get(targetSite ?? resolveSite(parseDocsConfig(configPath))) ?? [];
+      } catch {
+        // portDocConfig reports the parse error
+      }
+      ok.push(portDocConfig({ configPath, flintPath, docsRepoPath, targetSite, alsoPublished }));
     } catch (err) {
       const error = (err as Error).message;
       failed.push({ configPath, error });

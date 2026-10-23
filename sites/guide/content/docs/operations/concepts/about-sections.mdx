@@ -1,0 +1,68 @@
+---
+title: "About Sections"
+---
+
+A section is a group of tasks with one purpose. It is where work gets done. Sections can depend on each other. Those links form the delivery graph.
+
+## The home of a section
+
+Every section has one home. The home is one of four things:
+
+- **A deliverable.** The section is one chunk of the work that the deliverable delivers. This is the most common home.
+- **A project.** The section holds project work that has no deliverable yet. Use it to name and order work before you scope a deliverable.
+- **A deployment.** The section is the inbox of the deployment. It collects the tasks that come up while the deployment runs. See [About Deployments](/operations/concepts/about-deployments).
+- **The workspace.** The section belongs to no project. The master backlog is a section of this kind.
+
+A section has one home at a time. You can move a plain section to another home: a project, a deliverable, or a deployment. Its tasks and their subtasks go with it. A section with a role (backlog, queue, or inbox) cannot move. See [Move Tasks](/operations/guides/move-tasks).
+
+## Roles
+
+Most sections are plain sections. Some sections have a role. A role gives the section a fixed job.
+
+| Role | Where | What it does |
+| --- | --- | --- |
+| Backlog | One in each project, and one for the workspace | Holds work that is not committed yet. Tasks sort by priority, then by order. |
+| Queue | In a project | Holds work that you intend to pull soon. |
+| Inbox | One in each active deployment | Collects the tasks that come up while the deployment runs. |
+
+The service makes the backlog section the first time a project needs one. It makes the inbox section when a deployment becomes active. You do not make these sections yourself.
+
+A section with no role sorts its tasks in the order that you give them.
+
+## When a section is done
+
+The service derives the status of a section. You do not set it.
+
+- A section is done when it has root tasks and every root task is done.
+- A section is blocked when a section that it depends on is not done.
+- A section is in progress when a task in it is doing, and it is not blocked.
+- Otherwise the section is ready.
+
+A list of a section shows root tasks only. A root task is a task that is not the subtask of another task. Each root task shows how many of its subtasks are done, for example `2/5`: two done of five. See [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs).
+
+A section does not decide when its deliverable is done. A person marks a deliverable done. See [About Deliverables](/operations/concepts/about-deliverables).
+
+You can archive a done section. An archived section leaves the view of its home. It still counts as done for the sections that depend on it.
+
+## Order and dependencies
+
+The sections of one home have an order. You can reorder them.
+
+A section can depend on other sections. A link means "this section waits on that section". Inside one deliverable, a section can only depend on a section above it. A section can also depend on a section in another deliverable. The service rejects a cycle.
+
+The map shows the sections of the workspace and the links between them.
+
+## Hidden context
+
+A section has a Context field. You edit it in the edit sheet of the section. Write what the section is about, in Markdown. The page does not show it. Search and the place suggestions read it.
+
+## The old name
+
+Sections were called subsections before. Some older text and some older tools still say subsection. It means the same thing as section.
+
+## Further reading
+
+- [Core Ideas](/operations/concepts/core-ideas)
+- [About Deliverables](/operations/concepts/about-deliverables)
+- [About Tasks and Backlogs](/operations/concepts/about-tasks-and-backlogs)
+- [Plan Work with Sections](/operations/guides/plan-work-with-sections)

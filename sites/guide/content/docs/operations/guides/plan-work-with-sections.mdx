@@ -1,0 +1,74 @@
+---
+title: "Plan Work with Sections"
+---
+
+This guide shows you how to break work into sections, how to order them, and how to link them. At the end the graph shows what is ready and what is blocked, and you know when to mark the deliverable done.
+
+## Prerequisites
+
+- You have a project. See [Set Up a Project](/operations/guides/set-up-a-project).
+- You know what a section is and where it can live. See [About Sections](/operations/concepts/about-sections).
+
+## Choose the home
+
+Decide where the sections go.
+
+- Put them in a deliverable when the work has a scoped outcome. This is the normal case.
+- Put them in the project when the work has no deliverable yet. You can name and order the work now, and move the sections into a deliverable later.
+
+## Add sections
+
+Open the deliverable or the project. Add a section for each chunk of work. Give each section a clear title.
+
+You can choose a position when you add a section. If you do not choose, the new section goes last.
+
+Add tasks to a section as you name the work. A section with no tasks cannot be done. Status needs tasks.
+
+A task can have subtasks. Use subtasks when one task has steps that you want to track. The section list shows the root task with a count of its subtasks.
+
+If you want search and the place suggestions to find a section, fill in its Context field. Write what the section is about. The page does not show it.
+
+## Set dependencies
+
+Link a section to the sections it needs. A link means "this section waits on that section".
+
+Inside one deliverable, a section can only depend on a section above it. The service rejects a cycle.
+
+You can also link to a section in another deliverable. Use that when this chunk waits on a different outcome.
+
+## Read the graph
+
+Look at the deliverable and at the map.
+
+- A section is ready when its dependencies are done and no task in it is doing.
+- A section is in progress when a task in it is doing, and it is not blocked.
+- A section is blocked when a dependency is not done.
+- A section is done when every root task in it is done.
+
+The map shows the same graph for the organisation. You can hide completed work. You can hide blocks that have no cross links. You can mark a few sections as highlights so the map shows the path to them.
+
+If a section is done and you no longer need to see it, you can archive it. It leaves the view of its home. It still counts as done for anything that depends on it.
+
+## Change the plan
+
+Work changes. The sections can change with it.
+
+- Reorder sections when the order of the work changes.
+- Move a task to another section when it belongs there.
+- Move a section to another home. For example, move a project section into a new deliverable when you scope the work.
+
+See [Move Tasks](/operations/guides/move-tasks).
+
+## Mark the deliverable done
+
+Do the section work first. When every section is done, check the outcome. Then mark the deliverable done: on the project page, choose the done button of the deliverable (its hint is "Mark as done").
+
+The service does not mark it done for you. All the sections can be done while the deliverable is still open. That is on purpose: you decide when the work is delivered.
+
+If you find more work after that, reopen the deliverable: choose the done button again (its hint is "Done. Click to reopen"). Add the work to a section, or add a new section.
+
+## Next steps
+
+- Put tasks in the right place in [Create a Task in the Right Place](/operations/guides/create-a-task-in-the-right-place).
+- Move work between sections in [Move Tasks](/operations/guides/move-tasks).
+- Attach dates in [Plan Your Week](/operations/workflows/plan-your-week).
