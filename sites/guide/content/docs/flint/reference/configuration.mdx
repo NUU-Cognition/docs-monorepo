@@ -416,7 +416,7 @@ The managed block of `.gitignore` always ignores `flint.env` and `flint.env.loca
 }
 ```
 
-`flint orbh profiles default set <target>...` writes the key, `flint orbh profiles default unset` removes it, and step 4 of `flint setup` writes it when you put another target first. The Flint layer (`[orbh] default` in `flint.toml`) wins over this key. With no key, the shipped list applies: `claude/o55h`, then `codex/a6h`. The variable `ORBH_SETTINGS_PATH` names another settings file. See [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list).
+`flint orbh profiles default set <target>...` writes the key, and `flint orbh profiles default unset` removes it. `flint setup` does not write it. The Flint layer (`[orbh] default` in `flint.toml`) wins over this key. With no key, the shipped list applies: `claude/o55h`, then `codex/a6h`. The variable `ORBH_SETTINGS_PATH` names another settings file. See [Agent Sessions > The Default Target List](/flint/modules/agent-sessions#the-default-target-list).
 
 ## The Flint CLI Config
 

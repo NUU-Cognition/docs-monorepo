@@ -2,7 +2,7 @@
 title: "Setting Up a Machine"
 ---
 
-`flint setup` prepares a machine in seven steps. Run it once per machine. It needs internet access.
+`flint setup` prepares a machine in five steps. Run it once per machine. It needs internet access.
 
 ```bash
 flint setup
@@ -45,9 +45,9 @@ Setup checks the network before the first step. With no network, it stops. It as
 Flint setup needs internet access. Connect to the internet, then run flint setup again.
 ```
 
-## The Seven Steps
+## The Five Steps
 
-Each step prints a header, such as `Step 2 of 7 - Git author`. A summary ends the run.
+Each step prints a header, such as `Step 2 of 5 - Git author`. A summary ends the run.
 
 ### Step 1: Identity
 
@@ -92,36 +92,17 @@ Then setup checks the terminal font `JetBrainsMono Nerd Font`. The Obsidian term
 - Each skip and each failure prints `Later: flint setup font`.
 - With `NUU_HOME` set, setup installs no font.
 
-### Step 4: Agent Default
+Then setup prepares the agent default. When the Orbh home has no `default.json`, setup copies the Orbh profiles from the public repository `NUU-Cognition/orbh-profiles`. The screen shows `Copying the Orbh profiles` while it works. Setup never writes `profiles.json`, the file of the person. With no network, or when the copy fails, setup gives a warning and prints `Later: flint orbh profiles update`.
 
-Setup copies the Orbh profiles first. When the Orbh home has no `default.json`, setup copies it from the public repository `NUU-Cognition/orbh-profiles`. The screen shows `Copying the Orbh profiles` while it works. Setup never writes `profiles.json`, the file of the person. With no network, or when the copy fails, setup gives a warning and prints `Later: flint orbh profiles update`.
+Then setup shows the default target list and the target that Orbh selects now: the first target of the list that can run. Setup asks no question about the order. `flint orbh profiles default set` changes the order later.
 
-Then setup shows the default target list and the target that Orbh selects now. In a terminal, you can put another target first. Setup writes that order to the machine layer.
-
-### Step 5: Computer Flint
+### Step 4: Computer Flint
 
 Setup makes the Computer Flint when it is missing. It asks no question.
 
 When setup cannot make the Computer Flint, the run fails. The screen names the repair command.
 
-### Step 6: Guide
-
-Setup clones the Guide of NUU Cognition into the home folder, beside the Computer Flint. The folder is `(Guide) NUU Cognition`. The Guide is a public Flint from `https://github.com/NUU-Cognition/guide-nuu-cognition`. Its shard Flint Help answers Flint questions and explains Flint problems. You ask it with an agent. The summary of setup names the command:
-
-```bash
-flint orbh i -p ~/"(Guide) NUU Cognition"
-```
-
-Setup asks `Clone the Guide?` The answer "yes" is the default. Setup skips the clone in four cases:
-
-- with `--no-guide`
-- when you answer "no"
-- with no terminal and neither `--guide` nor `--yes`
-- with no network
-
-Each skip prints `Later: flint setup guide`.
-
-### Step 7: Open and Onboarding
+### Step 5: Open and Onboarding
 
 Setup opens the Computer Flint in Obsidian on every run. The first open of a machine has one trust click ("Trust author and enable plugins"). Obsidian then reloads once, and the onboarding session starts in a terminal tab after that reload.
 
@@ -139,26 +120,24 @@ A later run resumes the recorded onboarding session. The session explains Flint 
 | `--machine-proper-name <name>` | The machine display name, with no question. It renames the Computer Flint too |
 | `--machine-name <word>` | The branch prefix of this machine |
 | `--git-email <email>` | The email of the Git author, with no question |
-| `--guide` | Clone the Guide with no question |
-| `--no-guide` | Skip the Guide (later: `flint setup guide`) |
 | `--font` | Install the terminal font with no question |
 | `--no-font` | Skip the terminal font (later: `flint setup font`) |
 | `--no-open` | Do not open Obsidian. The onboarding session runs in the terminal |
-| `-y, --yes` | Ask no question. Each open input takes its default, setup installs the terminal font, and setup clones the Guide |
+| `-y, --yes` | Ask no question. Each open input takes its default, and setup installs the terminal font |
 | `--json` | Print one JSON result envelope on stdout. Ask no question. Start no session |
 
 ```bash
 flint setup --yes
-flint setup --no-guide --no-open
+flint setup --no-open
 ```
 
-The flags `--computer` and `--no-computer` are retired. Each prints one line, and the run continues. Setup always makes the Computer Flint.
+The flags `--computer`, `--no-computer`, `--guide`, and `--no-guide` are retired. Each prints one line, and the run continues. Setup always makes the Computer Flint, and it has no Guide step.
 
 ## A Second Run
 
-A second run asks nothing that is stored. It keeps the Computer Flint and the Guide. It opens the Computer Flint and resumes the onboarding session.
+A second run asks nothing that is stored. It keeps the Computer Flint. It opens the Computer Flint and resumes the onboarding session.
 
-Only three things fail a run: step 1, step 5, and a stop (Ctrl-C). Each other step gives a warning and a `Later:` line.
+Only three things fail a run: step 1, step 4, and a stop (Ctrl-C). Each other step gives a warning and a `Later:` line.
 
 ## The Computer Flint
 
@@ -209,16 +188,6 @@ flint move computer "<new path>"
 ```
 
 The command moves the Computer Flint and updates the roster. The claim follows, so Flint still finds it. Do not move the folder by hand.
-
-## The Guide Alone
-
-```bash
-flint setup guide
-```
-
-The command clones the Guide of NUU Cognition alone. A present Guide stays: the command finds it by its Flint id and clones nothing.
-
-To get the newest Guide later, run `flint git merge` in the Guide. It takes the new history from origin and runs the local sync. It pushes nothing. Do not run `flint git sync` in the Guide: it tries to push to the public repository.
 
 ## The Terminal Font Alone
 
