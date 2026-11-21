@@ -85,7 +85,7 @@ When no target is available, the command refuses with exit 1. It names the insta
 | Layer | Where | Written by |
 |---|---|---|
 | Flint | `[orbh] default` in `flint.toml` of the Flint | `flint orbh profiles default set --flint <target>...` |
-| Machine | The key `defaultTargets` in the Orbh settings file `~/.nuucognition/orbh/settings.json` | `flint orbh profiles default set <target>...`, and step 4 of `flint setup` |
+| Machine | The key `defaultTargets` in the Orbh settings file `~/.nuucognition/orbh/settings.json` | `flint orbh profiles default set <target>...` |
 | Shipped | The list that Orbh ships: `claude/o55h`, `codex/a6h` | Orbh |
 
 The highest layer that has a list applies. It replaces the lower list; the layers do not merge. The Flint layer in `flint.toml`:

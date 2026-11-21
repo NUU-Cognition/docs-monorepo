@@ -54,7 +54,7 @@ The Computer Flint is private: other machines cannot read it through the network
 
 ## Make It
 
-`flint setup` makes the Computer Flint at step 5, "Computer Flint". It asks no question. Step 7, "Open and onboarding", then opens it in Obsidian. See [Setting Up a Machine > Step 5: Computer Flint](/flint/guide/setting-up-a-machine#step-5-computer-flint) and [Setting Up a Machine > Step 7: Open and Onboarding](/flint/guide/setting-up-a-machine#step-7-open-and-onboarding).
+`flint setup` makes the Computer Flint at step 4, "Computer Flint". It asks no question. Step 5, "Open and onboarding", then opens it in Obsidian. See [Setting Up a Machine > Step 4: Computer Flint](/flint/guide/setting-up-a-machine#step-4-computer-flint) and [Setting Up a Machine > Step 5: Open and Onboarding](/flint/guide/setting-up-a-machine#step-5-open-and-onboarding).
 
 The step needs the network: the Computer Flint gets its shards and its Obsidian payload. Setup checks the network before step 1. With no network, setup stops. It asks nothing and writes nothing. When setup cannot make the Computer Flint, the run fails. The screen names the repair command.
 
@@ -85,7 +85,7 @@ The flag `--convert` is retired. To convert a Flint to the Computer Flint, use `
 flint convert "<flint>" --to computer
 ```
 
-A second run of `flint setup` keeps the Computer Flint that exists. Step 7 opens it again. When the Computer Flint has no "Start here" note, setup adds the note. It never writes over a note that exists.
+A second run of `flint setup` keeps the Computer Flint that exists. Step 5 opens it again. When the Computer Flint has no "Start here" note, setup adds the note. It never writes over a note that exists.
 
 ## The Repair Notes
 

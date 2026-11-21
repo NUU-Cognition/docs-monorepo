@@ -50,17 +50,15 @@ flint update --check
 flint setup
 ```
 
-`flint setup` needs internet access. With no network it stops before the first step. It runs seven steps in order:
+`flint setup` needs internet access. With no network it stops before the first step. It runs five steps in order:
 
 1. **Identity**: your Name and the machine display name.
 2. **Git author**: the author of the first commits of new Flints.
-3. **Environment**: a check of Git, Node.js, Obsidian, and the agent CLIs, and the terminal font `JetBrainsMono Nerd Font` (setup asks before it installs the font).
-4. **Agent default**: the first copy of the Orbh profiles and the default target list.
-5. **Computer Flint**: the home Flint of this machine. It holds the "Start here" note and the notes of the repair sessions. See [The Computer Flint](/flint/guide/the-computer-flint).
-6. **Guide**: a clone of the Guide of NUU Cognition, a Flint that answers Flint questions with an agent (optional).
-7. **Open and onboarding**: the open of the Computer Flint with your first agent session.
+3. **Environment**: a check of Git, Node.js, Obsidian, and the agent CLIs, the terminal font `JetBrainsMono Nerd Font` (setup asks before it installs the font), the first copy of the Orbh profiles, and the agent that Orbh selects.
+4. **Computer Flint**: the home Flint of this machine. It holds the "Start here" note and the notes of the repair sessions. See [The Computer Flint](/flint/guide/the-computer-flint).
+5. **Open and onboarding**: the open of the Computer Flint with your first agent session.
 
-**The one trust click.** Obsidian asks you to trust the plugins of a new vault. At step 7, click **Trust author and enable plugins** in the Computer Flint. This is the only trust click on this machine. After it, `flint open` opens each new Flint with its plugins on, and Obsidian does not ask again. See [Using Obsidian](/flint/guide/using-obsidian).
+**The one trust click.** Obsidian asks you to trust the plugins of a new vault. At step 5, click **Trust author and enable plugins** in the Computer Flint. This is the only trust click on this machine. After it, `flint open` opens each new Flint with its plugins on, and Obsidian does not ask again. See [Using Obsidian](/flint/guide/using-obsidian).
 
 > [!note] "Vault not found" at the first open
 > Obsidian does not know the folder of the Computer Flint yet, so the first open can show "Vault not found". Then open Obsidian, choose **Open folder as vault**, and select the folder of the Computer Flint. Click **Trust author and enable plugins**. Later, `flint open computer` opens it.

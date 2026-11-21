@@ -326,7 +326,7 @@ Flint setup needs internet access. Connect to the internet, then run flint setup
 
 Setup checks the network before the first step. With no network it stops with exit 1. It asks nothing and writes nothing. Connect to the internet, then run `flint setup` again.
 
-A later step that needs the network skips with a `Later:` line instead of failing the run. The terminal font skips with the warning `No network: setup did not install the terminal font.` and `Later: flint setup font`. The Guide step skips with `Later: flint setup guide`. The agent default step skips the profile pull with `Later: flint orbh profiles update`.
+A later step that needs the network skips with a `Later:` line instead of failing the run. The terminal font skips with the warning `No network: setup did not install the terminal font.` and `Later: flint setup font`. Step 3 skips the copy of the Orbh profiles with `Later: flint orbh profiles update`.
 
 ## The Terminal Font Is Missing
 
