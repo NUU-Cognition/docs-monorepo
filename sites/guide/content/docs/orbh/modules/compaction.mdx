@@ -22,7 +22,7 @@ flint orbh context
 flint orbh context <session-id> --json
 ```
 
-`flint orbh context` reads the same number without rendering the Page. An armed pager fires an advisory when occupancy reaches 80 percent.
+`flint orbh context` reads the same number without rendering the Page. Managed delivery sends an advisory when occupancy reaches 80 percent. A session with no harness connection sees the advisory at its next Page read.
 
 80 percent is guidance, not a gate. Nothing blocks the verbs below it, and nothing runs them for the agent above it. The agent starts compaction at or near 80 percent, so that enough context remains to write a good handoff. The agent also compacts earlier when the operator asks or when a natural seam makes a clean handoff cheap.
 
@@ -36,13 +36,13 @@ flint orbh compact handoff
 flint orbh compact finish
 ```
 
-`compact start` prints the handoff contract, the exact path to write the handoff to, and the live Page. It records nothing, claims nothing, and kills nothing. It runs again safely at any occupancy. Its one durable effect is to hold the pager, so that nothing interrupts the critical section. The hold also marks the session `[Compacting...]` on every title surface: the pane title, the session list, the cockpit, and attached views. Events that land during the hold stay pending, and none are lost.
+`compact start` prints the handoff contract, the exact path to write the handoff to, and the live Page. It records nothing, claims nothing, and kills nothing. It runs again safely at any occupancy. Its one durable effect is to hold delivery, so that nothing interrupts the critical section. The hold also marks the session `[Compacting...]` on every title surface: the pane title, the session list, the cockpit, and attached views. Events that land during the hold stay pending, and none are lost.
 
 The agent then writes the handoff to that path with its own tools.
 
 `compact handoff` is a turn-ending verb. It validates the handoff while the agent is still alive, then ends the context and relaunches the same session from the handoff. The agent plans no work after it.
 
-`compact finish` runs in the relaunched context. The new context reads the handoff and every path in its `FILES` list, then runs `finish`. That clears `[Compacting...]` and releases the pager hold. A successor that never runs `finish` leaves the marker up, which correctly shows that the new context never confirmed its handoff.
+`compact finish` runs in the relaunched context. The new context reads the handoff and every path in its `FILES` list, then runs `finish`. That clears `[Compacting...]` and releases the delivery hold. A successor that never runs `finish` leaves the marker up, which correctly shows that the new context never confirmed its handoff.
 
 To back out between `start` and `handoff`, the agent runs:
 
@@ -50,7 +50,7 @@ To back out between `start` and `handoff`, the agent runs:
 flint orbh compact abort
 ```
 
-`compact abort` releases the pager hold and clears the marker. Ending the turn with a normal return also releases the hold. Arming the pager does not release it.
+`compact abort` releases the delivery hold and clears the marker. Ending the turn with a normal return also releases the hold.
 
 ## The Handoff File
 

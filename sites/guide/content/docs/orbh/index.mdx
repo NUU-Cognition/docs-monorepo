@@ -69,7 +69,7 @@ In a terminal, `list` and `active` open an interactive cockpit. `--print` gives 
 
 The Page is the introspection surface of one session. It shows unread coordination, jobs, wake state, context occupancy, and hygiene warnings. An agent reads it at the seams of its work: on resume, before it ends a long turn, and after a batch of subagents.
 
-Delivery has two paths. During a live turn, a manager with a harness connection submits each Page natively, or the agent arms a one-shot pager that fires on the first new event. Between turns, the machine orchestrator wakes a parked session with one digest of everything pending. No event is ever lost: without a live pager, events wait as durable state until the next Page read or turn boundary.
+Delivery has two paths. During a live turn, a manager with a harness connection submits each Page natively: this is managed delivery. Between turns, the machine orchestrator wakes a parked session with one digest of everything pending. No event is ever lost: in a session with no harness connection, events wait as durable state until the next Page read or turn boundary.
 
 ## Subagents
 
@@ -92,7 +92,7 @@ Sessions talk to each other with direct messages. A message lands in the target 
 A long session fills its context window. Compaction lets the agent write its own handoff and relaunch the same session id with a fresh context:
 
 ```bash
-flint orbh compact start    # Print the handoff contract and hold the pager
+flint orbh compact start    # Print the handoff contract and hold delivery
 flint orbh compact handoff  # Validate the handoff and relaunch this session
 flint orbh compact finish   # Run by the relaunched context after it reads the handoff
 ```

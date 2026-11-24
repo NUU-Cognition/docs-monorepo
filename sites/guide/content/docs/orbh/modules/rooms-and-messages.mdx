@@ -34,7 +34,7 @@ Read the full output of `message send`. It names the delivery path of the messag
 
 Each message wakes an awaiting target. The orchestrator sweep resumes the target with the message. No extra flag is needed.
 
-A working target with an armed pager receives the message during its run. A working target without an armed pager keeps the message until its next Page read or turn boundary.
+A working target with managed delivery receives the message during its run, as a pushed Page. A working target with no harness connection keeps the message until its next Page read or turn boundary. An idle interactive target with no harness connection sees the message only after a person types in it.
 
 An ended target keeps the message in its history, but nothing wakes the target. Add `--revive` to resume an ended session with the message:
 

@@ -459,11 +459,12 @@ See [Watching Sessions in the Cockpit](/orbh/guides/watching-sessions-in-the-coc
 | Verb | Syntax | Purpose |
 | --- | --- | --- |
 | `run` | `page run <source>/<name> [args...]` | Invoke one Page function on demand. |
-| `arm` | `page arm [id]` | Arm the long-poll pager for a session. Run it in the background. |
-| `status` | `page status [id]` | Inspect the pager process and compaction hold without consuming events. |
+| `status` | `page status [id]` | Inspect the delivery mode and the compaction hold without consuming events. |
 | `recover` | `page recover <event-id>` | Inspect an uncertain event. |
 
-Main flags: `page` takes `--raw` and `--no-mutate`. `run` takes `--session <id>` and `--no-mutate`. `arm` takes `--max-wait <seconds>`. `status` takes `--json`. `recover` takes `--session <id>` and `--acknowledge`.
+Main flags: `page` takes `--raw` and `--no-mutate`. `run` takes `--session <id>` and `--no-mutate`. `status` takes `--json`. `recover` takes `--session <id>` and `--acknowledge`.
+
+`page arm` is removed. It refuses with the code `page-arm-removed` and names the next command `flint orbh page`.
 
 Example:
 
