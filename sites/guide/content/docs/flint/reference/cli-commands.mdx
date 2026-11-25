@@ -2654,10 +2654,10 @@ Agent-facing session lifecycle commands. Compaction moved to `flint orbh compact
 
 ```text
 Compaction has moved to its own in-process lifecycle:
-  flint orbh compact start      Print the handoff contract + the path to write it to; hold the pager, show [Compacting...].
+  flint orbh compact start      Print the handoff contract + the path to write it to; hold delivery, show [Compacting...].
   flint orbh compact handoff    TURN-ENDING: validate the handoff, end this context, and relaunch the same session; use --into runtime/profile to change runtime or profile.
   flint orbh compact finish     In the fresh context, confirm the handoff was read and clear the compaction marker.
-  flint orbh compact abort    Release the pager hold if you decide not to compact.
+  flint orbh compact abort    Release the delivery hold if you decide not to compact.
 ```
 
 #### flint orbh update
@@ -4945,33 +4945,13 @@ Invoke one Page function on demand: page run `<source>`/`<name>` [args…]
 | `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
 | `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
 
-##### flint orbh page arm
-
-```text
-flint orbh page arm [options] [id]
-```
-
-Agent-facing long-poll pager for this session; run it in the background.
-
-| Argument | Description |
-|---|---|
-| `id` | Session ID (full or partial). Optional when ORBH_SESSION_ID is set. |
-
-| Option | Description |
-|---|---|
-| `--max-wait <seconds>` | Maximum wait before a heartbeat render. Omit to wait indefinitely. |
-| `-p, --path <dir>` | Path to flint (default: auto-detect) |
-| `--orb-root <dir>` | Scope this command to an Orb store directory (overrides ORBH_ORB_ROOT_DIR and cwd) |
-| `--at <scope>` | Scope this command by name: 'flint:`<name>`' (registered Flint) or 'machine' (~/.orb). The human spelling of --orb-root. |
-| `--create-store` | Permit an explicitly scoped store that does not exist yet to be created |
-
 ##### flint orbh page status
 
 ```text
 flint orbh page status [options] [id]
 ```
 
-Inspect the pager process and compaction hold without consuming events. An armed process does not prove agent notification.
+Inspect delivery (the harness connection and the compaction hold) without consuming events.
 
 | Argument | Description |
 |---|---|
@@ -6500,7 +6480,7 @@ Manually drive the firing chokepoint. The harness chokepoints (session return, o
 flint orbh compact [options] [command]
 ```
 
-Agent-authored compaction, in three verbs. `compact start` prints the handoff contract and the path to write it to, holds the pager, and marks the session [Compacting...]; you then write the handoff with your own tools. `compact handoff` is TURN-ENDING: it validates what you wrote, ends this context, and relaunches the SAME session from it; `--into <runtime/profile> [--account <name>]` selects the runtime, profile, and optional account for that fresh run. Interactive panes keep their manager and swap only the harness child. `compact finish` is run by the RELAUNCHED context once it has read the handoff and every FILES path — it clears [Compacting...] and releases the hold. `compact abort` backs out before handoff.
+Agent-authored compaction, in three verbs. `compact start` prints the handoff contract and the path to write it to, holds delivery, and marks the session [Compacting...]; you then write the handoff with your own tools. `compact handoff` is TURN-ENDING: it validates what you wrote, ends this context, and relaunches the SAME session from it; `--into <runtime/profile> [--account <name>]` selects the runtime, profile, and optional account for that fresh run. Interactive panes keep their manager and swap only the harness child. `compact finish` is run by the RELAUNCHED context once it has read the handoff and every FILES path — it clears [Compacting...] and releases the hold. `compact abort` backs out before handoff.
 
 Subcommands: `start`, `handoff`, `test`, `finish`, `abort`.
 
@@ -6510,7 +6490,7 @@ Subcommands: `start`, `handoff`, `test`, `finish`, `abort`.
 flint orbh compact start [options]
 ```
 
-Hold the pager and prepare the compaction handoff. Request continuation on supported Codex managers. Keep this context alive.
+Hold delivery and prepare the compaction handoff. Request continuation on supported Codex managers. Keep this context alive.
 
 ##### flint orbh compact handoff
 
@@ -6543,7 +6523,7 @@ Show the compaction curtain on this pane for a few seconds, then hand the pane b
 flint orbh compact finish [options]
 ```
 
-Run by the RELAUNCHED context once it has read the handoff and every FILES path: clears [Compacting...] and releases the pager hold.
+Run by the RELAUNCHED context once it has read the handoff and every FILES path: clears [Compacting...] and releases the delivery hold.
 
 ##### flint orbh compact abort
 
@@ -6551,7 +6531,7 @@ Run by the RELAUNCHED context once it has read the handoff and every FILES path:
 flint orbh compact abort [options]
 ```
 
-Back out of a compaction started but not handed off: releases the pager hold and clears [Compacting...].
+Back out of a compaction started but not handed off: releases the delivery hold and clears [Compacting...].
 
 #### flint orbh command-action
 
