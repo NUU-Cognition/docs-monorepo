@@ -23,7 +23,7 @@ flint orbh page <session-id> --no-mutate
 
 When `ORBH_SESSION_ID` is set, `page` targets the current session. A self-read can update session state: it drains pending inbox items, advances room cursors, and bumps read counters. Use `--no-mutate` for a read-only render. Use `--raw` to label each section with its function id.
 
-The Page shows the session identity and state, the context use of the live run, unread messages and requests, room activity, jobs and their results, dispatches and child results, the awaiting state, the pager status, and warnings that need action. The Page also shows the active procedure of the session.
+The Page shows the session identity and state, the context use of the live run, unread messages and requests, room activity, jobs and their results, dispatches and child results, the awaiting state, the delivery mode, and warnings that need action. The Page also shows the active procedure of the session.
 
 Run one Page function on its own:
 
@@ -32,32 +32,28 @@ flint orbh page run core/jobs
 flint orbh page run core/inbox --session <session-id> --no-mutate
 ```
 
-## The Pager
+## Page Delivery
 
-The pager delivers new events to a live turn. It has two paths. During a live turn, delivery arrives through the harness connection or through a shell pager. Between turns, the orchestrator sweep wakes an awaiting session with one digest. See [Orchestrator](/orbh/modules/orchestrator).
+Delivery brings new events to a session. It has two paths. During a live turn, delivery arrives through the harness connection: this is managed delivery. Between turns, the orchestrator sweep wakes an awaiting session with one digest. See [Orchestrator](/orbh/modules/orchestrator).
 
-Check which path is live before you arm a pager:
+Check the delivery mode of a session:
 
 ```bash
 flint orbh page status
+flint orbh page status --json
 ```
 
-`MODE managed` means the manager submits every Page through the harness connection. In that mode, do not arm a shell pager.
+| Mode | Meaning |
+| --- | --- |
+| `MODE managed` | The manager submits every Page through the harness connection. A busy session takes the Page between tool calls, and an idle session starts a turn on it. The agent starts no background task for delivery. |
+| `MODE held` | A compaction hold suspends delivery, from `compact start` to `compact finish`. |
+| `MODE unmanaged` | The session has no live harness connection. Events wait for the next Page read or turn boundary. |
 
-In any other mode, arm the one-shot pager in the background:
+The manager sends a Page when something lands: a message, a terminal job, a child result, a request answer, room activity, a finished group barrier, a due scheduled wake, or a context advisory.
 
-```bash
-flint orbh page arm
-flint orbh page arm <session-id> --max-wait 120
-```
+With `MODE unmanaged`, nothing is lost. Events stay in the durable spool and appear at the next Page read or at the turn boundary. Read `flint orbh page` at each seam of a long turn. An idle interactive session with no harness connection sees nothing until a person types in it.
 
-The pager watches the session spool and exits with a full Page render when something lands: a message, a terminal job, a child result, a request answer, room activity, a finished group barrier, a due scheduled wake, or a context advisory. It fires once. Arm it again after it fires while fast delivery matters.
-
-`--max-wait` sets a heartbeat deadline in seconds. At the deadline the pager prints a Page render and exits. Without it, the pager waits until its lease expires.
-
-A second arm for the same run is refused with `page arm already active for this session`. When the pager prints `session ended — pager exiting`, do not arm again.
-
-With no pager on a working turn, nothing is lost. Events stay in the durable spool and appear at the next Page read or at the turn boundary. A missed re-arm costs time, never events.
+The command `flint orbh page arm` is removed. It refuses with the code `page-arm-removed`, writes nothing, and names the next command `flint orbh page`.
 
 ## Jobs
 
